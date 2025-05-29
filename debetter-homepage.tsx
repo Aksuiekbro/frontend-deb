@@ -39,7 +39,7 @@ export default function Component() {
       <section className="text-center py-8">
         <h1 className="text-[#4a4e69] text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
 
-        <div className="bg-[#22223b] rounded-[16px] mx-8 py-16 px-8 relative">
+        <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
           <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8">
             <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
             <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
@@ -74,7 +74,7 @@ export default function Component() {
 
           <div className="flex space-x-6 overflow-hidden">
             {[1, 2].map((item) => (
-              <div key={item} className="bg-[#22223b] rounded-[12px] p-6 flex-1 min-w-0">
+              <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
                 <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">AITU Kerek</h4>
                 <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">Almaty, Zhandosov 52</p>
                 <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">10.11.2027</p>
@@ -245,7 +245,7 @@ export default function Component() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#22223b] text-[#FFFFFF] py-16 mt-16">
+      <footer className="bg-[#0D1321] text-[#FFFFFF] py-16 mt-16">
         <div className="px-8">
           <div className="text-center mb-8">
             <div className="text-[45px] font-bold font-hikasami mb-4">DB</div>
