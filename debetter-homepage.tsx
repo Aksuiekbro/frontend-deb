@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
-
+// test
 export default function Component() {
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
