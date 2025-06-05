@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"node_modules/@stagewise/toolbar-next/dist/index.js -> @stagewise/toolbar-react\":{\"id\":\"node_modules/@stagewise/toolbar-next/dist/index.js -> @stagewise/toolbar-react\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_stagewise_toolbar-react_dist_index_js.js\"]}}"
