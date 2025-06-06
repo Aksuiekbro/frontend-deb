@@ -1227,6 +1227,9 @@ video {
 .min-w-\[var\(--radix-select-trigger-width\)\] {
   min-width: var(--radix-select-trigger-width);
 }
+.min-w-\[120px\] {
+  min-width: 120px;
+}
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -1343,6 +1346,10 @@ video {
 }
 .rotate-90 {
   --tw-rotate: 90deg;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.rotate-180 {
+  --tw-rotate: 180deg;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 .transform {
@@ -2669,6 +2676,11 @@ body {
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-gray-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1));
+}
+
 .hover\:bg-opacity-10:hover {
   --tw-bg-opacity: 0.1;
 }
@@ -2722,6 +2734,11 @@ body {
 .hover\:text-\[\#4a4e69\]:hover {
   --tw-text-opacity: 1;
   color: rgb(74 78 105 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-\[\#0D1321\]:hover {
+  --tw-text-opacity: 1;
+  color: rgb(13 19 33 / var(--tw-text-opacity, 1));
 }
 
 .hover\:underline:hover {

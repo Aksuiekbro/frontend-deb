@@ -42,7 +42,7 @@ export default function AuthPage() {
         router.push('/dashboard')
         return                      // prevent setState in finally
       }
-    } catch {
+    } catch (error) {
       setSignUpErrorMsg('An unexpected error occurred')
     } finally { setSignUpLoading(false) }
   }
@@ -66,7 +66,7 @@ export default function AuthPage() {
         router.push('/dashboard')
         return
       }
-    } catch {
+    } catch (error) {
       setSignInError('An unexpected error occurred')
     } finally { setSignInLoading(false) }
   }

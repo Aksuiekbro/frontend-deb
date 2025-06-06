@@ -1,51 +1,98 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import Header from "../../../components/Header"
 
 export default function TournamentDetailPage() {
   const [activeTab, setActiveTab] = useState('Main Info')
+  const [isMainInfoDropdownOpen, setIsMainInfoDropdownOpen] = useState(false)
+  const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Main info')
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsMainInfoDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      {/* Header */}
-      <header className="flex items-center justify-between px-12 py-4">
-        <div className="flex items-center space-x-16">
-          <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
-          <nav className="flex space-x-12">
-            <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
-              Join Debates
-            </a>
-            <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
-              Rating
-            </a>
-          </nav>
-        </div>
-        <div className="flex items-center space-x-6">
-          <select
-            className="border border-[#9a8c98] rounded-[4px] px-4 py-2 text-[#4a4e69] bg-white text-[16px] font-normal appearance-none bg-no-repeat bg-right bg-[length:12px] pr-8"
-            style={{
-              backgroundImage:
-                'url(\'data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"%3E%3Cpath fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/%3E%3C/svg>\')',
-            }}
-          >
-            <option>English</option>
-          </select>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-[#9a8c98] rounded-full"></div>
-            <span className="text-[#0D1321] text-[16px] font-normal">User1120023</span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Page Title */}
       <section className="px-12 py-8">
         <h1 className="text-[#0D1321] text-[48px] font-bold mb-8">Tournament: Lorem ipsum dolores sit amit</h1>
         
         {/* Tabs */}
-        <div className="flex border-b border-gray-300 mb-8">
-          {['Main Info', 'teams', 'Judges', 'Pairing and Matches', 'Results and Statistics'].map((tab) => (
+        <div role="tablist" className="flex border-b border-gray-300 mb-8">
+          {/* Main Info Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'Main Info'}
+              aria-controls="main-info-panel"
+              tabIndex={activeTab === 'Main Info' ? 0 : -1}
+              onClick={() => {
+                setActiveTab('Main Info')
+                setIsMainInfoDropdownOpen(!isMainInfoDropdownOpen)
+              }}
+              className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === 'Main Info'
+                  ? 'text-[#0D1321] border-[#0D1321]'
+                  : 'text-[#9a8c98] border-transparent hover:text-[#4a4e69]'
+              }`}
+            >
+              {selectedMainInfoOption}
+              <svg 
+                className={`w-4 h-4 transition-transform ${isMainInfoDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Dropdown Menu */}
+            {isMainInfoDropdownOpen && (
+              <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[120px]">
+                <button
+                  onClick={() => {
+                    setSelectedMainInfoOption('Main info')
+                    setIsMainInfoDropdownOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
+                >
+                  Main info
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedMainInfoOption('Map')
+                    setIsMainInfoDropdownOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
+                >
+                  Map
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Other Tabs */}
+          {['teams', 'Judges', 'Pairing and Matches', 'Results and Statistics'].map((tab) => (
             <button
               key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`${tab.toLowerCase().replace(/\s+/g, '-')}-panel`}
+              tabIndex={activeTab === tab ? 0 : -1}
               onClick={() => setActiveTab(tab)}
               className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors ${
                 activeTab === tab
@@ -78,7 +125,7 @@ export default function TournamentDetailPage() {
             <div className="flex space-x-12 mb-8">
               <div>
                 <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Dates</h3>
-                <p className="text-[#4a4e69] text-[16px]">11.25.2052-10.02.5020</p>
+ <p className="text-[#4a4e69] text-[16px]">November 25, 2024 - February 10, 2025</p>
               </div>
               <div>
                 <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Location</h3>
