@@ -1,6 +1,6 @@
 {
-  "/my-tournaments/page": "app/my-tournaments/page.js",
-  "/page": "app/page.js",
   "/join/page": "app/join/page.js",
+  "/page": "app/page.js",
+  "/my-tournaments/page": "app/my-tournaments/page.js",
   "/tournament/[id]/page": "app/tournament/[id]/page.js"
 }
