@@ -185,7 +185,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Almaty</td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">87756278927</td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -197,7 +197,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Astana</td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" checked readOnly />
+                      <span className="text-green-500 text-lg">✓</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -209,7 +209,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" checked readOnly />
+                      <span className="text-green-500 text-lg">✓</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -233,7 +233,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -245,7 +245,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -257,7 +257,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -269,7 +269,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -281,7 +281,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -293,7 +293,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -305,7 +305,7 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <input type="checkbox" className="w-4 h-4" />
+                      <span className="text-gray-400 text-lg">—</span>
                     </td>
                   </tr>
                 </tbody>
