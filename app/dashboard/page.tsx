@@ -1,6 +1,10 @@
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // Fetch user stats dynamically
+  const res = await fetch('/api/user/stats');
+  const { tournaments, activeTournaments, averageScore, ranking } = await res.json();
+
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       {/* Header - Post Login */}
@@ -88,46 +92,46 @@ export default function DashboardPage() {
             <h4 className="text-[#FFFFFF] text-[24px] font-medium mb-6">Your Stats</h4>
             <div className="grid grid-cols-2 gap-6">
               {/* Tournaments */}
-              <div className="flex items-center space-x-4">
+<div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-[#748CAB] rounded-full flex items-center justify-center">
                   <span className="text-[#FFFFFF] text-[18px] font-bold">12</span>
                 </div>
                 <div>
                   <div className="text-[#FFFFFF] text-[16px] font-medium">Tournaments</div>
-                  <div className="text-[#9a8c98] text-[14px]">12</div>
+                  <div className="text-[#9a8c98] text-[14px]">Total participated</div>
                 </div>
               </div>
 
               {/* Active Tournaments */}
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-[#748CAB] rounded-full flex items-center justify-center">
-                  <span className="text-[#FFFFFF] text-[18px] font-bold">12</span>
+                  <span className="text-[#FFFFFF] text-[18px] font-bold">3</span>
                 </div>
                 <div>
                   <div className="text-[#FFFFFF] text-[16px] font-medium">Active Tournaments</div>
-                  <div className="text-[#9a8c98] text-[14px]">12</div>
+                  <div className="text-[#9a8c98] text-[14px]">Currently ongoing</div>
                 </div>
               </div>
 
               {/* Average Score */}
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-[#748CAB] rounded-full flex items-center justify-center">
-                  <span className="text-[#FFFFFF] text-[18px] font-bold">12</span>
+                  <span className="text-[#FFFFFF] text-[18px] font-bold">{averageScore}</span>
                 </div>
                 <div>
                   <div className="text-[#FFFFFF] text-[16px] font-medium">Average Score</div>
-                  <div className="text-[#9a8c98] text-[14px]">12</div>
+                  <div className="text-[#9a8c98] text-[14px]">{averageScore}</div>
                 </div>
               </div>
 
               {/* Ranking */}
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-[#748CAB] rounded-full flex items-center justify-center">
-                  <span className="text-[#FFFFFF] text-[18px] font-bold">12</span>
+                  <span className="text-[#FFFFFF] text-[18px] font-bold">{ranking}</span>
                 </div>
                 <div>
                   <div className="text-[#FFFFFF] text-[16px] font-medium">Ranking</div>
-                  <div className="text-[#9a8c98] text-[14px]">12</div>
+                  <div className="text-[#9a8c98] text-[14px]">{ranking}</div>
                 </div>
               </div>
             </div>

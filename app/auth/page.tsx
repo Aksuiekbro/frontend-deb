@@ -1,9 +1,68 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(true)
+  const router = useRouter()
+  // Sign Up state and validation
+  const [signUpName, setSignUpName] = useState('')
+  const [signUpEmail, setSignUpEmail] = useState('')
+  const [signUpPassword, setSignUpPassword] = useState('')
+  const [signUpErrors, setSignUpErrors] = useState<{ name?: string; email?: string; password?: string }>({})
+  // Sign In state and validation
+  const [signInEmail, setSignInEmail] = useState('')
+  const [signInPassword, setSignInPassword] = useState('')
+  const [signInError, setSignInError] = useState<string | null>(null)
+  // Loading and error states
+  const [signUpLoading, setSignUpLoading] = useState(false)
+  const [signUpErrorMsg, setSignUpErrorMsg] = useState<string | null>(null)
+  const [signInLoading, setSignInLoading] = useState(false)
+
+  const handleSignUpSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const errors: { name?: string; email?: string; password?: string } = {}
+    if (!signUpName.trim()) errors.name = 'Name is required'
+    if (!/^\S+@\S+\.\S+$/.test(signUpEmail)) errors.email = 'Invalid email format'
+    if (signUpPassword.length < 8) errors.password = 'Password must be at least 8 characters'
+    setSignUpErrors(errors)
+    if (Object.keys(errors).length > 0) return
+    setSignUpErrorMsg(null)
+    setSignUpLoading(true)
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name: signUpName, email: signUpEmail, password: signUpPassword })
+      })
+      const data = await res.json()
+      if (!res.ok) setSignUpErrorMsg(data.message || 'Registration failed')
+      else router.push('/dashboard')
+    } catch {
+      setSignUpErrorMsg('An unexpected error occurred')
+    } finally { setSignUpLoading(false) }
+  }
+
+  const handleSignInSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const validationErrors: string[] = []
+    if (!/^\S+@\S+\.\S+$/.test(signInEmail)) validationErrors.push('Invalid email format')
+    if (!signInPassword) validationErrors.push('Password is required')
+    if (validationErrors.length) return setSignInError(validationErrors.join(', '))
+    setSignInError(null)
+    setSignInLoading(true)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: signInEmail, password: signInPassword })
+      })
+      const data = await res.json()
+      if (!res.ok) setSignInError(data.message || 'Login failed')
+      else router.push('/dashboard')
+    } catch {
+      setSignInError('An unexpected error occurred')
+    } finally { setSignInLoading(false) }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F1F1]">
@@ -17,7 +76,7 @@ export default function AuthPage() {
         <div className={`form-container sign-up-container absolute top-0 h-full w-1/2 left-0 transition-all duration-500 ease-in-out ${
           isSignUp ? 'translate-x-full opacity-100 z-10' : 'opacity-0 z-0'
         }`}>
-          <form className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
+          <form onSubmit={handleSignUpSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Create Account</h2>
             
             <div className="social-container mb-4">
@@ -34,12 +93,47 @@ export default function AuthPage() {
             
             <span className="text-xs mb-4 text-gray-600">or use your email for registration</span>
             
-            <input type="text" placeholder="Name" className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]" />
-            <input type="email" placeholder="Email" className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]" />
-            <input type="password" placeholder="Password" className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]" />
+            <label htmlFor="auth-signup-name" className="sr-only">Full Name</label>
+            <input
+              id="auth-signup-name"
+              name="name"
+              type="text"
+              placeholder="Name"
+              required
+              value={signUpName}
+              onChange={(e) => setSignUpName(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
+            {signUpErrors.name && <p className="text-red-500 text-xs">{signUpErrors.name}</p>}
+            <label htmlFor="auth-signup-email" className="sr-only">Email</label>
+            <input
+              id="auth-signup-email"
+              name="email"
+              type="email"
+              placeholder="Email"
+              required
+              value={signUpEmail}
+              onChange={(e) => setSignUpEmail(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
+            {signUpErrors.email && <p className="text-red-500 text-xs">{signUpErrors.email}</p>}
+            <label htmlFor="auth-signup-password" className="sr-only">Password</label>
+            <input
+              id="auth-signup-password"
+              name="password"
+              type="password"
+              placeholder="Password"
+              required
+              minLength={8}
+              value={signUpPassword}
+              onChange={(e) => setSignUpPassword(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
+            {signUpErrors.password && <p className="text-red-500 text-xs">{signUpErrors.password}</p>}
+            {signUpErrorMsg && <p className="text-red-500 text-xs">{signUpErrorMsg}</p>}
             
-            <button className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] mt-4">
-              Sign Up
+            <button type="submit" disabled={signUpLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] mt-4 disabled:opacity-50">
+              {signUpLoading ? 'Signing up...' : 'Sign Up'}
             </button>
           </form>
         </div>
@@ -48,7 +142,7 @@ export default function AuthPage() {
         <div className={`form-container sign-in-container absolute top-0 h-full w-1/2 left-0 z-20 transition-all duration-500 ease-in-out ${
           isSignUp ? 'translate-x-full' : ''
         }`}>
-          <form className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
+          <form onSubmit={handleSignInSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Sign in to DeBetter</h2>
             
             <div className="social-container mb-4">
@@ -65,13 +159,32 @@ export default function AuthPage() {
             
             <span className="text-xs mb-4 text-gray-600">or use your email account</span>
             
-            <input type="email" placeholder="Email" className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]" />
-            <input type="password" placeholder="Password" className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]" />
+            <label htmlFor="auth-signin-email" className="sr-only">Email address</label>
+            <input
+              id="auth-signin-email"
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={signInEmail}
+              onChange={(e) => setSignInEmail(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
+            <label htmlFor="auth-signin-password" className="sr-only">Password</label>
+            <input
+              id="auth-signin-password"
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={signInPassword}
+              onChange={(e) => setSignInPassword(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
+            {signInError && <p className="text-red-500 text-xs">{signInError}</p>}
             
             <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">Forgot your password?</a>
             
-            <button className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748]">
-              Sign In
+            <button type="submit" disabled={signInLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] disabled:opacity-50">
+              {signInLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         </div>

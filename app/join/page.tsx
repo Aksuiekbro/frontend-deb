@@ -1,6 +1,10 @@
-import { Search, MapPin, Calendar, Users, Filter } from "lucide-react"
+"use client"
+
+import { Search, MapPin, Calendar, Users, Filter, X } from "lucide-react"
+import { useState } from "react"
 
 export default function JoinDebatesPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       {/* Header */}
@@ -53,23 +57,33 @@ export default function JoinDebatesPage() {
               <div className="mb-6">
                 <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Date:</h3>
                 <div className="space-y-3">
-                  <input
-                    type="date"
-                    placeholder="Start date"
-                    className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
-                  />
-                  <input
-                    type="date"
-                    placeholder="End date"
-                    className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
-                  />
+                  <div>
+                    <label htmlFor="start-date" className="sr-only">Start date</label>
+                    <input
+                      id="start-date"
+                      type="date"
+                      placeholder="Start date"
+                      className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="end-date" className="sr-only">End date</label>
+                    <input
+                      id="end-date"
+                      type="date"
+                      placeholder="End date"
+                      className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Location Filter */}
               <div className="mb-6">
                 <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Location:</h3>
+                <label htmlFor="location" className="sr-only">Location</label>
                 <input
+                  id="location"
                   type="text"
                   placeholder="Place/City"
                   className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
@@ -97,19 +111,24 @@ export default function JoinDebatesPage() {
           <div className="flex-1">
             {/* Search and Sort */}
             <div className="flex items-center justify-between mb-8">
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#9a8c98]" />
                 <input
                   type="text"
                   placeholder="Search"
-                  className="w-full pl-12 pr-4 py-3 rounded-[12px] border border-[#9a8c98] text-[#4a4e69] text-[16px] font-normal"
+                  className="w-full pl-12 pr-40 py-3 rounded-[12px] border border-[#9a8c98] text-[#4a4e69] text-[16px] font-normal"
                 />
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <select className="appearance-none bg-[#3E5C76] text-white px-4 py-2 rounded-full text-[14px] font-normal pr-8 focus:outline-none cursor-pointer">
+                    <option>Most Recent</option>
+                    <option>Upcoming</option>
+                    <option>Popular</option>
+                  </select>
+                  <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-white pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
               </div>
-              <select className="border border-[#9a8c98] rounded-[8px] px-4 py-3 text-[#4a4e69] bg-white text-[16px] font-normal ml-4">
-                <option>Most Recent</option>
-                <option>Upcoming</option>
-                <option>Popular</option>
-              </select>
             </div>
 
             {/* Debate Cards */}
@@ -118,7 +137,7 @@ export default function JoinDebatesPage() {
                 <div key={item} className="bg-[#0D1321] rounded-[16px] p-8 relative">
                   {/* Debate Info */}
                   <div className="flex items-start mb-6">
-                    <div className="w-32 h-32 bg-[#FFFFFF] rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
+                    <div className="w-[150px] h-[150px] bg-[#FFFFFF] rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
                       <img 
                         src="/the-talking-logo.png" 
                         alt="The Talking Logo"
@@ -157,7 +176,10 @@ export default function JoinDebatesPage() {
                     <a href="#" className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
                       More...
                     </a>
-                    <button className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal">
+                    <button 
+                      onClick={() => setIsModalOpen(true)}
+                      className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
+                    >
                       Join Debates
                     </button>
                   </div>
@@ -215,6 +237,91 @@ export default function JoinDebatesPage() {
           </div>
         </div>
       </footer>
+
+      {/* Registration Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#F1F1F1] rounded-lg p-8 w-full max-w-md mx-4 relative">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            <h2 className="text-[#0D1321] text-[32px] font-bold text-center mb-8">Registration</h2>
+            
+            <form className="space-y-4">
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Team Name:</label>
+                <input 
+                  type="text" 
+                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Club Name:</label>
+                <input 
+                  type="text" 
+                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">1st Speaker Name:</label>
+                <input 
+                  type="text" 
+                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Speaker Name:</label>
+                <input 
+                  type="text" 
+                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">School/University Name:</label>
+                <input 
+                  type="text" 
+                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Phone Number:</label>
+                <input 
+                  type="tel" 
+                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">City:</label>
+                <select className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76] appearance-none bg-white">
+                  <option value="">Select City</option>
+                  <option value="almaty">Almaty</option>
+                  <option value="astana">Astana</option>
+                  <option value="shymkent">Shymkent</option>
+                </select>
+              </div>
+              
+              <div className="pt-6">
+                <button 
+                  type="submit"
+                  className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 
