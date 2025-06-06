@@ -36,8 +36,12 @@ export default function AuthPage() {
         body: JSON.stringify({ name: signUpName, email: signUpEmail, password: signUpPassword })
       })
       const data = await res.json()
-      if (!res.ok) setSignUpErrorMsg(data.message || 'Registration failed')
-      else router.push('/dashboard')
+      if (!res.ok) {
+        setSignUpErrorMsg(data.message || 'Registration failed')
+      } else {
+        router.push('/dashboard')
+        return                      // prevent setState in finally
+      }
     } catch {
       setSignUpErrorMsg('An unexpected error occurred')
     } finally { setSignUpLoading(false) }
@@ -58,7 +62,10 @@ export default function AuthPage() {
       })
       const data = await res.json()
       if (!res.ok) setSignInError(data.message || 'Login failed')
-      else router.push('/dashboard')
+      else {
+        router.push('/dashboard')
+        return
+      }
     } catch {
       setSignInError('An unexpected error occurred')
     } finally { setSignInLoading(false) }

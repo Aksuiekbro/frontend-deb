@@ -938,6 +938,9 @@ video {
 .block {
   display: block;
 }
+.inline-block {
+  display: inline-block;
+}
 .flex {
   display: flex;
 }
@@ -1055,6 +1058,9 @@ video {
 }
 .h-\[150px\] {
   height: 150px;
+}
+.h-80 {
+  height: 20rem;
 }
 .max-h-96 {
   max-height: 24rem;
@@ -1596,6 +1602,9 @@ video {
 .border-t {
   border-top-width: 1px;
 }
+.border-b-2 {
+  border-bottom-width: 2px;
+}
 .border-dashed {
   border-style: dashed;
 }
@@ -1646,6 +1655,10 @@ video {
 .border-white {
   --tw-border-opacity: 1;
   border-color: rgb(255 255 255 / var(--tw-border-opacity, 1));
+}
+.border-\[\#0D1321\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(13 19 33 / var(--tw-border-opacity, 1));
 }
 .border-l-transparent {
   border-left-color: transparent;
@@ -1790,6 +1803,10 @@ video {
 .bg-black {
   --tw-bg-opacity: 1;
   background-color: rgb(0 0 0 / var(--tw-bg-opacity, 1));
+}
+.bg-gray-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(107 114 128 / var(--tw-bg-opacity, 1));
 }
 .bg-opacity-50 {
   --tw-bg-opacity: 0.5;
@@ -2119,6 +2136,9 @@ video {
 .text-xs {
   font-size: 0.75rem;
   line-height: 1rem;
+}
+.text-\[48px\] {
+  font-size: 48px;
 }
 .font-bold {
   font-weight: 700;
@@ -2697,6 +2717,11 @@ body {
 .hover\:text-gray-700:hover {
   --tw-text-opacity: 1;
   color: rgb(55 65 81 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-\[\#4a4e69\]:hover {
+  --tw-text-opacity: 1;
+  color: rgb(74 78 105 / var(--tw-text-opacity, 1));
 }
 
 .hover\:underline:hover {

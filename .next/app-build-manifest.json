@@ -16,10 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/join/page.js"
     ],
-    "/_not-found/page": [
+    "/my-tournaments/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/my-tournaments/page.js"
+    ],
+    "/tournament/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/tournament/[id]/page.js"
     ]
   }
 }
