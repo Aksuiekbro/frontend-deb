@@ -1,7 +1,4 @@
 {
   "/page": "app/page.js",
-  "/auth/page": "app/auth/page.js",
-  "/my-tournaments/page": "app/my-tournaments/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
   "/tournament/[id]/page": "app/tournament/[id]/page.js"
 }

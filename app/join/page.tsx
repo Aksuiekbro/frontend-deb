@@ -120,10 +120,10 @@ export default function JoinDebatesPage() {
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                   <select className="appearance-none bg-[#3E5C76] text-white px-4 py-2 rounded-full text-[14px] font-normal pr-8 focus:outline-none cursor-pointer">
-                    <option>Most Recent</option>
-                    <option>Upcoming</option>
-                    <option>Popular</option>
-                  </select>
+                <option>Most Recent</option>
+                <option>Upcoming</option>
+                <option>Popular</option>
+              </select>
                   <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-white pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
