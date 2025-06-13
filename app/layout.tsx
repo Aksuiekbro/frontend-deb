@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { StagewiseToolbar } from '@stagewise/toolbar-next'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -10,6 +11,10 @@ export const metadata: Metadata = {
   description: "A showcase of color palettes and schemes",
     generator: 'v0.dev'
 }
+
+const stagewiseConfig = {
+  plugins: []
+};
 
 export default function RootLayout({
   children,
@@ -24,7 +29,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.className} font-hikasami`}>{children}</body>
+      <body className={`${inter.className} font-hikasami`}>
+        {children}
+        {process.env.NODE_ENV === 'development' && (
+          <StagewiseToolbar config={stagewiseConfig} />
+        )}
+      </body>
     </html>
   )
 }

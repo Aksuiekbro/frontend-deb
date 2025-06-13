@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
-
+// test
 export default function Component() {
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
@@ -26,10 +26,10 @@ export default function Component() {
           >
             <option>English</option>
           </select>
-          <button className="bg-[#4a4e69] text-white px-4 py-2 rounded hover:bg-[#22223b] text-[14px] font-normal">
+          <button className="bg-[#3E5C76] text-white px-6 py-3 rounded-lg hover:bg-[#22223b] text-[14px] font-normal">
             Registration
           </button>
-          <button className="border border-[#4a4e69] text-[#4a4e69] px-4 py-2 rounded hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal">
+          <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal">
             Log In
           </button>
         </div>
@@ -37,9 +37,9 @@ export default function Component() {
 
       {/* Hero Section */}
       <section className="text-center py-8">
-        <h1 className="text-[#4a4e69] text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
+        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
 
-        <div className="bg-[#22223b] rounded-[16px] mx-8 py-16 px-8 relative">
+        <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
           <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8">
             <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
             <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
@@ -65,7 +65,7 @@ export default function Component() {
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">
-        <h3 className="text-[#4a4e69] text-[38px] font-semibold mb-8">Upcoming Debates</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Upcoming Debates</h3>
 
         <div className="relative">
           <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
@@ -74,7 +74,7 @@ export default function Component() {
 
           <div className="flex space-x-6 overflow-hidden">
             {[1, 2].map((item) => (
-              <div key={item} className="bg-[#22223b] rounded-[12px] p-6 flex-1 min-w-0">
+              <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
                 <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">AITU Kerek</h4>
                 <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">Almaty, Zhandosov 52</p>
                 <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">10.11.2027</p>
@@ -112,7 +112,7 @@ export default function Component() {
 
       {/* Testimonials */}
       <section className="px-8 py-12">
-        <h3 className="text-[#4a4e69] text-[38px] font-semibold mb-8">Testimonials</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Testimonials</h3>
 
         <div className="relative">
           <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
@@ -123,9 +123,9 @@ export default function Component() {
             {[1, 2, 3].map((item) => (
               <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
                 <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
-                <h6 className="text-[#4a4e69] text-[20px] font-medium text-center mb-1">Zheksembek Abdolla</h6>
-                <p className="text-[#9a8c98] text-[14px] font-normal text-center mb-4">Debatter</p>
-                <p className="text-[#4a4e69] text-[14px] font-normal text-center leading-relaxed">
+                <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1">Zheksembek Abdolla</h6>
+                <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4">Debatter</p>
+                <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi posuere ipsum vel mattis mollis. In sit
                   amet orci ac dui viverra lobortis ac at mi. Nulla a enim rutrum, vehicula. And I simply want to end
                   this shill! Hahahahahaha
@@ -142,16 +142,16 @@ export default function Component() {
 
       {/* Leader Board */}
       <section className="px-8 py-12">
-        <h3 className="text-[#4a4e69] text-[38px] font-semibold mb-8">Leader Board</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Leader Board</h3>
 
         <div className="relative">
-          <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-center justify-center">
+          <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-start justify-center pt-8">
             Champions
           </h3>
 
-          <div className="flex justify-center items-start space-x-12 relative z-10 pt-32">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
             {/* 2nd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-[256px]">
+            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
               <div className="h-[96px] bg-gradient-to-r from-blue-400 via-blue-300 to-cyan-300 relative">
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
               </div>
@@ -181,7 +181,7 @@ export default function Component() {
             </div>
 
             {/* 1st Place */}
-            <div className="bg-white rounded-[12px] shadow-lg relative w-[256px] transform -translate-y-8">
+            <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
               <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
               <div className="h-[96px] bg-gradient-to-r from-yellow-300 via-yellow-200 to-green-300 relative rounded-t-[12px]">
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
@@ -212,7 +212,7 @@ export default function Component() {
             </div>
 
             {/* 3rd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-[256px]">
+            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3">
               <div className="h-[96px] bg-gradient-to-r from-red-400 via-pink-300 to-pink-400 relative">
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
               </div>
@@ -245,7 +245,7 @@ export default function Component() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#22223b] text-[#FFFFFF] py-16 mt-16">
+      <footer className="bg-[#0D1321] text-[#FFFFFF] py-16 mt-16">
         <div className="px-8">
           <div className="text-center mb-8">
             <div className="text-[45px] font-bold font-hikasami mb-4">DB</div>
