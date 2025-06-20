@@ -11,6 +11,8 @@ export default function TournamentDetailPage() {
   const [selectedResultsOption, setSelectedResultsOption] = useState('APF')
   const [resultsSubTab, setResultsSubTab] = useState('Speaker Score')
   const [selectedRound, setSelectedRound] = useState('1/16')
+  // Add new state for active section (mutually exclusive)
+  const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [invitedUsers, setInvitedUsers] = useState([
@@ -630,10 +632,12 @@ export default function TournamentDetailPage() {
               {/* Format Header */}
               <h2 className="text-[#0D1321] text-[32px] font-bold mb-8">{selectedResultsOption}</h2>
               
+
+              
               {/* Results Table */}
               <div className="relative">
                 {/* Speaker Score Table for APF */}
-                {selectedResultsOption === 'APF' && resultsSubTab === 'Speaker Score' && (
+                {selectedResultsOption === 'APF' && activeResultsSection === 'APF Speaker Score' && (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                       <thead>
@@ -737,118 +741,6 @@ export default function TournamentDetailPage() {
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">250</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                
-                {/* Results Table for APF */}
-                {selectedResultsOption === 'APF' && resultsSubTab === 'Results' && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 1</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 2</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 3</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                          <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/8 */}
-                        {selectedRound === '1/8' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/4 */}
-                        {selectedRound === '1/4' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">3</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                          </tr>
-                        )}
-                        
-                        {/* Данные для раунда 1/2 */}
-                        {selectedRound === '1/2' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">4</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
                           </tr>
                         )}
                       </tbody>
@@ -1070,7 +962,7 @@ export default function TournamentDetailPage() {
                     </table>
                   </div>
                 )}
-                
+
                 {/* BPF Tables */}
                 {selectedResultsOption === 'BPF' && (
                   <div className="overflow-x-auto">
@@ -1254,14 +1146,20 @@ export default function TournamentDetailPage() {
                     {selectedResultsOption !== 'LD' && (
                       <>
                         <button 
-                          className={`px-4 py-2 ${resultsSubTab === 'Results' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                          onClick={() => setResultsSubTab('Results')}
+                          className={`px-4 py-2 ${activeResultsSection === 'APF Results' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                          onClick={() => {
+                            setActiveResultsSection('APF Results')
+                            setResultsSubTab('Results')
+                          }}
                         >
                           {selectedResultsOption} Results
                         </button>
                         <button 
-                          className={`px-4 py-2 ${resultsSubTab === 'Speaker Score' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                          onClick={() => setResultsSubTab('Speaker Score')}
+                          className={`px-4 py-2 ${activeResultsSection === 'APF Speaker Score' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                          onClick={() => {
+                            setActiveResultsSection('APF Speaker Score')
+                            setResultsSubTab('Speaker Score')
+                          }}
                         >
                           {selectedResultsOption} Speaker Score
                         </button>
@@ -1271,26 +1169,38 @@ export default function TournamentDetailPage() {
                     
                     {/* Round selection buttons */}
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/16' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/16')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/16' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/16')
+                        setSelectedRound('1/16')
+                      }}
                     >
                       1/16
                     </button>
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/8' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/8')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/8' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/8')
+                        setSelectedRound('1/8')
+                      }}
                     >
                       1/8
                     </button>
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/4' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/4')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/4' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/4')
+                        setSelectedRound('1/4')
+                      }}
                     >
                       1/4
                     </button>
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/2' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/2')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/2' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/2')
+                        setSelectedRound('1/2')
+                      }}
                     >
                       1/2
                     </button>
