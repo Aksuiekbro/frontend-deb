@@ -1469,59 +1469,166 @@ export default function TournamentDetailPage() {
             <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
               <h3 className="text-[#0D1321] text-[24px] font-bold mb-6">Recent Feedback</h3>
               
-              <div className="space-y-4">
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-[#0D1321] font-medium">Anonymous Participant</span>
-                        <div className="flex text-yellow-400">
-                          ⭐⭐⭐⭐⭐
-                        </div>
+              <div className="space-y-6">
+                {/* Comment 1 */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/placeholder-user.jpg" 
+                        alt="Niceass profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-12 h-12 bg-gradient-to-br from-[#3E5C76] to-[#748CAB] rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-bold">N</span>
                       </div>
-                      <span className="text-[#9a8c98] text-[14px]">November 20, 2024</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <h4 className="text-[#0D1321] text-[18px] font-semibold">Niceass</h4>
+                      </div>
+                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                        Actually I love debetter it is very simple and minimalistic. The design is very human!
+                      </p>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V18m-7-8a2 2 0 01-2-2V7a2 2 0 012-2s0 0 0 0 1.53-.027 2.06-.06l5.474-.279a2 2 0 011.94 1.472c.087.462.087.957 0 1.419L14 10z" />
+                          </svg>
+                          <span>Like</span>
+                        </button>
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2m0-12V2m7 10h4.764a2 2 0 001.789-2.894l-3.5-7A2 2 0 0015.263 1h-4.017c-.163 0-.326.02-.485.06L7 2" />
+                          </svg>
+                          <span>Dislike</span>
+                        </button>
+                        <span className="text-[#9a8c98]">2 min</span>
+                        <button className="hover:text-[#3E5C76] transition-colors">Reply</button>
+                        <button className="flex items-center space-x-1 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {/* View Replies */}
+                      <button className="mt-3 text-[#9a8c98] text-[14px] hover:text-[#3E5C76] transition-colors">
+                        View Replies (4)
+                      </button>
                     </div>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px]">
-                    "Excellent tournament organization! The judges were very professional and the venue was perfect. 
-                    Looking forward to participating in future events."
-                  </p>
                 </div>
 
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-[#0D1321] font-medium">Team Captain</span>
-                        <div className="flex text-yellow-400">
-                          ⭐⭐⭐⭐
-                        </div>
+                {/* Comment 2 */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/placeholder-user.jpg" 
+                        alt="Hair_ass profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-12 h-12 bg-gradient-to-br from-[#9a8c98] to-[#4a4e69] rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-bold">H</span>
                       </div>
-                      <span className="text-[#9a8c98] text-[14px]">November 19, 2024</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <h4 className="text-[#0D1321] text-[18px] font-semibold">Hair_ass</h4>
+                      </div>
+                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                        Actually I love debetter it is very simple and minimalistic. The design is very human!
+                      </p>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V18m-7-8a2 2 0 01-2-2V7a2 2 0 012-2s0 0 0 0 1.53-.027 2.06-.06l5.474-.279a2 2 0 011.94 1.472c.087.462.087.957 0 1.419L14 10z" />
+                          </svg>
+                          <span>Like</span>
+                        </button>
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2m0-12V2m7 10h4.764a2 2 0 001.789-2.894l-3.5-7A2 2 0 0015.263 1h-4.017c-.163 0-.326.02-.485.06L7 2" />
+                          </svg>
+                          <span>Dislike</span>
+                        </button>
+                        <span className="text-[#9a8c98]">5 min</span>
+                        <button className="hover:text-[#3E5C76] transition-colors">Reply</button>
+                        <button className="flex items-center space-x-1 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px]">
-                    "Great tournament overall. The only suggestion would be to have more time between rounds for preparation. 
-                    The topics were challenging and well-chosen."
-                  </p>
                 </div>
 
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-[#0D1321] font-medium">Judge Observer</span>
-                        <div className="flex text-yellow-400">
-                          ⭐⭐⭐⭐⭐
-                        </div>
+                {/* Comment 3 */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/placeholder-user.jpg" 
+                        alt="Tournament Expert profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-12 h-12 bg-gradient-to-br from-[#0D1321] to-[#3E5C76] rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-bold">TE</span>
                       </div>
-                      <span className="text-[#9a8c98] text-[14px]">November 18, 2024</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <h4 className="text-[#0D1321] text-[18px] font-semibold">Tournament Expert</h4>
+                      </div>
+                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                        The tournament structure was well-organized and the judging criteria were clear. Great experience overall for both participants and spectators.
+                      </p>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V18m-7-8a2 2 0 01-2-2V7a2 2 0 012-2s0 0 0 0 1.53-.027 2.06-.06l5.474-.279a2 2 0 011.94 1.472c.087.462.087.957 0 1.419L14 10z" />
+                          </svg>
+                          <span>Like</span>
+                        </button>
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2m0-12V2m7 10h4.764a2 2 0 001.789-2.894l-3.5-7A2 2 0 0015.263 1h-4.017c-.163 0-.326.02-.485.06L7 2" />
+                          </svg>
+                          <span>Dislike</span>
+                        </button>
+                        <span className="text-[#9a8c98]">1 day</span>
+                        <button className="hover:text-[#3E5C76] transition-colors">Reply</button>
+                        <button className="flex items-center space-x-1 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px]">
-                    "Impressed by the level of debate and the smooth running of the tournament. The technology integration 
-                    for scoring was seamless."
-                  </p>
                 </div>
               </div>
             </div>
