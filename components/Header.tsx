@@ -1,15 +1,20 @@
+import Link from "next/link"
+
 export default function Header() {
   return (
     <header className="flex items-center justify-between px-12 py-4">
       <div className="flex items-center space-x-16">
-        <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
+        <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</Link>
         <nav className="flex space-x-12">
-          <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+          <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
             Join Debates
-          </a>
-          <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+          </Link>
+          <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
             Rating
-          </a>
+          </Link>
+          <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            News
+          </Link>
         </nav>
       </div>
       <div className="flex items-center space-x-6">

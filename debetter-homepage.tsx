@@ -8,11 +8,14 @@ export default function Component() {
         <div className="flex items-center space-x-16">
           <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
           <nav className="flex space-x-12">
-            <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <a href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               Join Debates
             </a>
-            <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <a href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               Rating
+            </a>
+            <a href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+              News
             </a>
           </nav>
         </div>
@@ -46,9 +49,9 @@ export default function Component() {
           </h2>
 
           <div className="flex justify-center space-x-4 mb-8">
-            <button className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal">
+            <a href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
               Join Debates
-            </button>
+            </a>
             <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
               Host Debate
             </button>
@@ -95,9 +98,9 @@ export default function Component() {
                     </a>
                   </div>
                   <div className="flex justify-start">
-                    <button className="bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal">
+                    <a href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
                       Join Debates
-                    </button>
+                    </a>
                   </div>
                 </div>
               </div>

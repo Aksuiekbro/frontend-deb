@@ -6,7 +6,7 @@ import Header from "../../../components/Header"
 export default function TournamentDetailPage() {
   const [activeTab, setActiveTab] = useState('Main Info')
   const [isMainInfoDropdownOpen, setIsMainInfoDropdownOpen] = useState(false)
-  const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Main info')
+  const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Announcements')
   const [isResultsDropdownOpen, setIsResultsDropdownOpen] = useState(false)
   const [selectedResultsOption, setSelectedResultsOption] = useState('APF')
   const [resultsSubTab, setResultsSubTab] = useState('Speaker Score')
@@ -138,15 +138,24 @@ export default function TournamentDetailPage() {
             
             {/* Dropdown Menu */}
             {isMainInfoDropdownOpen && (
-              <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[120px]">
+              <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[160px]">
                 <button
                   onClick={() => {
-                    setSelectedMainInfoOption('Main info')
+                    setSelectedMainInfoOption('Announcements')
                     setIsMainInfoDropdownOpen(false)
                   }}
                   className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
                 >
-                  Main info
+                  Announcements
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedMainInfoOption('Schedule')
+                    setIsMainInfoDropdownOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
+                >
+                  Schedule
                 </button>
                 <button
                   onClick={() => {
@@ -265,9 +274,57 @@ export default function TournamentDetailPage() {
 
       {/* Main Content */}
       <div className="px-12 pb-16">
+        {/* Announcements Content */}
+        {activeTab === 'Main Info' && selectedMainInfoOption === 'Announcements' && (
+          <div>
+            <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
+            <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
+              {/* Empty state for announcements */}
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">
+                No announcements yet
+              </div>
+              
+              {/* Add announcement button */}
+              <button 
+                onClick={() => setIsAddPostModalOpen(true)}
+                className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Schedule Content */}
+        {activeTab === 'Main Info' && selectedMainInfoOption === 'Schedule' && (
+          <div>
+            <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Schedule</h2>
+            <div className="bg-white rounded-lg border border-gray-300 min-h-[500px] p-6">
+              {/* Schedule content area */}
+              <div className="h-full">
+                {/* Schedule will be populated here */}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Map Content */}
+        {activeTab === 'Main Info' && selectedMainInfoOption === 'Map' && (
+          <div>
+            <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Map</h2>
+            <div className="bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">
+                Map will be displayed here
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg border border-gray-300">
-          {/* Main Info Tab Content */}
-          {activeTab === 'Main Info' && (
+          {/* Main Info Tab Content - Original content when no specific option selected */}
+          {activeTab === 'Main Info' && !['Announcements', 'Schedule', 'Map'].includes(selectedMainInfoOption) && (
             <div className="p-8">
               {/* Details Section */}
               <div className="mb-8">
@@ -1472,7 +1529,8 @@ export default function TournamentDetailPage() {
               <div className="space-y-6">
                 {/* Comment 1 */}
                 <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-start space-x-4">
+                  {/* Header with logo and username */}
+                  <div className="flex items-center space-x-3 mb-4">
                     <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                       <img 
                         src="/placeholder-user.jpg" 
@@ -1488,13 +1546,13 @@ export default function TournamentDetailPage() {
                         <span className="text-white text-lg font-bold">N</span>
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <h4 className="text-[#0D1321] text-[18px] font-semibold">Niceass</h4>
-                      </div>
-                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
-                        Actually I love debetter it is very simple and minimalistic. The design is very human!
-                      </p>
+                    <h4 className="text-[#0D1321] text-[18px] font-semibold">Niceass</h4>
+                  </div>
+                  
+                  {/* Comment content */}
+                  <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                    Actually I love debetter it is very simple and minimalistic. The design is very human!
+                  </p>
                       
                       {/* Action buttons */}
                       <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
@@ -1519,12 +1577,10 @@ export default function TournamentDetailPage() {
                         </button>
                       </div>
                       
-                      {/* View Replies */}
-                      <button className="mt-3 text-[#9a8c98] text-[14px] hover:text-[#3E5C76] transition-colors">
-                        View Replies (4)
-                      </button>
-                    </div>
-                  </div>
+                  {/* View Replies */}
+                  <button className="mt-3 text-[#9a8c98] text-[14px] hover:text-[#3E5C76] transition-colors">
+                    View Replies (4)
+                  </button>
                 </div>
 
                 {/* Comment 2 */}
