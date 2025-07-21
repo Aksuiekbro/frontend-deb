@@ -11,6 +11,7 @@ export default function TournamentDetailPage() {
   const [selectedResultsOption, setSelectedResultsOption] = useState('APF')
   const [resultsSubTab, setResultsSubTab] = useState('Speaker Score')
   const [selectedRound, setSelectedRound] = useState('1/16')
+  const [bpfSubTab, setBpfSubTab] = useState('BPF Results')
   // Add new state for active section (mutually exclusive)
   const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -22,6 +23,7 @@ export default function TournamentDetailPage() {
   ])
   const [inviteModalTab, setInviteModalTab] = useState('invite')
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState(false)
+  const [modalContext, setModalContext] = useState('')
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
   const [postImages, setPostImages] = useState<File[]>([])
@@ -47,13 +49,24 @@ export default function TournamentDetailPage() {
   }
 
   const handleAddPost = () => {
-    if (postTitle.trim() && postDescription.trim()) {
+    const isAnnouncement = modalContext === 'announcements'
+    const isValidAnnouncement = isAnnouncement && postTitle.trim() && postDescription.trim()
+    const isValidOther = !isAnnouncement // Schedule and map just need images
+    
+    if (isValidAnnouncement || isValidOther) {
       // Здесь будет логика добавления поста
-      console.log('Adding post:', { title: postTitle, description: postDescription, images: postImages })
-      setPostTitle('')
-      setPostDescription('')
+      const postData = modalContext === 'announcements' 
+        ? { title: postTitle, description: postDescription, images: postImages, type: modalContext }
+        : { images: postImages, type: modalContext }
+      console.log(`Adding ${modalContext}:`, postData)
+      
+      if (modalContext === 'announcements') {
+        setPostTitle('')
+        setPostDescription('')
+      }
       setPostImages([])
       setIsAddPostModalOpen(false)
+      setModalContext('')
     }
   }
 
@@ -286,7 +299,10 @@ export default function TournamentDetailPage() {
               
               {/* Add announcement button */}
               <button 
-                onClick={() => setIsAddPostModalOpen(true)}
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('announcements')
+                }}
                 className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,11 +317,24 @@ export default function TournamentDetailPage() {
         {activeTab === 'Main Info' && selectedMainInfoOption === 'Schedule' && (
           <div>
             <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Schedule</h2>
-            <div className="bg-white rounded-lg border border-gray-300 min-h-[500px] p-6">
+            <div className="relative bg-white rounded-lg border border-gray-300 min-h-[500px] p-6">
               {/* Schedule content area */}
               <div className="h-full">
                 {/* Schedule will be populated here */}
               </div>
+              
+              {/* Add schedule button */}
+              <button 
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('schedule')
+                }}
+                className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
             </div>
           </div>
         )}
@@ -314,10 +343,23 @@ export default function TournamentDetailPage() {
         {activeTab === 'Main Info' && selectedMainInfoOption === 'Map' && (
           <div>
             <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Map</h2>
-            <div className="bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
+            <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
               <div className="text-center text-[#9a8c98] text-[16px] py-20">
                 Map will be displayed here
               </div>
+              
+              {/* Add map button */}
+              <button 
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('map')
+                }}
+                className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
             </div>
           </div>
         )}
@@ -806,7 +848,7 @@ export default function TournamentDetailPage() {
                 )}
                 
                 {/* Speaker Score Table for BPF */}
-                {selectedResultsOption === 'BPF' && resultsSubTab === 'Speaker Score' && (
+                {selectedResultsOption === 'BPF' && bpfSubTab === 'BPF Speaker Score' && (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                       <thead>
@@ -1021,7 +1063,7 @@ export default function TournamentDetailPage() {
                 )}
 
                 {/* BPF Tables */}
-                {selectedResultsOption === 'BPF' && (
+                {selectedResultsOption === 'BPF' && bpfSubTab === 'BPF Results' && (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                       <thead>
@@ -1049,13 +1091,31 @@ export default function TournamentDetailPage() {
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">BPF Team 2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Fate Sealers</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">BPF Judge 2</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
                             </tr>
                           </>
                         )}
@@ -1074,6 +1134,57 @@ export default function TournamentDetailPage() {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                )}
+
+                {/* BPF Navigation Bar */}
+                {selectedResultsOption === 'BPF' && (
+                  <div className="bg-[#0D1321] rounded-lg p-4 flex items-center justify-between mt-4">
+                    <div className="flex items-center space-x-2">
+                      {/* BPF Sub-tabs */}
+                      <button
+                        onClick={() => setBpfSubTab('BPF Results')}
+                        className={`px-4 py-2 rounded text-[14px] font-medium transition-colors ${
+                          bpfSubTab === 'BPF Results' 
+                            ? 'bg-white text-[#0D1321]' 
+                            : 'text-white hover:bg-[#22223b]'
+                        }`}
+                      >
+                        BPF Results
+                      </button>
+                      <button
+                        onClick={() => setBpfSubTab('BPF Speaker Score')}
+                        className={`px-4 py-2 rounded text-[14px] font-medium transition-colors ${
+                          bpfSubTab === 'BPF Speaker Score' 
+                            ? 'bg-white text-[#0D1321]' 
+                            : 'text-white hover:bg-[#22223b]'
+                        }`}
+                      >
+                        BPF Speaker Score
+                      </button>
+                      
+                      {/* Round buttons */}
+                      <div className="flex space-x-1 ml-4">
+                        {['1/16', '1/8', '1/4', '1/2'].map((round) => (
+                          <button
+                            key={round}
+                            onClick={() => setSelectedRound(round)}
+                            className={`px-3 py-2 rounded text-[14px] font-medium transition-colors ${
+                              selectedRound === round 
+                                ? 'bg-white text-[#0D1321]' 
+                                : 'text-white hover:bg-[#22223b]'
+                            }`}
+                          >
+                            {round}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Submit button */}
+                    <button className="px-6 py-2 bg-white text-[#0D1321] rounded text-[14px] font-medium hover:bg-gray-100 transition-colors">
+                      Submit
+                    </button>
                   </div>
                 )}
                 
@@ -1698,9 +1809,16 @@ export default function TournamentDetailPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[#0D1321] text-[32px] font-bold">Add Post</h2>
+              <h2 className="text-[#0D1321] text-[32px] font-bold">
+                {modalContext === 'announcements' ? 'Add Announcement' : 
+                 modalContext === 'schedule' ? 'Add Schedule Item' : 
+                 modalContext === 'map' ? 'Add Map Item' : 'Add Post'}
+              </h2>
               <button
-                onClick={() => setIsAddPostModalOpen(false)}
+                onClick={() => {
+                  setIsAddPostModalOpen(false)
+                  setModalContext('')
+                }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
@@ -1762,35 +1880,40 @@ export default function TournamentDetailPage() {
                 )}
               </div>
 
-              {/* Title Input */}
-              <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={postTitle}
-                  onChange={(e) => setPostTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
-                  placeholder="Enter post title"
-                  required
-                />
-              </div>
+              {/* Title and Description - Only for Announcements */}
+              {modalContext === 'announcements' && (
+                <>
+                  {/* Title Input */}
+                  <div>
+                    <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={postTitle}
+                      onChange={(e) => setPostTitle(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
+                      placeholder="Enter post title"
+                      required
+                    />
+                  </div>
 
-              {/* Description Input */}
-              <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
-                  Description
-                </label>
-                <textarea
-                  value={postDescription}
-                  onChange={(e) => setPostDescription(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
-                  placeholder="Enter post description"
-                  required
-                />
-              </div>
+                  {/* Description Input */}
+                  <div>
+                    <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
+                      Description
+                    </label>
+                    <textarea
+                      value={postDescription}
+                      onChange={(e) => setPostDescription(e.target.value)}
+                      rows={6}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
+                      placeholder="Enter post description"
+                      required
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Submit Button */}
               <div className="flex justify-end">
