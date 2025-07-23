@@ -21,7 +21,18 @@ export default function TournamentDetailPage() {
     { id: 2, name: 'Who Has Access', avatar: '/avatar2.jpg' },
     { id: 3, name: 'Who Has Access', avatar: '/avatar3.jpg' }
   ])
-  const [inviteModalTab, setInviteModalTab] = useState('invite')
+  const [inviteModalTab, setInviteModalTab] = useState('invite')  
+  // Check-in state for each participant row
+  const [checkInStatus, setCheckInStatus] = useState<{[key: number]: boolean}>({})
+  
+  // Toggle check-in status for a participant
+  const toggleCheckIn = (participantId: number) => {
+    setCheckInStatus(prev => ({
+      ...prev,
+      [participantId]: !prev[participantId]
+    }))
+  }
+  
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState(false)
   const [modalContext, setModalContext] = useState('')
   const [postTitle, setPostTitle] = useState('')
@@ -441,7 +452,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Almaty</td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">87756278927</td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[1] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[1] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -453,7 +469,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Astana</td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-green-500 text-lg">✓</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[2] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(2)}
+                      >
+                        {checkInStatus[2] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -465,7 +486,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-green-500 text-lg">✓</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[3] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(3)}
+                      >
+                        {checkInStatus[3] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -477,7 +503,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-red-500 text-xl">✕</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(4)}
+                      >
+                        {checkInStatus[4] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -489,7 +520,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -501,7 +537,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -513,7 +554,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -525,7 +571,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -537,7 +588,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -549,7 +605,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -561,7 +622,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -588,7 +654,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Alma</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <input type="checkbox" className="w-5 h-5 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2" />
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[10] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(10)}
+                        >
+                          {checkInStatus[10] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
@@ -596,7 +667,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Aitpa</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <input type="checkbox" checked className="w-5 h-5 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2" readOnly />
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[11] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(11)}
+                        >
+                          {checkInStatus[11] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
@@ -604,7 +680,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">рудольф</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <input type="checkbox" checked className="w-5 h-5 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2" readOnly />
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[12] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(12)}
+                        >
+                          {checkInStatus[12] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
@@ -612,7 +693,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Плюсплюс</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span className="text-red-500 text-xl font-bold">✕</span>
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(4)}
+                        >
+                          {checkInStatus[4] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                   </tbody>
@@ -969,41 +1055,41 @@ export default function TournamentDetailPage() {
                         {/* Данные для раунда 1/16 */}
                         {selectedRound === '1/16' && (
                           <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
+                            <tr className="bg-gradient-to-r from-[#748CAB] to-[#8a9ba8] hover:from-[#8a9ba8] hover:to-[#9cacba]">
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">Goner</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center font-medium">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px]">L. Lomonosov</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">CL clan</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">K. Butov</td>
                             </tr>
                           </>
                         )}
@@ -1081,23 +1167,23 @@ export default function TournamentDetailPage() {
                         {/* Данные для раунда 1/16 */}
                         {selectedRound === '1/16' && (
                           <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
@@ -1137,56 +1223,6 @@ export default function TournamentDetailPage() {
                   </div>
                 )}
 
-                {/* BPF Navigation Bar */}
-                {selectedResultsOption === 'BPF' && (
-                  <div className="bg-[#0D1321] rounded-lg p-4 flex items-center justify-between mt-4">
-                    <div className="flex items-center space-x-2">
-                      {/* BPF Sub-tabs */}
-                      <button
-                        onClick={() => setBpfSubTab('BPF Results')}
-                        className={`px-4 py-2 rounded text-[14px] font-medium transition-colors ${
-                          bpfSubTab === 'BPF Results' 
-                            ? 'bg-white text-[#0D1321]' 
-                            : 'text-white hover:bg-[#22223b]'
-                        }`}
-                      >
-                        BPF Results
-                      </button>
-                      <button
-                        onClick={() => setBpfSubTab('BPF Speaker Score')}
-                        className={`px-4 py-2 rounded text-[14px] font-medium transition-colors ${
-                          bpfSubTab === 'BPF Speaker Score' 
-                            ? 'bg-white text-[#0D1321]' 
-                            : 'text-white hover:bg-[#22223b]'
-                        }`}
-                      >
-                        BPF Speaker Score
-                      </button>
-                      
-                      {/* Round buttons */}
-                      <div className="flex space-x-1 ml-4">
-                        {['1/16', '1/8', '1/4', '1/2'].map((round) => (
-                          <button
-                            key={round}
-                            onClick={() => setSelectedRound(round)}
-                            className={`px-3 py-2 rounded text-[14px] font-medium transition-colors ${
-                              selectedRound === round 
-                                ? 'bg-white text-[#0D1321]' 
-                                : 'text-white hover:bg-[#22223b]'
-                            }`}
-                          >
-                            {round}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Submit button */}
-                    <button className="px-6 py-2 bg-white text-[#0D1321] rounded text-[14px] font-medium hover:bg-gray-100 transition-colors">
-                      Submit
-                    </button>
-                  </div>
-                )}
                 
                 {/* LD Table */}
                 {selectedResultsOption === 'LD' && (
@@ -1207,23 +1243,23 @@ export default function TournamentDetailPage() {
                         {/* Данные для раунда 1/16 */}
                         {selectedRound === '1/16' && (
                           <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
@@ -1388,7 +1424,10 @@ export default function TournamentDetailPage() {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-[#0D1321] text-[32px] font-bold">Tournament News</h2>
               <button 
-                onClick={() => setIsAddPostModalOpen(true)}
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('news')
+                }}
                 className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
               >
                 Add News
@@ -1812,7 +1851,8 @@ export default function TournamentDetailPage() {
               <h2 className="text-[#0D1321] text-[32px] font-bold">
                 {modalContext === 'announcements' ? 'Add Announcement' : 
                  modalContext === 'schedule' ? 'Add Schedule Item' : 
-                 modalContext === 'map' ? 'Add Map Item' : 'Add Post'}
+                 modalContext === 'map' ? 'Add Map Item' : 
+                 modalContext === 'news' ? 'Add News' : 'Add Content'}
               </h2>
               <button
                 onClick={() => {

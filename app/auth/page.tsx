@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, FormEvent, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
   // Sign Up state and validation
   const [signUpName, setSignUpName] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
@@ -18,7 +19,17 @@ export default function AuthPage() {
   // Loading and error states
   const [signUpLoading, setSignUpLoading] = useState(false)
   const [signUpErrorMsg, setSignUpErrorMsg] = useState<string | null>(null)
+  const [signUpSuccess, setSignUpSuccess] = useState<string | null>(null)
   const [signInLoading, setSignInLoading] = useState(false)
+
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    if (mode === 'login') {
+      setIsSignUp(false)
+    } else if (mode === 'register') {
+      setIsSignUp(true)
+    }
+  }, [searchParams])
 
   const handleSignUpSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -29,6 +40,7 @@ export default function AuthPage() {
     setSignUpErrors(errors)
     if (Object.keys(errors).length > 0) return
     setSignUpErrorMsg(null)
+    setSignUpSuccess(null)
     setSignUpLoading(true)
     try {
       const res = await fetch('/api/auth/register', {
@@ -39,7 +51,10 @@ export default function AuthPage() {
       if (!res.ok) {
         setSignUpErrorMsg(data.message || 'Registration failed')
       } else {
-        router.push('/dashboard')
+        setSignUpSuccess('Account created successfully! Redirecting...')
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 2000)
         return                      // prevent setState in finally
       }
     } catch (error) {
@@ -138,6 +153,7 @@ export default function AuthPage() {
             />
             {signUpErrors.password && <p className="text-red-500 text-xs">{signUpErrors.password}</p>}
             {signUpErrorMsg && <p className="text-red-500 text-xs">{signUpErrorMsg}</p>}
+            {signUpSuccess && <p className="text-green-500 text-xs">{signUpSuccess}</p>}
             
             <button type="submit" disabled={signUpLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] mt-4 disabled:opacity-50">
               {signUpLoading ? 'Signing up...' : 'Sign Up'}
@@ -146,8 +162,8 @@ export default function AuthPage() {
         </div>
 
         {/* Sign In Form */}
-        <div className={`form-container sign-in-container absolute top-0 h-full w-1/2 left-0 z-20 transition-all duration-500 ease-in-out ${
-          isSignUp ? 'translate-x-full' : ''
+        <div className={`form-container sign-in-container absolute top-0 h-full w-1/2 left-0 transition-all duration-500 ease-in-out ${
+          isSignUp ? 'translate-x-full z-0' : 'z-20'
         }`}>
           <form onSubmit={handleSignInSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Sign in to DeBetter</h2>

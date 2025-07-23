@@ -146,7 +146,7 @@ export default function JoinDebatesPage() {
 
                   {/* Actions */}
                   <div className="flex items-center justify-between">
-                    <a href="#" className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
+                    <a href={`/tournament/${item}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
                       More...
                     </a>
                     <button 
