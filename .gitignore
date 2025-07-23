@@ -3,6 +3,9 @@ node_modules
 # Ignore gzip files
 *.gz
 
+# Ignore Next.js build output
+.next/
+
 # Ignore Next.js cache files
 .next/cache/
 .next/build-manifest.json
