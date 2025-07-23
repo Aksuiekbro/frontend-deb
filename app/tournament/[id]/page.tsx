@@ -6,11 +6,14 @@ import Header from "../../../components/Header"
 export default function TournamentDetailPage() {
   const [activeTab, setActiveTab] = useState('Main Info')
   const [isMainInfoDropdownOpen, setIsMainInfoDropdownOpen] = useState(false)
-  const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Main info')
+  const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Announcements')
   const [isResultsDropdownOpen, setIsResultsDropdownOpen] = useState(false)
   const [selectedResultsOption, setSelectedResultsOption] = useState('APF')
   const [resultsSubTab, setResultsSubTab] = useState('Speaker Score')
   const [selectedRound, setSelectedRound] = useState('1/16')
+  const [bpfSubTab, setBpfSubTab] = useState('BPF Results')
+  // Add new state for active section (mutually exclusive)
+  const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [invitedUsers, setInvitedUsers] = useState([
@@ -18,8 +21,20 @@ export default function TournamentDetailPage() {
     { id: 2, name: 'Who Has Access', avatar: '/avatar2.jpg' },
     { id: 3, name: 'Who Has Access', avatar: '/avatar3.jpg' }
   ])
-  const [inviteModalTab, setInviteModalTab] = useState('invite')
+  const [inviteModalTab, setInviteModalTab] = useState('invite')  
+  // Check-in state for each participant row
+  const [checkInStatus, setCheckInStatus] = useState<{[key: number]: boolean}>({})
+  
+  // Toggle check-in status for a participant
+  const toggleCheckIn = (participantId: number) => {
+    setCheckInStatus(prev => ({
+      ...prev,
+      [participantId]: !prev[participantId]
+    }))
+  }
+  
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState(false)
+  const [modalContext, setModalContext] = useState('')
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
   const [postImages, setPostImages] = useState<File[]>([])
@@ -45,13 +60,24 @@ export default function TournamentDetailPage() {
   }
 
   const handleAddPost = () => {
-    if (postTitle.trim() && postDescription.trim()) {
+    const isAnnouncement = modalContext === 'announcements'
+    const isValidAnnouncement = isAnnouncement && postTitle.trim() && postDescription.trim()
+    const isValidOther = !isAnnouncement // Schedule and map just need images
+    
+    if (isValidAnnouncement || isValidOther) {
       // Здесь будет логика добавления поста
-      console.log('Adding post:', { title: postTitle, description: postDescription, images: postImages })
-      setPostTitle('')
-      setPostDescription('')
+      const postData = modalContext === 'announcements' 
+        ? { title: postTitle, description: postDescription, images: postImages, type: modalContext }
+        : { images: postImages, type: modalContext }
+      console.log(`Adding ${modalContext}:`, postData)
+      
+      if (modalContext === 'announcements') {
+        setPostTitle('')
+        setPostDescription('')
+      }
       setPostImages([])
       setIsAddPostModalOpen(false)
+      setModalContext('')
     }
   }
 
@@ -136,15 +162,24 @@ export default function TournamentDetailPage() {
             
             {/* Dropdown Menu */}
             {isMainInfoDropdownOpen && (
-              <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[120px]">
+              <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[160px]">
                 <button
                   onClick={() => {
-                    setSelectedMainInfoOption('Main info')
+                    setSelectedMainInfoOption('Announcements')
                     setIsMainInfoDropdownOpen(false)
                   }}
                   className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
                 >
-                  Main info
+                  Announcements
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedMainInfoOption('Schedule')
+                    setIsMainInfoDropdownOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
+                >
+                  Schedule
                 </button>
                 <button
                   onClick={() => {
@@ -263,9 +298,86 @@ export default function TournamentDetailPage() {
 
       {/* Main Content */}
       <div className="px-12 pb-16">
+        {/* Announcements Content */}
+        {activeTab === 'Main Info' && selectedMainInfoOption === 'Announcements' && (
+          <div>
+            <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
+            <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
+              {/* Empty state for announcements */}
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">
+                No announcements yet
+              </div>
+              
+              {/* Add announcement button */}
+              <button 
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('announcements')
+                }}
+                className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Schedule Content */}
+        {activeTab === 'Main Info' && selectedMainInfoOption === 'Schedule' && (
+          <div>
+            <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Schedule</h2>
+            <div className="relative bg-white rounded-lg border border-gray-300 min-h-[500px] p-6">
+              {/* Schedule content area */}
+              <div className="h-full">
+                {/* Schedule will be populated here */}
+              </div>
+              
+              {/* Add schedule button */}
+              <button 
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('schedule')
+                }}
+                className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Map Content */}
+        {activeTab === 'Main Info' && selectedMainInfoOption === 'Map' && (
+          <div>
+            <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Map</h2>
+            <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">
+                Map will be displayed here
+              </div>
+              
+              {/* Add map button */}
+              <button 
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('map')
+                }}
+                className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg border border-gray-300">
-          {/* Main Info Tab Content */}
-          {activeTab === 'Main Info' && (
+          {/* Main Info Tab Content - Original content when no specific option selected */}
+          {activeTab === 'Main Info' && !['Announcements', 'Schedule', 'Map'].includes(selectedMainInfoOption) && (
             <div className="p-8">
               {/* Details Section */}
               <div className="mb-8">
@@ -340,7 +452,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Almaty</td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">87756278927</td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[1] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[1] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -352,7 +469,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Astana</td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-green-500 text-lg">✓</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[2] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(2)}
+                      >
+                        {checkInStatus[2] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -364,7 +486,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-green-500 text-lg">✓</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[3] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(3)}
+                      >
+                        {checkInStatus[3] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -376,7 +503,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-red-500 text-xl">✕</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(4)}
+                      >
+                        {checkInStatus[4] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -388,7 +520,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -400,7 +537,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -412,7 +554,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -424,7 +571,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -436,7 +588,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -448,7 +605,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-gray-50">
@@ -460,7 +622,12 @@ export default function TournamentDetailPage() {
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
                     <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span className="text-gray-400 text-lg">—</span>
+                      <span 
+                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
+                        onClick={() => toggleCheckIn(1)}
+                      >
+                        {checkInStatus[5] ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -487,7 +654,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Alma</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <input type="checkbox" className="w-5 h-5 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2" />
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[10] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(10)}
+                        >
+                          {checkInStatus[10] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
@@ -495,7 +667,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Aitpa</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <input type="checkbox" checked className="w-5 h-5 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2" readOnly />
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[11] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(11)}
+                        >
+                          {checkInStatus[11] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
@@ -503,7 +680,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">рудольф</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <input type="checkbox" checked className="w-5 h-5 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2" readOnly />
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[12] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(12)}
+                        >
+                          {checkInStatus[12] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
@@ -511,7 +693,12 @@ export default function TournamentDetailPage() {
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Плюсплюс</td>
                       <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
                       <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span className="text-red-500 text-xl font-bold">✕</span>
+                        <span 
+                          className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
+                          onClick={() => toggleCheckIn(4)}
+                        >
+                          {checkInStatus[4] ? '✓' : '✕'}
+                        </span>
                       </td>
                     </tr>
                   </tbody>
@@ -630,10 +817,12 @@ export default function TournamentDetailPage() {
               {/* Format Header */}
               <h2 className="text-[#0D1321] text-[32px] font-bold mb-8">{selectedResultsOption}</h2>
               
+
+              
               {/* Results Table */}
               <div className="relative">
                 {/* Speaker Score Table for APF */}
-                {selectedResultsOption === 'APF' && resultsSubTab === 'Speaker Score' && (
+                {selectedResultsOption === 'APF' && activeResultsSection === 'APF Speaker Score' && (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                       <thead>
@@ -744,120 +933,8 @@ export default function TournamentDetailPage() {
                   </div>
                 )}
                 
-                {/* Results Table for APF */}
-                {selectedResultsOption === 'APF' && resultsSubTab === 'Results' && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 1</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 2</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 3</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
-                          <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                          <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/8 */}
-                        {selectedRound === '1/8' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/4 */}
-                        {selectedRound === '1/4' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">3</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                          </tr>
-                        )}
-                        
-                        {/* Данные для раунда 1/2 */}
-                        {selectedRound === '1/2' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">4</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                
                 {/* Speaker Score Table for BPF */}
-                {selectedResultsOption === 'BPF' && resultsSubTab === 'Speaker Score' && (
+                {selectedResultsOption === 'BPF' && bpfSubTab === 'BPF Speaker Score' && (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                       <thead>
@@ -978,41 +1055,41 @@ export default function TournamentDetailPage() {
                         {/* Данные для раунда 1/16 */}
                         {selectedRound === '1/16' && (
                           <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
+                            <tr className="bg-gradient-to-r from-[#748CAB] to-[#8a9ba8] hover:from-[#8a9ba8] hover:to-[#9cacba]">
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">Goner</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center font-medium">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px]">L. Lomonosov</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">CL clan</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">K. Butov</td>
                             </tr>
                           </>
                         )}
@@ -1070,9 +1147,9 @@ export default function TournamentDetailPage() {
                     </table>
                   </div>
                 )}
-                
+
                 {/* BPF Tables */}
-                {selectedResultsOption === 'BPF' && (
+                {selectedResultsOption === 'BPF' && bpfSubTab === 'BPF Results' && (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                       <thead>
@@ -1090,23 +1167,41 @@ export default function TournamentDetailPage() {
                         {/* Данные для раунда 1/16 */}
                         {selectedRound === '1/16' && (
                           <>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
+                            </tr>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
+                            </tr>
                             <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">BPF Team 2</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Fate Sealers</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">BPF Judge 2</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
+                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
                             </tr>
                           </>
                         )}
@@ -1127,6 +1222,7 @@ export default function TournamentDetailPage() {
                     </table>
                   </div>
                 )}
+
                 
                 {/* LD Table */}
                 {selectedResultsOption === 'LD' && (
@@ -1147,23 +1243,23 @@ export default function TournamentDetailPage() {
                         {/* Данные для раунда 1/16 */}
                         {selectedRound === '1/16' && (
                           <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
                             </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
+                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
+                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
@@ -1254,14 +1350,20 @@ export default function TournamentDetailPage() {
                     {selectedResultsOption !== 'LD' && (
                       <>
                         <button 
-                          className={`px-4 py-2 ${resultsSubTab === 'Results' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                          onClick={() => setResultsSubTab('Results')}
+                          className={`px-4 py-2 ${activeResultsSection === 'APF Results' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                          onClick={() => {
+                            setActiveResultsSection('APF Results')
+                            setResultsSubTab('Results')
+                          }}
                         >
                           {selectedResultsOption} Results
                         </button>
                         <button 
-                          className={`px-4 py-2 ${resultsSubTab === 'Speaker Score' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                          onClick={() => setResultsSubTab('Speaker Score')}
+                          className={`px-4 py-2 ${activeResultsSection === 'APF Speaker Score' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                          onClick={() => {
+                            setActiveResultsSection('APF Speaker Score')
+                            setResultsSubTab('Speaker Score')
+                          }}
                         >
                           {selectedResultsOption} Speaker Score
                         </button>
@@ -1271,26 +1373,38 @@ export default function TournamentDetailPage() {
                     
                     {/* Round selection buttons */}
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/16' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/16')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/16' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/16')
+                        setSelectedRound('1/16')
+                      }}
                     >
                       1/16
                     </button>
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/8' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/8')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/8' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/8')
+                        setSelectedRound('1/8')
+                      }}
                     >
                       1/8
                     </button>
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/4' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/4')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/4' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/4')
+                        setSelectedRound('1/4')
+                      }}
                     >
                       1/4
                     </button>
                     <button 
-                      className={`px-3 py-2 ${selectedRound === '1/2' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
-                      onClick={() => setSelectedRound('1/2')}
+                      className={`px-3 py-2 ${activeResultsSection === '1/2' ? 'bg-white text-[#0D1321]' : 'text-white hover:bg-[#3E5C76]'} rounded text-[14px] font-medium transition-colors`}
+                      onClick={() => {
+                        setActiveResultsSection('1/2')
+                        setSelectedRound('1/2')
+                      }}
                     >
                       1/2
                     </button>
@@ -1310,7 +1424,10 @@ export default function TournamentDetailPage() {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-[#0D1321] text-[32px] font-bold">Tournament News</h2>
               <button 
-                onClick={() => setIsAddPostModalOpen(true)}
+                onClick={() => {
+                  setIsAddPostModalOpen(true)
+                  setModalContext('news')
+                }}
                 className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
               >
                 Add News
@@ -1559,59 +1676,165 @@ export default function TournamentDetailPage() {
             <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
               <h3 className="text-[#0D1321] text-[24px] font-bold mb-6">Recent Feedback</h3>
               
-              <div className="space-y-4">
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-[#0D1321] font-medium">Anonymous Participant</span>
-                        <div className="flex text-yellow-400">
-                          ⭐⭐⭐⭐⭐
-                        </div>
+              <div className="space-y-6">
+                {/* Comment 1 */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  {/* Header with logo and username */}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/placeholder-user.jpg" 
+                        alt="Niceass profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-12 h-12 bg-gradient-to-br from-[#3E5C76] to-[#748CAB] rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-bold">N</span>
                       </div>
-                      <span className="text-[#9a8c98] text-[14px]">November 20, 2024</span>
                     </div>
+                    <h4 className="text-[#0D1321] text-[18px] font-semibold">Niceass</h4>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px]">
-                    "Excellent tournament organization! The judges were very professional and the venue was perfect. 
-                    Looking forward to participating in future events."
+                  
+                  {/* Comment content */}
+                  <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                    Actually I love debetter it is very simple and minimalistic. The design is very human!
                   </p>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V18m-7-8a2 2 0 01-2-2V7a2 2 0 012-2s0 0 0 0 1.53-.027 2.06-.06l5.474-.279a2 2 0 011.94 1.472c.087.462.087.957 0 1.419L14 10z" />
+                          </svg>
+                          <span>Like</span>
+                        </button>
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2m0-12V2m7 10h4.764a2 2 0 001.789-2.894l-3.5-7A2 2 0 0015.263 1h-4.017c-.163 0-.326.02-.485.06L7 2" />
+                          </svg>
+                          <span>Dislike</span>
+                        </button>
+                        <span className="text-[#9a8c98]">2 min</span>
+                        <button className="hover:text-[#3E5C76] transition-colors">Reply</button>
+                        <button className="flex items-center space-x-1 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                  {/* View Replies */}
+                  <button className="mt-3 text-[#9a8c98] text-[14px] hover:text-[#3E5C76] transition-colors">
+                    View Replies (4)
+                  </button>
                 </div>
 
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-[#0D1321] font-medium">Team Captain</span>
-                        <div className="flex text-yellow-400">
-                          ⭐⭐⭐⭐
-                        </div>
+                {/* Comment 2 */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/placeholder-user.jpg" 
+                        alt="Hair_ass profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-12 h-12 bg-gradient-to-br from-[#9a8c98] to-[#4a4e69] rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-bold">H</span>
                       </div>
-                      <span className="text-[#9a8c98] text-[14px]">November 19, 2024</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <h4 className="text-[#0D1321] text-[18px] font-semibold">Hair_ass</h4>
+                      </div>
+                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                        Actually I love debetter it is very simple and minimalistic. The design is very human!
+                      </p>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V18m-7-8a2 2 0 01-2-2V7a2 2 0 012-2s0 0 0 0 1.53-.027 2.06-.06l5.474-.279a2 2 0 011.94 1.472c.087.462.087.957 0 1.419L14 10z" />
+                          </svg>
+                          <span>Like</span>
+                        </button>
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2m0-12V2m7 10h4.764a2 2 0 001.789-2.894l-3.5-7A2 2 0 0015.263 1h-4.017c-.163 0-.326.02-.485.06L7 2" />
+                          </svg>
+                          <span>Dislike</span>
+                        </button>
+                        <span className="text-[#9a8c98]">5 min</span>
+                        <button className="hover:text-[#3E5C76] transition-colors">Reply</button>
+                        <button className="flex items-center space-x-1 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px]">
-                    "Great tournament overall. The only suggestion would be to have more time between rounds for preparation. 
-                    The topics were challenging and well-chosen."
-                  </p>
                 </div>
 
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-[#0D1321] font-medium">Judge Observer</span>
-                        <div className="flex text-yellow-400">
-                          ⭐⭐⭐⭐⭐
-                        </div>
+                {/* Comment 3 */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/placeholder-user.jpg" 
+                        alt="Tournament Expert profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-12 h-12 bg-gradient-to-br from-[#0D1321] to-[#3E5C76] rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-bold">TE</span>
                       </div>
-                      <span className="text-[#9a8c98] text-[14px]">November 18, 2024</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <h4 className="text-[#0D1321] text-[18px] font-semibold">Tournament Expert</h4>
+                      </div>
+                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
+                        The tournament structure was well-organized and the judging criteria were clear. Great experience overall for both participants and spectators.
+                      </p>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-6 text-[#9a8c98] text-[14px]">
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V18m-7-8a2 2 0 01-2-2V7a2 2 0 012-2s0 0 0 0 1.53-.027 2.06-.06l5.474-.279a2 2 0 011.94 1.472c.087.462.087.957 0 1.419L14 10z" />
+                          </svg>
+                          <span>Like</span>
+                        </button>
+                        <button className="flex items-center space-x-2 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2m0-12V2m7 10h4.764a2 2 0 001.789-2.894l-3.5-7A2 2 0 0015.263 1h-4.017c-.163 0-.326.02-.485.06L7 2" />
+                          </svg>
+                          <span>Dislike</span>
+                        </button>
+                        <span className="text-[#9a8c98]">1 day</span>
+                        <button className="hover:text-[#3E5C76] transition-colors">Reply</button>
+                        <button className="flex items-center space-x-1 hover:text-[#3E5C76] transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px]">
-                    "Impressed by the level of debate and the smooth running of the tournament. The technology integration 
-                    for scoring was seamless."
-                  </p>
                 </div>
               </div>
             </div>
@@ -1625,9 +1848,17 @@ export default function TournamentDetailPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[#0D1321] text-[32px] font-bold">Add Post</h2>
+              <h2 className="text-[#0D1321] text-[32px] font-bold">
+                {modalContext === 'announcements' ? 'Add Announcement' : 
+                 modalContext === 'schedule' ? 'Add Schedule Item' : 
+                 modalContext === 'map' ? 'Add Map Item' : 
+                 modalContext === 'news' ? 'Add News' : 'Add Content'}
+              </h2>
               <button
-                onClick={() => setIsAddPostModalOpen(false)}
+                onClick={() => {
+                  setIsAddPostModalOpen(false)
+                  setModalContext('')
+                }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
@@ -1689,35 +1920,40 @@ export default function TournamentDetailPage() {
                 )}
               </div>
 
-              {/* Title Input */}
-              <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={postTitle}
-                  onChange={(e) => setPostTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
-                  placeholder="Enter post title"
-                  required
-                />
-              </div>
+              {/* Title and Description - Only for Announcements */}
+              {modalContext === 'announcements' && (
+                <>
+                  {/* Title Input */}
+                  <div>
+                    <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={postTitle}
+                      onChange={(e) => setPostTitle(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
+                      placeholder="Enter post title"
+                      required
+                    />
+                  </div>
 
-              {/* Description Input */}
-              <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
-                  Description
-                </label>
-                <textarea
-                  value={postDescription}
-                  onChange={(e) => setPostDescription(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
-                  placeholder="Enter post description"
-                  required
-                />
-              </div>
+                  {/* Description Input */}
+                  <div>
+                    <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
+                      Description
+                    </label>
+                    <textarea
+                      value={postDescription}
+                      onChange={(e) => setPostDescription(e.target.value)}
+                      rows={6}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
+                      placeholder="Enter post description"
+                      required
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Submit Button */}
               <div className="flex justify-end">

@@ -1,6 +1,10 @@
+"use client"
+
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
-// test
+import { useRouter } from "next/navigation"
+
 export default function Component() {
+  const router = useRouter()
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       {/* Header */}
@@ -8,11 +12,14 @@ export default function Component() {
         <div className="flex items-center space-x-16">
           <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
           <nav className="flex space-x-12">
-            <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <a href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               Join Debates
             </a>
-            <a href="#" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <a href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               Rating
+            </a>
+            <a href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+              News
             </a>
           </nav>
         </div>
@@ -26,10 +33,16 @@ export default function Component() {
           >
             <option>English</option>
           </select>
-          <button className="bg-[#3E5C76] text-white px-6 py-3 rounded-lg hover:bg-[#22223b] text-[14px] font-normal">
+          <button 
+            onClick={() => router.push('/auth?mode=register')}
+            className="bg-[#3E5C76] text-white px-6 py-3 rounded-lg hover:bg-[#22223b] text-[14px] font-normal"
+          >
             Registration
           </button>
-          <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal">
+          <button 
+            onClick={() => router.push('/auth?mode=login')}
+            className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal"
+          >
             Log In
           </button>
         </div>
@@ -46,9 +59,9 @@ export default function Component() {
           </h2>
 
           <div className="flex justify-center space-x-4 mb-8">
-            <button className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal">
+            <a href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
               Join Debates
-            </button>
+            </a>
             <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
               Host Debate
             </button>
@@ -95,9 +108,9 @@ export default function Component() {
                     </a>
                   </div>
                   <div className="flex justify-start">
-                    <button className="bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal">
+                    <a href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
                       Join Debates
-                    </button>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -152,7 +165,7 @@ export default function Component() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
             {/* 2nd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
-              <div className="h-[96px] bg-gradient-to-r from-blue-400 via-blue-300 to-cyan-300 relative">
+              <div className="h-[96px] relative" style={{background: 'linear-gradient(to right, #3E5C76, #748CAB)'}}>
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
               </div>
               <div className="p-6 pt-[48px]">
@@ -183,7 +196,7 @@ export default function Component() {
             {/* 1st Place */}
             <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
               <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-              <div className="h-[96px] bg-gradient-to-r from-yellow-300 via-yellow-200 to-green-300 relative rounded-t-[12px]">
+              <div className="h-[96px] relative rounded-t-[12px]" style={{background: 'linear-gradient(to right, #0D1321, #3E5C76)'}}>
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
               </div>
               <div className="p-6 pt-[48px]">
@@ -213,7 +226,7 @@ export default function Component() {
 
             {/* 3rd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3">
-              <div className="h-[96px] bg-gradient-to-r from-red-400 via-pink-300 to-pink-400 relative">
+              <div className="h-[96px] relative" style={{background: 'linear-gradient(to right, #748CAB, #c9ada7)'}}>
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
               </div>
               <div className="p-6 pt-[48px]">
