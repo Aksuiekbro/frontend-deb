@@ -172,7 +172,7 @@ export default function Component() {
                 <div
                   className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
                   style={{
-                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
                     transform: "rotate(90deg)",
                   }}
                 ></div>
@@ -203,7 +203,7 @@ export default function Component() {
                 <div
                   className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
                   style={{
-                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
                     transform: "rotate(90deg)",
                   }}
                 ></div>
@@ -233,7 +233,7 @@ export default function Component() {
                 <div
                   className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
                   style={{
-                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
                     transform: "rotate(90deg)",
                   }}
                 ></div>
