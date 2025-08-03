@@ -1,7 +1,18 @@
+"use client"
+
 import { Crown } from "lucide-react"
 import Header from "../../components/Header"
+import { useEffect, useState } from "react"
 
 export default function RatingPage() {
+  const [animateGradients, setAnimateGradients] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimateGradients(true)
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       <Header />
@@ -16,7 +27,15 @@ export default function RatingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
             {/* 2nd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
-              <div className="h-[96px] relative" style={{background: 'linear-gradient(to right, #3E5C76, #748CAB)'}}>
+              <div className="h-[96px] relative overflow-hidden">
+                <div 
+                  className="h-full transition-all duration-1000 ease-out"
+                  style={{
+                    background: 'linear-gradient(to right, #3E5C76, #748CAB)',
+                    width: animateGradients ? '100%' : '0%',
+                    transform: 'translateX(0)'
+                  }}
+                />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
               </div>
               <div className="p-6 pt-[48px]">
@@ -47,7 +66,15 @@ export default function RatingPage() {
             {/* 1st Place */}
             <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
               <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-              <div className="h-[96px] relative rounded-t-[12px]" style={{background: 'linear-gradient(to right, #0D1321, #3E5C76)'}}>
+              <div className="h-[96px] relative rounded-t-[12px] overflow-hidden">
+                <div 
+                  className="h-full transition-all duration-1000 ease-out rounded-t-[12px]"
+                  style={{
+                    background: 'linear-gradient(to right, #0D1321, #3E5C76)',
+                    width: animateGradients ? '100%' : '0%',
+                    transform: 'translateX(0)'
+                  }}
+                />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
               </div>
               <div className="p-6 pt-[48px]">
@@ -77,7 +104,15 @@ export default function RatingPage() {
 
             {/* 3rd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3 md:order-3">
-              <div className="h-[96px] relative" style={{background: 'linear-gradient(to right, #748CAB, #c9ada7)'}}>
+              <div className="h-[96px] relative overflow-hidden">
+                <div 
+                  className="h-full transition-all duration-1000 ease-out"
+                  style={{
+                    background: 'linear-gradient(to right, #748CAB, #c9ada7)',
+                    width: animateGradients ? '100%' : '0%',
+                    transform: 'translateX(0)'
+                  }}
+                />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
               </div>
               <div className="p-6 pt-[48px]">
