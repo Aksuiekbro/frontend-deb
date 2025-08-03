@@ -2,9 +2,35 @@
 
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect, useState, useRef } from "react"
+import Link from "next/link"
 
 export default function Component() {
   const router = useRouter()
+  const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
+  const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleGradients(prev => ({
+              ...prev,
+              [entry.target.id]: true
+            }))
+          }
+        })
+      },
+      { threshold: 0.3 }
+    )
+
+    Object.values(gradientRefs.current).forEach(ref => {
+      if (ref) observer.observe(ref)
+    })
+
+    return () => observer.disconnect()
+  }, [])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       {/* Header */}
@@ -12,15 +38,15 @@ export default function Component() {
         <div className="flex items-center space-x-16">
           <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
           <nav className="flex space-x-12">
-            <a href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               Join Debates
-            </a>
-            <a href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            </Link>
+            <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               Rating
-            </a>
-            <a href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            </Link>
+            <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
               News
-            </a>
+            </Link>
           </nav>
         </div>
         <div className="flex items-center space-x-6">
@@ -62,9 +88,9 @@ export default function Component() {
           </h2>
 
           <div className="flex justify-center space-x-4 mb-8">
-            <a href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
+            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
               Join Debates
-            </a>
+            </Link>
             <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
               Host Debate
             </button>
@@ -111,9 +137,9 @@ export default function Component() {
                     </a>
                   </div>
                   <div className="flex justify-start">
-                    <a href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
+                    <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
                       Join Debates
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -168,7 +194,19 @@ export default function Component() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
             {/* 2nd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
-              <div className="h-[96px] relative" style={{background: 'linear-gradient(to right, #3E5C76, #748CAB)'}}>
+              <div 
+                className="h-[96px] relative overflow-hidden"
+                id="gradient-2nd"
+                ref={el => gradientRefs.current['gradient-2nd'] = el}
+              >
+                <div 
+                  className="h-full transition-all duration-1000 ease-out"
+                  style={{
+                    background: 'linear-gradient(to right, #3E5C76, #748CAB)',
+                    width: visibleGradients['gradient-2nd'] ? '100%' : '0%',
+                    transform: 'translateX(0)'
+                  }}
+                />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
               </div>
               <div className="p-6 pt-[48px]">
@@ -199,7 +237,19 @@ export default function Component() {
             {/* 1st Place */}
             <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
               <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-              <div className="h-[96px] relative rounded-t-[12px]" style={{background: 'linear-gradient(to right, #0D1321, #3E5C76)'}}>
+              <div 
+                className="h-[96px] relative rounded-t-[12px] overflow-hidden"
+                id="gradient-1st"
+                ref={el => gradientRefs.current['gradient-1st'] = el}
+              >
+                <div 
+                  className="h-full transition-all duration-1000 ease-out rounded-t-[12px]"
+                  style={{
+                    background: 'linear-gradient(to right, #0D1321, #3E5C76)',
+                    width: visibleGradients['gradient-1st'] ? '100%' : '0%',
+                    transform: 'translateX(0)'
+                  }}
+                />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
               </div>
               <div className="p-6 pt-[48px]">
@@ -229,7 +279,19 @@ export default function Component() {
 
             {/* 3rd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3">
-              <div className="h-[96px] relative" style={{background: 'linear-gradient(to right, #748CAB, #c9ada7)'}}>
+              <div 
+                className="h-[96px] relative overflow-hidden"
+                id="gradient-3rd"
+                ref={el => gradientRefs.current['gradient-3rd'] = el}
+              >
+                <div 
+                  className="h-full transition-all duration-1000 ease-out"
+                  style={{
+                    background: 'linear-gradient(to right, #748CAB, #c9ada7)',
+                    width: visibleGradients['gradient-3rd'] ? '100%' : '0%',
+                    transform: 'translateX(0)'
+                  }}
+                />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
               </div>
               <div className="p-6 pt-[48px]">
