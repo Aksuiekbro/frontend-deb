@@ -200,11 +200,12 @@ export default function Component() {
                 ref={el => gradientRefs.current['gradient-2nd'] = el}
               >
                 <div 
-                  className="h-full transition-all duration-1000 ease-out"
+                  className="h-full transition-all duration-1000"
                   style={{
                     background: 'linear-gradient(to right, #3E5C76, #748CAB)',
                     width: visibleGradients['gradient-2nd'] ? '100%' : '0%',
-                    transform: 'translateX(0)'
+                    transform: 'translateX(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
@@ -243,11 +244,12 @@ export default function Component() {
                 ref={el => gradientRefs.current['gradient-1st'] = el}
               >
                 <div 
-                  className="h-full transition-all duration-1000 ease-out rounded-t-[12px]"
+                  className="h-full transition-all duration-1000 rounded-t-[12px]"
                   style={{
                     background: 'linear-gradient(to right, #0D1321, #3E5C76)',
                     width: visibleGradients['gradient-1st'] ? '100%' : '0%',
-                    transform: 'translateX(0)'
+                    transform: 'translateX(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
@@ -285,11 +287,12 @@ export default function Component() {
                 ref={el => gradientRefs.current['gradient-3rd'] = el}
               >
                 <div 
-                  className="h-full transition-all duration-1000 ease-out"
+                  className="h-full transition-all duration-1000"
                   style={{
                     background: 'linear-gradient(to right, #748CAB, #c9ada7)',
                     width: visibleGradients['gradient-3rd'] ? '100%' : '0%',
-                    transform: 'translateX(0)'
+                    transform: 'translateX(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
