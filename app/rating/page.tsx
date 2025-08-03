@@ -29,11 +29,12 @@ export default function RatingPage() {
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
               <div className="h-[96px] relative overflow-hidden">
                 <div 
-                  className="h-full transition-all duration-1000 ease-out"
+                  className="h-full transition-all duration-1000"
                   style={{
                     background: 'linear-gradient(to right, #3E5C76, #748CAB)',
                     width: animateGradients ? '100%' : '0%',
-                    transform: 'translateX(0)'
+                    transform: 'translateX(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
@@ -68,11 +69,12 @@ export default function RatingPage() {
               <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
               <div className="h-[96px] relative rounded-t-[12px] overflow-hidden">
                 <div 
-                  className="h-full transition-all duration-1000 ease-out rounded-t-[12px]"
+                  className="h-full transition-all duration-1000 rounded-t-[12px]"
                   style={{
                     background: 'linear-gradient(to right, #0D1321, #3E5C76)',
                     width: animateGradients ? '100%' : '0%',
-                    transform: 'translateX(0)'
+                    transform: 'translateX(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
@@ -106,11 +108,12 @@ export default function RatingPage() {
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3 md:order-3">
               <div className="h-[96px] relative overflow-hidden">
                 <div 
-                  className="h-full transition-all duration-1000 ease-out"
+                  className="h-full transition-all duration-1000"
                   style={{
                     background: 'linear-gradient(to right, #748CAB, #c9ada7)',
                     width: animateGradients ? '100%' : '0%',
-                    transform: 'translateX(0)'
+                    transform: 'translateX(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
