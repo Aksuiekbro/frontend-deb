@@ -8,6 +8,7 @@ import Link from "next/link"
 export default function Component() {
   const router = useRouter()
   const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
+  const [expandedDebates, setExpandedDebates] = useState<{[key: number]: boolean}>({})
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
 
   useEffect(() => {
@@ -88,10 +89,10 @@ export default function Component() {
           </h2>
 
           <div className="flex justify-center space-x-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
+            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center transform transition-all duration-300 hover:scale-105">
               Join Debates
             </Link>
-            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
+            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal transform transition-all duration-300 hover:scale-105">
               Host Debate
             </button>
           </div>
@@ -110,31 +111,50 @@ export default function Component() {
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Upcoming Debates</h3>
 
         <div className="relative">
-          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
+          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10 transition-all duration-300 hover:scale-110 hover:shadow-xl">
             <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
 
           <div className="flex space-x-6 overflow-hidden">
             {[1, 2].map((item) => (
-              <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
+              <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0 transform transition-all duration-500 hover:scale-105 hover:shadow-xl">
                 <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">AITU Kerek</h4>
                 <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">Almaty, Zhandosov 52</p>
                 <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">10.11.2027</p>
 
                 <div className="flex space-x-2 mb-6">
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">БПА</span>
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">АПА</span>
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">БПА</span>
+                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-pointer">БПА</span>
+                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-pointer">АПА</span>
+                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-pointer">БПА</span>
                   {item === 1 && (
-                    <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">А</span>
+                    <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-pointer">А</span>
                   )}
                 </div>
 
                 <div className="space-y-3">
+                  {expandedDebates[item] && (
+                    <div className="text-[#9a8c98] text-[14px] font-normal leading-relaxed mb-3">
+                      <p className="mb-2">
+                        This debate will focus on contemporary political and social issues affecting our community. 
+                        Participants will engage in structured argumentation covering multiple perspectives.
+                      </p>
+                      <p className="mb-2">
+                        Format: British Parliamentary style with 4 teams. Each team will have 7 minutes for opening statements 
+                        and 3 minutes for rebuttals. Judges will evaluate based on content, delivery, and logical reasoning.
+                      </p>
+                      <p>
+                        Registration deadline: 3 days before the event. All skill levels welcome. 
+                        Refreshments will be provided during breaks.
+                      </p>
+                    </div>
+                  )}
                   <div className="flex justify-start">
-                    <a href="#" className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal">
-                      More...
-                    </a>
+                    <button 
+                      onClick={() => setExpandedDebates(prev => ({...prev, [item]: !prev[item]}))}
+                      className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal bg-transparent border-none cursor-pointer"
+                    >
+                      {expandedDebates[item] ? 'Less...' : 'More...'}
+                    </button>
                   </div>
                   <div className="flex justify-start">
                     <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
@@ -146,7 +166,7 @@ export default function Component() {
             ))}
           </div>
 
-          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
+          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg z-10 transition-all duration-300 hover:scale-110 hover:shadow-xl">
             <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
         </div>
@@ -163,7 +183,7 @@ export default function Component() {
 
           <div className="flex space-x-6 overflow-hidden">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
+              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0 transform transition-all duration-500 hover:scale-105 hover:shadow-lg">
                 <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
                 <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1">Zheksembek Abdolla</h6>
                 <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4">Debatter</p>
@@ -193,19 +213,19 @@ export default function Component() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
             {/* 2nd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
+            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1 transform transition-all duration-700 hover:scale-105 animate-in fade-in-50 slide-in-from-bottom-8">
               <div 
                 className="h-[96px] relative overflow-hidden"
                 id="gradient-2nd"
                 ref={el => gradientRefs.current['gradient-2nd'] = el}
               >
                 <div 
-                  className="h-full transition-all duration-1000"
+                  className={`h-full transition-all duration-1000 ease-out transform ${
+                    visibleGradients['gradient-2nd'] ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
+                  }`}
                   style={{
                     background: 'linear-gradient(to right, #3E5C76, #748CAB)',
-                    width: visibleGradients['gradient-2nd'] ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                    width: '100%'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
@@ -229,27 +249,27 @@ export default function Component() {
                     <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
                   </div>
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
+                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal transform transition-all duration-300 hover:scale-105">
                   Profile
                 </button>
               </div>
             </div>
 
             {/* 1st Place */}
-            <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
-              <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
+            <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2 transition-all duration-700 hover:scale-105 animate-in fade-in-50 slide-in-from-bottom-8 delay-200">
+              <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20 animate-bounce" />
               <div 
                 className="h-[96px] relative rounded-t-[12px] overflow-hidden"
                 id="gradient-1st"
                 ref={el => gradientRefs.current['gradient-1st'] = el}
               >
                 <div 
-                  className="h-full transition-all duration-1000 rounded-t-[12px]"
+                  className={`h-full rounded-t-[12px] transition-all duration-1000 ease-out transform ${
+                    visibleGradients['gradient-1st'] ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
+                  }`}
                   style={{
                     background: 'linear-gradient(to right, #0D1321, #3E5C76)',
-                    width: visibleGradients['gradient-1st'] ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                    width: '100%'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
@@ -273,26 +293,26 @@ export default function Component() {
                     <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
                   </div>
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
+                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal transform transition-all duration-300 hover:scale-105">
                   Profile
                 </button>
               </div>
             </div>
 
             {/* 3rd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3">
+            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3 transform transition-all duration-700 hover:scale-105 animate-in fade-in-50 slide-in-from-bottom-8 delay-500">
               <div 
                 className="h-[96px] relative overflow-hidden"
                 id="gradient-3rd"
                 ref={el => gradientRefs.current['gradient-3rd'] = el}
               >
                 <div 
-                  className="h-full transition-all duration-1000"
+                  className={`h-full transition-all duration-1000 ease-out transform ${
+                    visibleGradients['gradient-3rd'] ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
+                  }`}
                   style={{
                     background: 'linear-gradient(to right, #748CAB, #c9ada7)',
-                    width: visibleGradients['gradient-3rd'] ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                    width: '100%'
                   }}
                 />
                 <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
@@ -316,7 +336,7 @@ export default function Component() {
                     <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
                   </div>
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
+                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal transform transition-all duration-300 hover:scale-105">
                   Profile
                 </button>
               </div>
@@ -333,7 +353,7 @@ export default function Component() {
             <div className="flex justify-center space-x-4 mb-8">
               <a
                 href="#"
-                className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
+                className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-all duration-300 transform hover:scale-110 hover:rotate-12"
               >
                 <svg className="w-[36px] h-[36px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
@@ -341,7 +361,7 @@ export default function Component() {
               </a>
               <a
                 href="#"
-                className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
+                className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-all duration-300 transform hover:scale-110 hover:rotate-12"
               >
                 <svg className="w-[24px] h-[24px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
@@ -349,7 +369,7 @@ export default function Component() {
               </a>
               <a
                 href="#"
-                className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
+                className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-all duration-300 transform hover:scale-110 hover:rotate-12"
               >
                 <svg className="w-[24px] h-[24px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
