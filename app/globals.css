@@ -1,10 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;200;300;400;500;600;700;800;900&family=M+PLUS+1p:wght@100;300;400;500;700;800;900&display=swap');
+
+/* Hikasami Sans Local Font */
+@font-face {
+  font-family: 'Hikasami Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Hikasami-VF.woff2') format('woff2'), 
+       url('/fonts/Hikasami-VF.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Hikasami Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Hikasami-Regular.woff2') format('woff2'), 
+       url('/fonts/Hikasami-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Hikasami Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Hikasami-Medium.woff2') format('woff2'), 
+       url('/fonts/Hikasami-Medium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Hikasami Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Hikasami-SemiBold.woff2') format('woff2'), 
+       url('/fonts/Hikasami-SemiBold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Hikasami Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Hikasami-Bold.woff2') format('woff2'), 
+       url('/fonts/Hikasami-Bold.woff') format('woff');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer utilities {
   .text-balance {

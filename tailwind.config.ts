@@ -20,15 +20,17 @@ const config: Config = {
     extend: {
       fontFamily: {
         hikasami: [
-          "Hiragino Sans",
-          "Noto Sans JP",
-          "Yu Gothic",
+          '"Hikasami Sans"',
+          '"M PLUS 1p"',
+          '"Noto Sans JP"',
+          '"Hiragino Sans"',
+          '"Yu Gothic"',
           "Meiryo",
           "Takao",
           "IPAexGothic",
           "IPAPGothic",
-          "VL PGothic",
-          "Helvetica Neue",
+          '"VL PGothic"',
+          '"Helvetica Neue"',
           "Helvetica",
           "Arial",
           "sans-serif",

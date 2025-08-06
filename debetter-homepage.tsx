@@ -46,13 +46,13 @@ export default function Component() {
         <div className="flex items-center space-x-16">
           <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
           <nav className="flex space-x-16">
-            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               Join Debates
             </Link>
-            <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               Rating
             </Link>
-            <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               News
             </Link>
           </nav>
@@ -60,7 +60,7 @@ export default function Component() {
         <div className="flex items-center space-x-6">
           <div className="relative">
             <select
-              className="border border-[#3E5C76] rounded-none px-4 py-2 text-[#0D1321] bg-white text-[14px] font-medium appearance-none bg-no-repeat bg-right bg-[length:20px] pr-4 hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20 transition-all duration-200 cursor-pointer min-w-[100px] shadow-sm"
+              className="border border-[#3E5C76] rounded-none px-4 py-2 text-[#0D1321] bg-white text-[14px] font-medium font-hikasami appearance-none bg-no-repeat bg-right bg-[length:20px] pr-4 hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20 transition-all duration-200 cursor-pointer min-w-[100px] shadow-sm"
               style={{
                 backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%233E5C76%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")',
               }}
@@ -72,13 +72,13 @@ export default function Component() {
           </div>
           <button 
             onClick={() => router.push('/auth?mode=register')}
-            className="bg-[#3E5C76] text-white px-8 py-4 rounded-lg hover:bg-[#22223b] text-[14px] font-normal"
+            className="bg-[#3E5C76] text-white px-8 py-4 rounded-lg hover:bg-[#22223b] text-[14px] font-normal font-hikasami"
           >
             Registration
           </button>
           <button 
             onClick={() => router.push('/auth?mode=login')}
-            className="border border-[#4a4e69] text-[#4a4e69] px-8 py-4 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal"
+            className="border border-[#4a4e69] text-[#4a4e69] px-8 py-4 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal font-hikasami"
           >
             Log In
           </button>
@@ -87,20 +87,20 @@ export default function Component() {
 
       {/* Hero Section */}
       <section className="text-center py-8">
-        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
+        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8 font-hikasami">Welcome to DeBetter</h1>
 
         <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
-          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8">
+          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8 font-hikasami">
             <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
             <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
           </h2>
 
-          <div className="flex justify-center space-x-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
-              Join Debates
+                    <div className="flex justify-center space-x-4 mb-8">
+            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
+              Join Debate
             </Link>
-            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
-              Host Debate
+            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
+              Create Tournament
             </button>
           </div>
 
@@ -115,7 +115,7 @@ export default function Component() {
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Upcoming Debates</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Upcoming Debates</h3>
 
         <div className="relative">
           <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
@@ -125,36 +125,36 @@ export default function Component() {
           <div className="flex space-x-6 overflow-hidden">
             {[1, 2].map((item) => (
               <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
-                <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">AITU Kerek</h4>
-                <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">Almaty, Zhandosov 52</p>
-                <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">10.11.2027</p>
+                <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2 font-hikasami">AITU Kerek</h4>
+                <p className="text-[#9a8c98] mb-1 text-[16px] font-normal font-hikasami">Almaty, Zhandosov 52</p>
+                <p className="text-[#9a8c98] mb-4 text-[16px] font-normal font-hikasami">10.11.2027</p>
 
                 <div className="flex space-x-2 mb-6">
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">БПА</span>
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">АПА</span>
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">БПА</span>
+                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">БПА</span>
+                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">АПА</span>
+                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">БПА</span>
                   {item === 1 && (
-                    <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">А</span>
+                    <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">А</span>
                   )}
                 </div>
 
                 {/* Expandable content */}
                 {expandedDebates[item] && (
                   <div className="mb-4 p-4 bg-[#22223b] rounded-lg">
-                    <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2">Debate Details</h5>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                    <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2 font-hikasami">Debate Details</h5>
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
                       Topic: "The impact of artificial intelligence on modern education systems"
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
                       Format: Parliamentary Debate (4 teams, 2 speakers each)
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
                       Registration deadline: 08.11.2027
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
                       Entry fee: 5000 KZT per team
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal">
+                    <p className="text-[#9a8c98] text-[14px] font-normal font-hikasami">
                       Contact: aitu.debates@gmail.com
                     </p>
                   </div>
@@ -164,13 +164,13 @@ export default function Component() {
                   <div className="flex justify-start">
                     <button 
                       onClick={() => toggleDebateDetails(item)}
-                      className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal"
+                      className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal font-hikasami"
                     >
                       {expandedDebates[item] ? 'Less...' : 'More...'}
                     </button>
                   </div>
                   <div className="flex justify-start">
-                    <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
+                    <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center">
                       Join Debates
                     </Link>
                   </div>
@@ -187,7 +187,7 @@ export default function Component() {
 
       {/* Testimonials */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Testimonials</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Testimonials</h3>
 
         <div className="relative">
           <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
@@ -198,9 +198,9 @@ export default function Component() {
             {[1, 2, 3].map((item) => (
               <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
                 <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
-                <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1">Zheksembek Abdolla</h6>
-                <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4">Debatter</p>
-                <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed">
+                <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1 font-hikasami">Zheksembek Abdolla</h6>
+                <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4 font-hikasami">Debatter</p>
+                <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed font-hikasami">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi posuere ipsum vel mattis mollis. In sit
                   amet orci ac dui viverra lobortis ac at mi. Nulla a enim rutrum, vehicula. And I simply want to end
                   this shill! Hahahahahaha
@@ -217,11 +217,11 @@ export default function Component() {
 
       {/* Leader Board */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Leader Board</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Leader Board</h3>
 
         <div className="relative">
-          <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-start justify-center pt-8">
-            Champions
+                    <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-start justify-center pt-8 font-hikasami">
+            TOP
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
@@ -241,7 +241,7 @@ export default function Component() {
                     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
+                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold font-hikasami">2nd</span>
               </div>
               <div className="p-6 pt-[48px]">
                 <div
@@ -251,18 +251,18 @@ export default function Component() {
                     transform: "rotate(90deg)",
                   }}
                 ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
+                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center font-hikasami">Kris Robertson</h6>
                 <div className="flex justify-between mb-6">
                   <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
+                    <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">20</div>
+                    <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">debates</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
+                    <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">1829</div>
+                    <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">Average Score</div>
                   </div>
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
+                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal font-hikasami">
                   Profile
                 </button>
               </div>
@@ -285,7 +285,7 @@ export default function Component() {
                     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
+                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold font-hikasami">1st</span>
               </div>
               <div className="p-6 pt-[48px]">
                 <div
@@ -295,18 +295,18 @@ export default function Component() {
                     transform: "rotate(90deg)",
                   }}
                 ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
+                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center font-hikasami">Kris Robertson</h6>
                 <div className="flex justify-between mb-6">
                   <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
+                    <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">20</div>
+                    <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">debates</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
+                    <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">1829</div>
+                    <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">Average Score</div>
                   </div>
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
+                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal font-hikasami">
                   Profile
                 </button>
               </div>
@@ -328,7 +328,7 @@ export default function Component() {
                     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
+                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold font-hikasami">3rd</span>
               </div>
               <div className="p-6 pt-[48px]">
                 <div
@@ -338,18 +338,18 @@ export default function Component() {
                     transform: "rotate(90deg)",
                   }}
                 ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
+                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center font-hikasami">Kris Robertson</h6>
                 <div className="flex justify-between mb-6">
                   <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
+                    <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">20</div>
+                    <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">debates</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
+                    <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">1829</div>
+                    <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">Average Score</div>
                   </div>
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
+                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal font-hikasami">
                   Profile
                 </button>
               </div>
@@ -391,7 +391,7 @@ export default function Component() {
             </div>
           </div>
 
-          <div className="flex justify-between items-center text-[14px] font-normal">
+          <div className="flex justify-between items-center text-[14px] font-normal font-hikasami">
             <div>Contact us: debetter@gmail.com</div>
             <div>© 2025 all rights reserved</div>
             <div>Privacy Policy</div>
