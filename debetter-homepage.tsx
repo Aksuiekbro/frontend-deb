@@ -8,7 +8,15 @@ import Link from "next/link"
 export default function Component() {
   const router = useRouter()
   const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
+  const [expandedDebates, setExpandedDebates] = useState<{[key: number]: boolean}>({})
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+
+  const toggleDebateDetails = (debateId: number) => {
+    setExpandedDebates(prev => ({
+      ...prev,
+      [debateId]: !prev[debateId]
+    }))
+  }
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -130,11 +138,36 @@ export default function Component() {
                   )}
                 </div>
 
+                {/* Expandable content */}
+                {expandedDebates[item] && (
+                  <div className="mb-4 p-4 bg-[#22223b] rounded-lg">
+                    <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2">Debate Details</h5>
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                      Topic: "The impact of artificial intelligence on modern education systems"
+                    </p>
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                      Format: Parliamentary Debate (4 teams, 2 speakers each)
+                    </p>
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                      Registration deadline: 08.11.2027
+                    </p>
+                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2">
+                      Entry fee: 5000 KZT per team
+                    </p>
+                    <p className="text-[#9a8c98] text-[14px] font-normal">
+                      Contact: aitu.debates@gmail.com
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <div className="flex justify-start">
-                    <a href="#" className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal">
-                      More...
-                    </a>
+                    <button 
+                      onClick={() => toggleDebateDetails(item)}
+                      className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal"
+                    >
+                      {expandedDebates[item] ? 'Less...' : 'More...'}
+                    </button>
                   </div>
                   <div className="flex justify-start">
                     <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
@@ -197,7 +230,7 @@ export default function Component() {
               <div 
                 className="h-[96px] relative overflow-hidden"
                 id="gradient-2nd"
-                ref={el => gradientRefs.current['gradient-2nd'] = el}
+                ref={el => { gradientRefs.current['gradient-2nd'] = el }}
               >
                 <div 
                   className="h-full transition-all duration-1000"
@@ -241,7 +274,7 @@ export default function Component() {
               <div 
                 className="h-[96px] relative rounded-t-[12px] overflow-hidden"
                 id="gradient-1st"
-                ref={el => gradientRefs.current['gradient-1st'] = el}
+                ref={el => { gradientRefs.current['gradient-1st'] = el }}
               >
                 <div 
                   className="h-full transition-all duration-1000 rounded-t-[12px]"
@@ -284,7 +317,7 @@ export default function Component() {
               <div 
                 className="h-[96px] relative overflow-hidden"
                 id="gradient-3rd"
-                ref={el => gradientRefs.current['gradient-3rd'] = el}
+                ref={el => { gradientRefs.current['gradient-3rd'] = el }}
               >
                 <div 
                   className="h-full transition-all duration-1000"
