@@ -105,7 +105,7 @@ export default function MyTournamentsPage() {
                   </div>
                   <div className="flex space-x-2">
                     {tournament.tags.map((tag, index) => (
-                      <span key={index} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">
+                      <span key={index} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">
                         {tag}
                       </span>
                     ))}
