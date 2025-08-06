@@ -118,11 +118,11 @@ export default function Component() {
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Upcoming Debates</h3>
 
         <div className="relative">
-          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
+          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
             <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
 
-          <div className="flex space-x-6 overflow-hidden">
+          <div className="flex space-x-6 overflow-hidden px-16">
             {[1, 2].map((item) => (
               <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
                 <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2 font-hikasami">AITU Kerek</h4>
@@ -179,7 +179,7 @@ export default function Component() {
             ))}
           </div>
 
-          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
+          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
             <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
         </div>
@@ -190,11 +190,11 @@ export default function Component() {
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Testimonials</h3>
 
         <div className="relative">
-          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
+          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
             <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
 
-          <div className="flex space-x-6 overflow-hidden">
+          <div className="flex space-x-6 overflow-hidden px-16">
             {[1, 2, 3].map((item) => (
               <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
                 <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
@@ -209,7 +209,7 @@ export default function Component() {
             ))}
           </div>
 
-          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
+          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
             <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
         </div>
