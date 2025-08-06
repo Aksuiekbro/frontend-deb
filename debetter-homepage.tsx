@@ -72,13 +72,13 @@ export default function Component() {
           </div>
           <button 
             onClick={() => router.push('/auth?mode=register')}
-            className="bg-[#3E5C76] text-white px-6 py-3 rounded-lg hover:bg-[#22223b] text-[14px] font-normal"
+            className="bg-[#3E5C76] text-white px-8 py-4 rounded-lg hover:bg-[#22223b] text-[14px] font-normal"
           >
             Registration
           </button>
           <button 
             onClick={() => router.push('/auth?mode=login')}
-            className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal"
+            className="border border-[#4a4e69] text-[#4a4e69] px-8 py-4 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal"
           >
             Log In
           </button>
