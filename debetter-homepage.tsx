@@ -228,7 +228,7 @@ export default function Component() {
             {/* 2nd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
               <div 
-                className="h-[96px] relative overflow-hidden"
+                className="h-[150px] relative overflow-hidden"
                 id="gradient-2nd"
                 ref={el => { gradientRefs.current['gradient-2nd'] = el }}
               >
@@ -245,7 +245,7 @@ export default function Component() {
               </div>
               <div className="p-6 pt-[48px]">
                 <div
-                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
+                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[118px] z-10"
                   style={{
                     clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
                     transform: "rotate(90deg)",
@@ -272,7 +272,7 @@ export default function Component() {
             <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
               <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
               <div 
-                className="h-[96px] relative rounded-t-[12px] overflow-hidden"
+                className="h-[150px] relative rounded-t-[12px] overflow-hidden"
                 id="gradient-1st"
                 ref={el => { gradientRefs.current['gradient-1st'] = el }}
               >
@@ -289,7 +289,7 @@ export default function Component() {
               </div>
               <div className="p-6 pt-[48px]">
                 <div
-                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
+                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[118px] z-10"
                   style={{
                     clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
                     transform: "rotate(90deg)",
@@ -315,7 +315,7 @@ export default function Component() {
             {/* 3rd Place */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3">
               <div 
-                className="h-[96px] relative overflow-hidden"
+                className="h-[150px] relative overflow-hidden"
                 id="gradient-3rd"
                 ref={el => { gradientRefs.current['gradient-3rd'] = el }}
               >
@@ -332,7 +332,7 @@ export default function Component() {
               </div>
               <div className="p-6 pt-[48px]">
                 <div
-                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
+                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[118px] z-10"
                   style={{
                     clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
                     transform: "rotate(90deg)",
