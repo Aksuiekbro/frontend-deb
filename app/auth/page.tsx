@@ -11,6 +11,8 @@ export default function AuthPage() {
   const [signUpName, setSignUpName] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
   const [signUpPassword, setSignUpPassword] = useState('')
+  const [isDebater, setIsDebater] = useState(false)
+  const [isOrganizer, setIsOrganizer] = useState(false)
   const [signUpErrors, setSignUpErrors] = useState<{ name?: string; email?: string; password?: string }>({})
   // Sign In state and validation
   const [signInEmail, setSignInEmail] = useState('')
@@ -138,6 +140,37 @@ export default function AuthPage() {
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
             {signUpErrors.password && <p className="text-red-500 text-xs">{signUpErrors.password}</p>}
+            
+            {/* Role Selection Checkboxes */}
+            <div className="w-full mt-4 mb-2">
+              <div className="flex items-center justify-center gap-8">
+                <div className="flex items-center">
+                  <input
+                    id="debater-checkbox"
+                    type="checkbox"
+                    checked={isDebater}
+                    onChange={(e) => setIsDebater(e.target.checked)}
+                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
+                  />
+                  <label htmlFor="debater-checkbox" className="text-sm text-gray-700 font-hikasami">
+                    Debater
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="organizer-checkbox"
+                    type="checkbox"
+                    checked={isOrganizer}
+                    onChange={(e) => setIsOrganizer(e.target.checked)}
+                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
+                  />
+                  <label htmlFor="organizer-checkbox" className="text-sm text-gray-700 font-hikasami">
+                    Organizer
+                  </label>
+                </div>
+              </div>
+            </div>
+            
             {signUpErrorMsg && <p className="text-red-500 text-xs">{signUpErrorMsg}</p>}
             {signUpSuccess && <p className="text-green-500 text-xs">{signUpSuccess}</p>}
             
