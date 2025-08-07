@@ -140,21 +140,21 @@ export default function Component() {
 
                 {/* Expandable content */}
                 {expandedDebates[item] && (
-                  <div className="mb-4 p-4 bg-[#22223b] rounded-lg">
+                  <div className="mb-4 p-4 bg-[#0D1321] rounded-lg">
                     <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2 font-hikasami">Debate Details</h5>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
+                    <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
                       Topic: "The impact of artificial intelligence on modern education systems"
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
+                    <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
                       Format: Parliamentary Debate (4 teams, 2 speakers each)
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
+                    <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
                       Registration deadline: 08.11.2027
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal mb-2 font-hikasami">
+                    <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
                       Entry fee: 5000 KZT per team
                     </p>
-                    <p className="text-[#9a8c98] text-[14px] font-normal font-hikasami">
+                    <p className="text-[#FFFFFF] text-[14px] font-normal font-hikasami">
                       Contact: aitu.debates@gmail.com
                     </p>
                   </div>
