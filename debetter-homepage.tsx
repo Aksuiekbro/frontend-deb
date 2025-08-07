@@ -220,8 +220,8 @@ export default function Component() {
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Leader Board</h3>
 
         <div className="relative">
-                    <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-start justify-center pt-8 font-hikasami">
-            CHAMPIONS
+                    <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-60 absolute inset-0 z-0 flex items-start justify-center pt-8 font-hikasami">
+            Champions
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
