@@ -2,6 +2,7 @@
 
 import { Search, MapPin, Calendar, Users, Filter, X } from "lucide-react"
 import { useState } from "react"
+import Link from "next/link"
 import Header from "../../components/Header"
 
 export default function JoinDebatesPage() {
@@ -146,9 +147,9 @@ export default function JoinDebatesPage() {
 
                   {/* Actions */}
                   <div className="flex items-center justify-between">
-                    <a href={`/tournament/${item}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
+                    <Link href={`/tournament/${item}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
                       More...
-                    </a>
+                    </Link>
                     <button 
                       onClick={() => setIsModalOpen(true)}
                       className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
