@@ -78,7 +78,7 @@ export default function Component() {
           </button>
           <button 
             onClick={() => router.push('/auth?mode=login')}
-            className="border border-[#4a4e69] text-[#4a4e69] px-8 py-4 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal font-hikasami"
+            className="border border-[#3E5C76] text-[#3E5C76] px-8 py-4 rounded-lg hover:bg-[#3E5C76] hover:text-white text-[14px] font-normal font-hikasami"
           >
             Log In
           </button>
@@ -96,7 +96,7 @@ export default function Component() {
           </h2>
 
                     <div className="flex justify-center space-x-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
+            <Link href="/join" className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
               Join Debate
             </Link>
             <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
@@ -106,9 +106,9 @@ export default function Component() {
 
           {/* Pagination dots */}
           <div className="flex justify-center space-x-2">
-            <div className="w-[8px] h-[8px] bg-[#4a4e69] rounded-full"></div>
+            <div className="w-[8px] h-[8px] bg-[#3E5C76] rounded-full"></div>
             <div className="w-[8px] h-[8px] bg-[#FFFFFF] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#4a4e69] rounded-full"></div>
+            <div className="w-[8px] h-[8px] bg-[#3E5C76] rounded-full"></div>
           </div>
         </div>
       </section>
@@ -170,7 +170,7 @@ export default function Component() {
                     </button>
                   </div>
                   <div className="flex justify-start">
-                    <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center">
+                    <Link href="/join" className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center">
                       Join Debates
                     </Link>
                   </div>
