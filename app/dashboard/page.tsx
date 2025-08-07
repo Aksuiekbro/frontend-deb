@@ -235,7 +235,7 @@ export default function Dashboard() {
 
           <div className="flex space-x-6 overflow-hidden">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
+              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] py-8 px-6 flex-1 min-w-0">
                 <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
                 <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1">Zheksembek Abdolla</h6>
                 <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4">Debatter</p>

@@ -194,9 +194,9 @@ export default function Component() {
             <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
           </button>
 
-          <div className="flex space-x-6 overflow-hidden px-16">
+          <div className="flex space-x-12 overflow-hidden px-16">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
+              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] py-16 px-16 flex-1 min-w-0">
                 <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
                 <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1 font-hikasami">Zheksembek Abdolla</h6>
                 <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4 font-hikasami">Debatter</p>
