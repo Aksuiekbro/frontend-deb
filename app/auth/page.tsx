@@ -90,7 +90,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F1F1] font-hikasami">
-      <div className="brand-logo absolute top-4 left-6 text-2xl font-bold text-[#3E5C76] z-50">
+      <div className="brand-logo absolute top-4 left-6 text-2xl font-bold text-[#0D1321] z-50">
         DeBetter
       </div>
       
