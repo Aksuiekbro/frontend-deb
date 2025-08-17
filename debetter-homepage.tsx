@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
+import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
 
 export default function Component() {
@@ -10,6 +11,9 @@ export default function Component() {
   const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
   const [expandedDebates, setExpandedDebates] = useState<{[key: number]: boolean}>({})
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+  const [isSwiping, setIsSwiping] = useState(false)
+  const [activeSlide, setActiveSlide] = useState<number>(0)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" })
 
   const toggleDebateDetails = (debateId: number) => {
     setExpandedDebates(prev => ({
@@ -39,6 +43,24 @@ export default function Component() {
 
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    const onSelect = () => setActiveSlide(emblaApi.selectedScrollSnap())
+    const onScroll = () => setIsSwiping(true)
+    const onSettle = () => setIsSwiping(false)
+    emblaApi.on('select', onSelect)
+    emblaApi.on('reInit', onSelect)
+    emblaApi.on('scroll', onScroll)
+    emblaApi.on('settle', onSettle)
+    onSelect()
+    return () => {
+      emblaApi.off('select', onSelect)
+      emblaApi.off('reInit', onSelect)
+      emblaApi.off('scroll', onScroll)
+      emblaApi.off('settle', onSettle)
+    }
+  }, [emblaApi])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       {/* Header */}
@@ -89,26 +111,62 @@ export default function Component() {
       <section className="text-center py-8">
         <h1 className="text-[#0D1321] text-[56px] font-bold mb-8 font-hikasami">Welcome to DeBetter</h1>
 
-        <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
-          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8 font-hikasami">
-            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
-            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
-          </h2>
-
-                    <div className="flex justify-center space-x-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
-              Join Debate
-            </Link>
-            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
-              Create Tournament
-            </button>
+        <div className="relative mx-8">
+          <div ref={emblaRef} className="overflow-hidden rounded-[16px]">
+            <div className="flex">
+              {[0, 1].map((i) => (
+                <div key={i} className="min-w-0 flex-[0_0_100%]">
+                  <div
+                    className="rounded-[16px] py-16 px-8 relative h-[311px] overflow-hidden"
+                    style={{ boxShadow: '0px 10px 28px 4px rgba(43, 63, 108, 0.25)' }}
+                  >
+                    {i === 1 ? (
+                      // Second slide: exact frame image
+                      <img
+                        src="/images/Frame 78.png"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover rounded-[16px]"
+                      />
+                    ) : (
+                      <>
+                        {/* First slide: gradient background + content */}
+                        <div className="absolute inset-0 rounded-[16px] bg-gradient-to-r from-[#0D1321] to-[#2B3F6C] z-10" />
+                        <div className="relative z-20 h-full flex flex-col justify-center">
+                          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8 font-hikasami">
+                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
+                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
+                          </h2>
+                          <div className="flex justify-center space-x-4 mb-8">
+                            <Link href="/join" className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
+                              Join Debate
+                            </Link>
+                            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
+                              Create Tournament
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Pagination dots */}
-          <div className="flex justify-center space-x-2">
-            <div className="w-[8px] h-[8px] bg-[#3E5C76] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#FFFFFF] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#3E5C76] rounded-full"></div>
+          {/* Pagination indicators (clickable, overlay) */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-2 z-20">
+            <button
+              type="button"
+              aria-label="Slide 1"
+              onClick={() => emblaApi && emblaApi.scrollTo(0)}
+              className={`h-[4px] rounded transition-all duration-200 ${activeSlide === 0 ? 'w-[28px] bg-white' : 'w-[24px] bg-[#3E5C76]'}`}
+            />
+            <button
+              type="button"
+              aria-label="Slide 2"
+              onClick={() => emblaApi && emblaApi.scrollTo(1)}
+              className={`h-[4px] rounded transition-all duration-200 ${activeSlide === 1 ? 'w-[28px] bg-white' : 'w-[24px] bg-[#3E5C76]'}`}
+            />
           </div>
         </div>
       </section>
@@ -251,7 +309,7 @@ export default function Component() {
                     transform: "rotate(90deg)",
                   }}
                 ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center font-hikasami">Kris Robertson</h6>
+                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-left font-hikasami">Kris Robertson</h6>
                 <div className="flex justify-between mb-6">
                   <div className="text-center">
                     <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">20</div>
@@ -295,7 +353,7 @@ export default function Component() {
                     transform: "rotate(90deg)",
                   }}
                 ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center font-hikasami">Kris Robertson</h6>
+                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-left font-hikasami">Kris Robertson</h6>
                 <div className="flex justify-between mb-6">
                   <div className="text-center">
                     <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">20</div>
@@ -338,7 +396,7 @@ export default function Component() {
                     transform: "rotate(90deg)",
                   }}
                 ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center font-hikasami">Kris Robertson</h6>
+                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-left font-hikasami">Kris Robertson</h6>
                 <div className="flex justify-between mb-6">
                   <div className="text-center">
                     <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">20</div>
