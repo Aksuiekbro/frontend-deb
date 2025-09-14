@@ -2,21 +2,29 @@
 
 import { useState, FormEvent, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { api } from '@/lib/api'
+import { Role } from '@/types/user/user'
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
   // Sign Up state and validation
-  const [signUpName, setSignUpName] = useState('')
+  const [signUpUsername, setSignUpUsername] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
   const [signUpPassword, setSignUpPassword] = useState('')
-  const [isDebater, setIsDebater] = useState(false)
-  const [isOrganizer, setIsOrganizer] = useState(false)
+  const [role, setRole] = useState<Role>(Role.PARTICIPANT)
+
+  const [signUpFirstName, setSignUpFirstName] = useState('')
+  const [signUpLastName, setSignUpLastName] = useState('')
+  const [signUpCity, setSignUpCity] = useState('')
+  const [signUpInstitution, setSignUpInstitution] = useState('')
+
   const [signUpErrors, setSignUpErrors] = useState<{ name?: string; email?: string; password?: string }>({})
   // Sign In state and validation
-  const [signInEmail, setSignInEmail] = useState('')
+  const [signInUsername, setSignInUsername] = useState('')
   const [signInPassword, setSignInPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [signInError, setSignInError] = useState<string | null>(null)
   // Loading and error states
   const [signUpLoading, setSignUpLoading] = useState(false)
@@ -36,7 +44,7 @@ export default function AuthPage() {
   const handleSignUpSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const errors: { name?: string; email?: string; password?: string } = {}
-    if (!signUpName.trim()) errors.name = 'Name is required'
+    if (!signUpUsername.trim()) errors.name = 'Name is required'
     if (!/^\S+@\S+\.\S+$/.test(signUpEmail)) errors.email = 'Invalid email format'
     if (signUpPassword.length < 8) errors.password = 'Password must be at least 8 characters'
     setSignUpErrors(errors)
@@ -45,12 +53,20 @@ export default function AuthPage() {
     setSignUpSuccess(null)
     setSignUpLoading(true)
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: signUpName, email: signUpEmail, password: signUpPassword })
-      })
-      const data = await res.json()
+      const res = await api.register({
+        username: signUpUsername,
+        password: signUpPassword,
+        email: signUpEmail,
+        firstName: signUpFirstName,
+        lastName: signUpLastName,
+        role: role,
+        ...(role === Role.PARTICIPANT && {
+          city: { name: signUpCity },
+          institution: { name: signUpInstitution },
+        }),
+      });
       if (!res.ok) {
+        const data = await res.json();
         setSignUpErrorMsg(data.message || 'Registration failed')
       } else {
         setSignUpSuccess('Account created successfully! Redirecting...')
@@ -67,18 +83,21 @@ export default function AuthPage() {
   const handleSignInSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const validationErrors: string[] = []
-    if (!/^\S+@\S+\.\S+$/.test(signInEmail)) validationErrors.push('Invalid email format')
+    if (!/^[a-zA-Z0-9]{3,20}$/.test(signInUsername)) validationErrors.push('Invalid username format')
     if (!signInPassword) validationErrors.push('Password is required')
     if (validationErrors.length) return setSignInError(validationErrors.join(', '))
     setSignInError(null)
     setSignInLoading(true)
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ email: signInEmail, password: signInPassword })
-      })
-      const data = await res.json()
-      if (!res.ok) setSignInError(data.message || 'Login failed')
+      const res = await api.login({ 
+        username: signInUsername, 
+        password: signInPassword,
+        rememberMe: rememberMe
+      });
+      if (!res.ok) {
+        const data = await res.json()
+        setSignInError(data.message || 'Login failed')
+      }
       else {
         router.push('/dashboard')
         return
@@ -106,12 +125,12 @@ export default function AuthPage() {
             <label htmlFor="auth-signup-name" className="sr-only">Full Name</label>
             <input
               id="auth-signup-name"
-              name="name"
+              name="username"
               type="text"
-              placeholder="Name"
+              placeholder="Username"
               required
-              value={signUpName}
-              onChange={(e) => setSignUpName(e.target.value)}
+              value={signUpUsername}
+              onChange={(e) => setSignUpUsername(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
             {signUpErrors.name && <p className="text-red-500 text-xs">{signUpErrors.name}</p>}
@@ -140,37 +159,88 @@ export default function AuthPage() {
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
             {signUpErrors.password && <p className="text-red-500 text-xs">{signUpErrors.password}</p>}
+
+            <label htmlFor="auth-signup-firstname" className="sr-only">First Name</label>
+            <input
+              id="auth-signup-firstname"
+              type="text"
+              placeholder="First Name"
+              required
+              value={signUpFirstName}
+              onChange={(e) => setSignUpFirstName(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
+
+            <label htmlFor="auth-signup-lastname" className="sr-only">Last Name</label>
+            <input
+              id="auth-signup-lastname"
+              type="text"
+              placeholder="Last Name"
+              required
+              value={signUpLastName}
+              onChange={(e) => setSignUpLastName(e.target.value)}
+              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+            />
             
-            {/* Role Selection Checkboxes */}
             <div className="w-full mt-4 mb-2">
               <div className="flex items-center justify-center gap-8">
                 <div className="flex items-center">
                   <input
-                    id="debater-checkbox"
-                    type="checkbox"
-                    checked={isDebater}
-                    onChange={(e) => setIsDebater(e.target.checked)}
-                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
+                    id="debater-radio"
+                    type="radio"
+                    name="role"
+                    value="debater"
+                    checked={role === Role.PARTICIPANT}
+                    onChange={() => setRole(Role.PARTICIPANT)}
+                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 focus:ring-[#3E5C76] focus:ring-2"
                   />
-                  <label htmlFor="debater-checkbox" className="text-sm text-gray-700 font-hikasami">
+                  <label htmlFor="debater-radio" className="text-sm text-gray-700 font-hikasami">
                     Debater
                   </label>
                 </div>
                 <div className="flex items-center">
                   <input
-                    id="organizer-checkbox"
-                    type="checkbox"
-                    checked={isOrganizer}
-                    onChange={(e) => setIsOrganizer(e.target.checked)}
-                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
+                    id="organizer-radio"
+                    type="radio"
+                    name="role"
+                    value="organizer"
+                    checked={role === Role.ORGANIZER}
+                    onChange={() => setRole(Role.ORGANIZER)}
+                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 focus:ring-[#3E5C76] focus:ring-2"
                   />
-                  <label htmlFor="organizer-checkbox" className="text-sm text-gray-700 font-hikasami">
+                  <label htmlFor="organizer-radio" className="text-sm text-gray-700 font-hikasami">
                     Organizer
                   </label>
                 </div>
               </div>
             </div>
-            
+
+            {role === Role.PARTICIPANT && (
+              <>
+                <label htmlFor="auth-signup-city" className="sr-only">City</label>
+                <input
+                  id="auth-signup-city"
+                  type="text"
+                  placeholder="City"
+                  required={role === Role.PARTICIPANT}
+                  value={signUpCity}
+                  onChange={(e) => setSignUpCity(e.target.value)}
+                  className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+
+                <label htmlFor="auth-signup-institution" className="sr-only">Institution</label>
+                <input
+                  id="auth-signup-institution"
+                  type="text"
+                  placeholder="Institution"
+                  required={role === Role.PARTICIPANT}
+                  value={signUpInstitution}
+                  onChange={(e) => setSignUpInstitution(e.target.value)}
+                  className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                />
+              </>
+            )}
+
             {signUpErrorMsg && <p className="text-red-500 text-xs">{signUpErrorMsg}</p>}
             {signUpSuccess && <p className="text-green-500 text-xs">{signUpSuccess}</p>}
             
@@ -187,14 +257,14 @@ export default function AuthPage() {
           <form onSubmit={handleSignInSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Sign in to DeBetter</h2>
             
-            <label htmlFor="auth-signin-email" className="sr-only">Email address</label>
+            <label htmlFor="auth-signin-email" className="sr-only">Username</label>
             <input
               id="auth-signin-email"
-              name="email"
-              type="email"
-              placeholder="Email"
-              value={signInEmail}
-              onChange={(e) => setSignInEmail(e.target.value)}
+              name="username"
+              type="text"
+              placeholder="Username"
+              value={signInUsername}
+              onChange={(e) => setSignInUsername(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
             <label htmlFor="auth-signin-password" className="sr-only">Password</label>
@@ -207,6 +277,18 @@ export default function AuthPage() {
               onChange={(e) => setSignInPassword(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
+            <div className="flex items-center w-full justify-start my-3 px-1">
+                <input
+                    id="remember-me-checkbox"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
+                />
+                <label htmlFor="remember-me-checkbox" className="ml-2 text-sm font-medium text-gray-700">
+                    Remember me
+                </label>
+            </div>
             {signInError && <p className="text-red-500 text-xs">{signInError}</p>}
             
             <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">Forgot your password?</a>
