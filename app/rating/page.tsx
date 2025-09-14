@@ -3,9 +3,16 @@
 import { Crown } from "lucide-react"
 import Header from "../../components/Header"
 import { useEffect, useState } from "react"
+import { useLeaderboard } from "../../hooks/use-api"
+import { LoadingState, LeaderboardSkeleton } from "../../components/ui/loading"
+import { ErrorState } from "../../components/ui/error"
+import Link from "next/link"
 
 export default function RatingPage() {
   const [animateGradients, setAnimateGradients] = useState(false)
+
+  // API hook for leaderboard
+  const { leaderboard, isLoading, error } = useLeaderboard(10)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -24,218 +31,141 @@ export default function RatingPage() {
             Champions
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
-            {/* 2nd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
-              <div className="h-[96px] relative overflow-hidden">
-                <div 
-                  className="h-full transition-all duration-1000"
-                  style={{
-                    background: 'linear-gradient(to right, #3E5C76, #748CAB)',
-                    width: animateGradients ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
+          <LoadingState
+            isLoading={isLoading}
+            fallback={
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
+                <LeaderboardSkeleton />
+                <LeaderboardSkeleton />
+                <LeaderboardSkeleton />
               </div>
-              <div className="p-6 pt-[48px]">
-                <div
-                  className="w-[96px] h-[96px] bg-[#c9ada7] absolute left-4 top-[48px] z-10"
-                  style={{
-                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                    transform: "rotate(30deg)",
-                  }}
-                ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
-                <div className="flex justify-between mb-6">
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
-                  </div>
+            }
+          >
+            {error ? (
+              <ErrorState
+                error={error}
+                onRetry={() => window.location.reload()}
+                message="Failed to load leaderboard"
+              />
+            ) : leaderboard && leaderboard.content.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
+                {/* Top 3 Special Display */}
+                {leaderboard.content.slice(0, 3).map((user, index) => {
+                  const position = index + 1
+                  const gradients = [
+                    'linear-gradient(to right, #0D1321, #3E5C76)', // 1st place
+                    'linear-gradient(to right, #3E5C76, #748CAB)', // 2nd place
+                    'linear-gradient(to right, #748CAB, #c9ada7)', // 3rd place
+                  ]
+                  const orders = ['order-1 md:order-2', 'order-2 md:order-1', 'order-3'] // 1st, 2nd, 3rd
+
+                  return (
+                    <div
+                      key={user.id}
+                      className={`bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full ${orders[index]} ${position === 1 ? 'transform md:-translate-y-8' : ''}`}
+                    >
+                      {position === 1 && (
+                        <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
+                      )}
+                      <div className={`h-[96px] relative overflow-hidden ${position === 1 ? 'rounded-t-[12px]' : ''}`}>
+                        <div
+                          className={`h-full transition-all duration-1000 ${position === 1 ? 'rounded-t-[12px]' : ''}`}
+                          style={{
+                            background: gradients[index],
+                            width: animateGradients ? '100%' : '0%',
+                            transform: 'translateX(0)',
+                            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                          }}
+                        />
+                        <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">
+                          {position === 1 ? '1st' : position === 2 ? '2nd' : '3rd'}
+                        </span>
+                      </div>
+                      <div className="p-6 pt-[48px]">
+                        <div
+                          className="w-[96px] h-[96px] bg-[#c9ada7] absolute left-4 top-[48px] z-10"
+                          style={{
+                            clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
+                            transform: "rotate(30deg)",
+                          }}
+                        ></div>
+                        <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">
+                          {user.firstName} {user.lastName}
+                        </h6>
+                        <div className="flex justify-between mb-6">
+                          <div className="text-center">
+                            <div className="text-[#4a4e69] text-[30px] font-medium">
+                              {user.tournamentsParticipated || 0}
+                            </div>
+                            <div className="text-[#9a8c98] text-[20px] font-medium">tournaments</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-[#4a4e69] text-[30px] font-medium">
+                              {user.rating || 0}
+                            </div>
+                            <div className="text-[#9a8c98] text-[20px] font-medium">Rating</div>
+                          </div>
+                        </div>
+                        <Link
+                          href={`/profile/${user.id}`}
+                          className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal text-center block transition-colors"
+                        >
+                          View Profile
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-[#4a4e69] text-[18px]">No leaderboard data available yet</p>
+                <p className="text-[#9a8c98] text-[14px] mt-2">
+                  Participate in tournaments to see rankings
+                </p>
+              </div>
+            )}
+
+            {/* Remaining Users (4th position onwards) */}
+            {leaderboard && leaderboard.content.length > 3 && (
+              <div className="mt-16 w-full max-w-4xl mx-auto">
+                <h4 className="text-[#0D1321] text-[32px] font-bold mb-8 text-center">Other Top Performers</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {leaderboard.content.slice(3).map((user, index) => (
+                    <div key={user.id} className="bg-white rounded-[12px] p-6 shadow-lg border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-[#c9ada7] rounded-full flex items-center justify-center text-white font-bold">
+                            {index + 4}
+                          </div>
+                          <div>
+                            <h6 className="text-[#4a4e69] text-[18px] font-medium">
+                              {user.firstName} {user.lastName}
+                            </h6>
+                            <p className="text-[#9a8c98] text-[14px]">
+                              {user.tournamentsParticipated || 0} tournaments
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[#4a4e69] text-[24px] font-bold">
+                            {user.rating || 0}
+                          </div>
+                          <p className="text-[#9a8c98] text-[12px]">Rating</p>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/profile/${user.id}`}
+                        className="mt-4 border border-[#4a4e69] text-[#4a4e69] px-4 py-2 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[14px] font-normal text-center block transition-colors"
+                      >
+                        View Profile
+                      </Link>
+                    </div>
+                  ))}
                 </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
-                  Profile
-                </button>
               </div>
-            </div>
-
-            {/* 1st Place */}
-            <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
-              <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-              <div className="h-[96px] relative rounded-t-[12px] overflow-hidden">
-                <div 
-                  className="h-full transition-all duration-1000 rounded-t-[12px]"
-                  style={{
-                    background: 'linear-gradient(to right, #0D1321, #3E5C76)',
-                    width: animateGradients ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
-              </div>
-              <div className="p-6 pt-[48px]">
-                <div
-                  className="w-[96px] h-[96px] bg-[#c9ada7] absolute left-4 top-[48px] z-10"
-                  style={{
-                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                    transform: "rotate(30deg)",
-                  }}
-                ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Baubek Negrov</h6>
-                <div className="flex justify-between mb-6">
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
-                  </div>
-                </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
-                  Profile
-                </button>
-              </div>
-            </div>
-
-            {/* 3rd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3 md:order-3">
-              <div className="h-[96px] relative overflow-hidden">
-                <div 
-                  className="h-full transition-all duration-1000"
-                  style={{
-                    background: 'linear-gradient(to right, #748CAB, #c9ada7)',
-                    width: animateGradients ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
-              </div>
-              <div className="p-6 pt-[48px]">
-                <div
-                  className="w-[96px] h-[96px] bg-[#c9ada7] absolute left-4 top-[48px] z-10"
-                  style={{
-                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                    transform: "rotate(30deg)",
-                  }}
-                ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Real Nigga</h6>
-                <div className="flex justify-between mb-6">
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">993</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
-                  </div>
-                </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
-                  Profile
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Leaderboard Table */}
-      <section className="px-8 pb-12">
-        <div className="max-w-6xl mx-auto">
-          {/* Table Header */}
-          <div className="grid grid-cols-4 gap-4 mb-4 px-6 py-4">
-            <div className="text-[#9a8c98] text-[16px] font-medium">Name</div>
-            <div></div>
-            <div className="text-[#9a8c98] text-[16px] font-medium text-center">Rating</div>
-            <div className="text-[#9a8c98] text-[16px] font-medium text-center">Mean point</div>
-          </div>
-
-          {/* Table Rows */}
-          <div className="space-y-2">
-            {/* 1st Place - Yellow border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-ranking-dark">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">1</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">Baubek Negrov</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">1750</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">1829</div>
-            </div>
-
-            {/* 2nd Place - Blue border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-ranking-medium">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">2</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">Kris Robertson</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">1550</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">98</div>
-            </div>
-
-            {/* 3rd Place - Red border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-ranking-light">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">3</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">Real Nigga</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">993</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">99</div>
-            </div>
-
-            {/* 4th Place - Gray border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-gray-300">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">4</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">Hanna</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">993</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">99</div>
-            </div>
-
-            {/* 5th Place - Gray border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-gray-300">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">5</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">Robertso</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">993</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">99</div>
-            </div>
-
-            {/* 6th Place - Gray border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-gray-300">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">6</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">Alex Nigga</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">993</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">99</div>
-            </div>
-
-            {/* 7th Place - Gray border */}
-            <div className="grid grid-cols-4 gap-4 items-center bg-white rounded-[8px] p-4 border-l-4 border-gray-300">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#4a4e69] text-[18px] font-medium">7</span>
-                <div className="w-[40px] h-[40px] bg-[#c9ada7] rounded-full"></div>
-              </div>
-              <div className="text-[#4a4e69] text-[16px] font-medium">monkey D Lyfu</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">993</div>
-              <div className="text-[#4a4e69] text-[16px] font-medium text-center">99</div>
-            </div>
-          </div>
+            )}
+          </LoadingState>
         </div>
       </section>
     </div>

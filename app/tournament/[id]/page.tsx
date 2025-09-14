@@ -1,9 +1,22 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useParams } from "next/navigation"
 import Header from "../../../components/Header"
+import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements } from "../../../hooks/use-api"
+import { LoadingState, Skeleton } from "../../../components/ui/loading"
+import { ErrorState } from "../../../components/ui/error"
 
 export default function TournamentDetailPage() {
+  const params = useParams()
+  const tournamentId = parseInt(params.id as string)
+
+  // API hooks
+  const { tournament, isLoading: tournamentLoading, error: tournamentError } = useTournament(tournamentId)
+  const { participants, isLoading: participantsLoading, error: participantsError } = useTournamentParticipants(tournamentId)
+  const { teams, isLoading: teamsLoading, error: teamsError } = useTournamentTeams(tournamentId)
+  const { announcements, isLoading: announcementsLoading, error: announcementsError } = useTournamentAnnouncements(tournamentId)
+
   const [activeTab, setActiveTab] = useState('Main Info')
   const [isMainInfoDropdownOpen, setIsMainInfoDropdownOpen] = useState(false)
   const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Announcements')
@@ -16,11 +29,14 @@ export default function TournamentDetailPage() {
   const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
-  const [invitedUsers, setInvitedUsers] = useState([
-    { id: 1, name: 'Who Has Access', avatar: '/avatar1.jpg' },
-    { id: 2, name: 'Who Has Access', avatar: '/avatar2.jpg' },
-    { id: 3, name: 'Who Has Access', avatar: '/avatar3.jpg' }
-  ])
+  const [invitedUsers, setInvitedUsers] = useState([])
+
+  // Get tournament organizers and participants for invited users
+  const tournamentMembers = participants?.content.slice(0, 5).map(participant => ({
+    id: participant.id,
+    name: `${participant.user.firstName} ${participant.user.lastName}`,
+    avatar: participant.user.imageUrl?.url || '/avatar-placeholder.jpg'
+  })) || []
   const [inviteModalTab, setInviteModalTab] = useState('invite')  
   // Check-in state for each participant row
   const [checkInStatus, setCheckInStatus] = useState<{[key: number]: boolean}>({})
@@ -121,7 +137,13 @@ export default function TournamentDetailPage() {
       {/* Page Title */}
       <section className="px-12 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: Lorem ipsum dolores sit amit</h1>
+          {tournamentLoading ? (
+            <Skeleton className="h-12 w-96" />
+          ) : tournamentError ? (
+            <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: Error loading data</h1>
+          ) : (
+            <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: {tournament?.name || "Unknown Tournament"}</h1>
+          )}
           <button 
             onClick={() => setIsInviteModalOpen(true)}
             className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
@@ -303,10 +325,38 @@ export default function TournamentDetailPage() {
           <div>
             <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
             <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
-              {/* Empty state for announcements */}
-              <div className="text-center text-[#9a8c98] text-[16px] py-20">
-                No announcements yet
-              </div>
+              <LoadingState
+                isLoading={announcementsLoading}
+                fallback={<Skeleton className="h-32 w-full" />}
+              >
+                {announcementsError ? (
+                  <div className="text-center text-red-500 text-[16px] py-20">
+                    Failed to load announcements
+                  </div>
+                ) : announcements && announcements.content.length > 0 ? (
+                  <div className="space-y-6">
+                    {announcements.content.map((announcement) => (
+                      <div key={announcement.id} className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="text-[#0D1321] text-[20px] font-bold">{announcement.title}</h3>
+                          <span className="text-[#9a8c98] text-[14px]">
+                            {new Date(announcement.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{announcement.content}</p>
+                        {announcement.user && (
+                          <div className="text-[#9a8c98] text-[14px]">
+                            Posted by {announcement.user.firstName} {announcement.user.lastName}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-[#9a8c98] text-[16px] py-20">
+                    No announcements yet
+                  </div>
+                )}
               
               {/* Add announcement button */}
               <button 
@@ -382,24 +432,50 @@ export default function TournamentDetailPage() {
               {/* Details Section */}
               <div className="mb-8">
                 <h2 className="text-[#0D1321] text-[24px] font-bold mb-4">Details</h2>
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vel turpis urna. Duis vulputate egestas sodales. Phasellus lectus tortor, fringilla sed est 
-                  non, accumsan maximus nisl. Pellentesque dapibus, est quis congue maximus, leo nisl dictum augue, dapibus dapibus nisl ex eget nulla. Aliquam tempus, 
-                  sem vulputate sagittis scelerisque, urna risus efficitur nisl, nec imperdiet quam arcu nec odio. Phasellus ut consequat turpis, vitae gravida lorem. Donec 
-                  molestudda nisl sit amet aliquam ornare. Donec tincidunt eros ut tellus sagittis, eu lobortis tellus consequat. Fusce commodo viverra dolor, vitae ultrices orci 
-                  mollis eget. Vivamus interdum tortor a elit dignissim iaculis. Fusce tincidunt nisl quis tellus pharetra, id varius neque porttitor. Curabitur tincidunt enim 
-                  dapibus eros ullamcorper, at gravida ligula mattis. Fusce odio nisl, ornare eget tortor in, gravida mattis neque.
-                </p>
+                <LoadingState
+                  isLoading={tournamentLoading}
+                  fallback={<Skeleton className="h-24 w-full" />}
+                >
+                  {tournamentError ? (
+                    <p className="text-red-500 text-[16px]">Unable to load tournament details</p>
+                  ) : tournament ? (
+                    <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
+                      {tournament.description || "No description available for this tournament."}
+                    </p>
+                  ) : (
+                    <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
+                      Tournament details will appear here once loaded.
+                    </p>
+                  )}
+                </LoadingState>
 
                 {/* Dates and Location */}
                 <div className="flex space-x-12 mb-8">
                   <div>
                     <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Dates</h3>
-                    <p className="text-[#4a4e69] text-[16px]">November 25, 2024 - February 10, 2025</p>
+                    <LoadingState
+                      isLoading={tournamentLoading}
+                      fallback={<Skeleton className="h-6 w-48" />}
+                    >
+                      <p className="text-[#4a4e69] text-[16px]">
+                        {tournament ? (
+                          tournament.endDate ?
+                            `${new Date(tournament.startDate).toLocaleDateString()} - ${new Date(tournament.endDate).toLocaleDateString()}` :
+                            new Date(tournament.startDate).toLocaleDateString()
+                        ) : "Tournament dates TBA"}
+                      </p>
+                    </LoadingState>
                   </div>
                   <div>
                     <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Location</h3>
-                    <p className="text-[#4a4e69] text-[16px]">Astana, Mynbaeva 48</p>
+                    <LoadingState
+                      isLoading={tournamentLoading}
+                      fallback={<Skeleton className="h-6 w-32" />}
+                    >
+                      <p className="text-[#4a4e69] text-[16px]">
+                        {tournament?.location || "Location TBA"}
+                      </p>
+                    </LoadingState>
                   </div>
                 </div>
               </div>
@@ -411,10 +487,30 @@ export default function TournamentDetailPage() {
                 {/* Announcements */}
                 <div>
                   <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Announcements</h2>
-                  <div className="text-[#0D1321] text-[18px] leading-relaxed">
-                    <p className="mb-2">объявления и распис</p>
-                    <p>пусть стоят как и стояли</p>
-                  </div>
+                  <LoadingState
+                    isLoading={announcementsLoading}
+                    fallback={<Skeleton className="h-20 w-full" />}
+                  >
+                    {announcementsError ? (
+                      <p className="text-red-500 text-[16px]">Unable to load announcements</p>
+                    ) : announcements && announcements.content.length > 0 ? (
+                      <div className="text-[#0D1321] text-[18px] leading-relaxed space-y-4">
+                        {announcements.content.slice(0, 3).map((announcement) => (
+                          <div key={announcement.id} className="border-b border-gray-200 pb-2 mb-2 last:border-b-0">
+                            <h4 className="font-medium text-[16px] mb-1">{announcement.title}</h4>
+                            <p className="text-[14px] text-[#4a4e69]">{announcement.content}</p>
+                            <span className="text-[12px] text-[#9a8c98]">
+                              {new Date(announcement.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[#9a8c98] text-[16px] py-8">
+                        No announcements yet
+                      </div>
+                    )}
+                  </LoadingState>
                 </div>
 
                 {/* Schedule */}
@@ -443,193 +539,57 @@ export default function TournamentDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">team1</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">NIS PhMD</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Alma</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Almaty</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">87756278927</td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[1] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[1] ? '✓' : '✕'}
-                      </span>
+                  {teamsLoading ? (
+                    // Loading skeleton rows
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="border border-gray-300 px-4 py-3 text-center"><Skeleton className="h-4 w-4 mx-auto" /></td>
+                      </tr>
+                    ))
+                  ) : teamsError ? (
+                    <tr>
+                      <td colSpan={8} className="border border-gray-300 px-4 py-8 text-center text-red-500">
+                        Failed to load teams
+                      </td>
+                    </tr>
+                  ) : teams && teams.content.length > 0 ? (
+                    teams.content.map((team) => (
+                      <tr key={team.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.name}</td>
+                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">
+                      {team.members?.[0]?.firstName} {team.members?.[0]?.lastName}
                     </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">realme</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Madiar</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Madiar</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">NIS HBD</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Altpa</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Astana</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[2] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(2)}
-                      >
-                        {checkInStatus[2] ? '✓' : '✕'}
-                      </span>
+                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">
+                      {team.members?.[1]?.firstName} {team.members?.[1]?.lastName}
                     </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Supreme</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Zhekse...</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Zhekse...</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[3] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(3)}
-                      >
-                        {checkInStatus[3] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Babniki</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(4)}
-                      >
-                        {checkInStatus[4] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Soslik</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Taldybai</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Taldybai</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Wasabi</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Rafaketch</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Rafaketch</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Tallfayev</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Karibozin</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Karibozin</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">15454351312</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Bubek</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Bubek</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">505</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Besktas</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Besktas</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">HZHZHZ</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Z. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Z. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Rasega</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
+                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.institution || 'N/A'}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.club || 'N/A'}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.city || 'N/A'}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.phone || 'N/A'}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <span
+                            className={`text-lg cursor-pointer ${checkInStatus[team.id] ? 'text-green-500' : 'text-red-500'}`}
+                            onClick={() => toggleCheckIn(team.id)}
+                          >
+                            {checkInStatus[team.id] ? '✓' : '✕'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="border border-gray-300 px-4 py-8 text-center text-[#4a4e69]">
+                        No teams registered yet
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -649,56 +609,9 @@ export default function TournamentDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Alma</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[10] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(10)}
-                        >
-                          {checkInStatus[10] ? '✓' : '✕'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Aitpa</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[11] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(11)}
-                        >
-                          {checkInStatus[11] ? '✓' : '✕'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">рудольф</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[12] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(12)}
-                        >
-                          {checkInStatus[12] ? '✓' : '✕'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Плюсплюс</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(4)}
-                        >
-                          {checkInStatus[4] ? '✓' : '✕'}
-                        </span>
+                    <tr>
+                      <td colSpan={4} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+                        No judges assigned yet
                       </td>
                     </tr>
                   </tbody>
@@ -2054,24 +1967,35 @@ export default function TournamentDetailPage() {
             <div>
               <h3 className="text-[#0D1321] text-[16px] font-medium mb-4">Who Has Access</h3>
               <div className="space-y-3">
-                {invitedUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {user.name.charAt(0)}
-                        </span>
+                {tournamentMembers.length > 0 ? (
+                  tournamentMembers.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {user.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {user.name.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-[#4a4e69] text-[16px]">{user.name}</span>
                       </div>
-                      <span className="text-[#4a4e69] text-[16px]">{user.name}</span>
+                      <span className="text-[#9a8c98] text-[14px]">
+                        Participant
+                      </span>
                     </div>
-                    <button
-                      onClick={() => handleRemoveUser(user.id)}
-                      className="text-[#9a8c98] hover:text-red-500 text-[14px] font-medium transition-colors"
-                    >
-                      Remove
-                    </button>
+                  ))
+                ) : (
+                  <div className="text-center text-[#9a8c98] text-[14px] py-4">
+                    No tournament members yet
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

@@ -9,10 +9,20 @@ import { SimpleTournamentResponse, TournamentGetParams, TournamentLeague } from 
 
 export default function JoinDebatesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null)
   const [tournaments, setTournaments] = useState<SimpleTournamentResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
+
+  // Registration form state
+  const [teamName, setTeamName] = useState('')
+  const [clubName, setClubName] = useState('')
+  const [speakerOneUsername, setSpeakerOneUsername] = useState('')
+  const [speakerTwoUsername, setSpeakerTwoUsername] = useState('')
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [registrationError, setRegistrationError] = useState<string | null>(null)
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
 
   // Filter states
   const [startDateFrom, setStartDateFrom] = useState<string>("")
@@ -79,6 +89,67 @@ export default function JoinDebatesPage() {
     setSelectedLeagues((prev) =>
       prev.includes(league) ? prev.filter((l) => l !== league) : [...prev, league]
     )
+  }
+
+  const handleRegistrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!selectedTournamentId) {
+      setRegistrationError('No tournament selected')
+      return
+    }
+
+    if (!teamName.trim() || !clubName.trim()) {
+      setRegistrationError('Team name and club name are required')
+      return
+    }
+
+    setIsRegistering(true)
+    setRegistrationError(null)
+
+    try {
+      const invitedParticipants = []
+
+      // Add speakers if usernames provided
+      if (speakerOneUsername.trim()) {
+        invitedParticipants.push({ username: speakerOneUsername.trim() })
+      }
+      if (speakerTwoUsername.trim()) {
+        invitedParticipants.push({ username: speakerTwoUsername.trim() })
+      }
+
+      const response = await api.registerTeam(selectedTournamentId, {
+        name: teamName.trim(),
+        club: clubName.trim(),
+        creatorId: 1, // TODO: Get current user ID from auth context
+        invitedParticipants: invitedParticipants.length > 0 ? invitedParticipants : undefined
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setRegistrationError(errorData.message || 'Registration failed')
+        return
+      }
+
+      setRegistrationSuccess(true)
+      // Reset form
+      setTeamName('')
+      setClubName('')
+      setSpeakerOneUsername('')
+      setSpeakerTwoUsername('')
+
+      // Close modal after success message
+      setTimeout(() => {
+        setIsModalOpen(false)
+        setRegistrationSuccess(false)
+      }, 2000)
+
+    } catch (error) {
+      console.error('Registration error:', error)
+      setRegistrationError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsRegistering(false)
+    }
   }
 
   return (
@@ -301,8 +372,11 @@ export default function JoinDebatesPage() {
                     <Link href={`/tournament/${tournament.id}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
                       More...
                     </Link>
-                    <button 
-                      onClick={() => setIsModalOpen(true)}
+                    <button
+                      onClick={() => {
+                        setSelectedTournamentId(tournament.id)
+                        setIsModalOpen(true)
+                      }}
                       className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
                     >
                       Join Debates
@@ -383,76 +457,85 @@ export default function JoinDebatesPage() {
               <X className="w-6 h-6" />
             </button>
             
-            <h2 className="text-[#0D1321] text-[32px] font-bold text-center mb-8">Registration</h2>
-            
-            <form className="space-y-4">
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Team Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
+            <h2 className="text-[#0D1321] text-[32px] font-bold text-center mb-8">
+              {registrationSuccess ? 'Registration Successful!' : 'Tournament Registration'}
+            </h2>
+
+            {registrationSuccess ? (
+              <div className="text-center py-8">
+                <div className="text-green-600 text-[18px] mb-4">✓ Your team has been registered successfully!</div>
+                <p className="text-[#4a4e69] text-[14px]">You will receive a confirmation email shortly.</p>
               </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Club Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">1st Speaker Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Speaker Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">School/University Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Phone Number:</label>
-                <input 
-                  type="tel" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">City:</label>
-                <select className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76] appearance-none bg-white">
-                  <option value="">Select City</option>
-                  <option value="almaty">Almaty</option>
-                  <option value="astana">Astana</option>
-                  <option value="shymkent">Shymkent</option>
-                </select>
-              </div>
-              
-              <div className="pt-6">
-                <button 
-                  type="submit"
-                  className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
+            ) : (
+              <form onSubmit={handleRegistrationSubmit} className="space-y-4">
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Team Name:</label>
+                  <input
+                    type="text"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    required
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Enter team name"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Club Name:</label>
+                  <input
+                    type="text"
+                    value={clubName}
+                    onChange={(e) => setClubName(e.target.value)}
+                    required
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Enter club/institution name"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">1st Speaker:</label>
+                  <input
+                    type="text"
+                    value={speakerOneUsername}
+                    onChange={(e) => setSpeakerOneUsername(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Username (optional)"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Speaker:</label>
+                  <input
+                    type="text"
+                    value={speakerTwoUsername}
+                    onChange={(e) => setSpeakerTwoUsername(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Username (optional)"
+                  />
+                </div>
+
+                <div className="text-[#9a8c98] text-[14px] px-2">
+                  <p className="mb-2">• Speaker usernames are optional - you can invite team members later</p>
+                  <p>• Only team name and club name are required for registration</p>
+                </div>
+
+                {registrationError && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <p className="text-red-600 text-[14px]">{registrationError}</p>
+                  </div>
+                )}
+
+                <div className="pt-6">
+                  <button
+                    type="submit"
+                    disabled={isRegistering}
+                    className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRegistering ? 'Registering...' : 'Register Team'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
