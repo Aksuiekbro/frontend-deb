@@ -7,5 +7,5 @@ export interface PageResult<T> {
 export interface Pageable {
     page?: number;
     size?: number;
-    sort?: string;
+    sort?: string | string[];
 }

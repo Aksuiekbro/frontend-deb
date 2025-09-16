@@ -7,11 +7,12 @@ export interface NewsResponse {
     id: number;
     author: OrganizerProfileResponse;
     user: SimpleUserResponse;
-    thumnbailUrl: UrlResponse;
+    thumbnailUrl: UrlResponse;
     images: UrlResponse[];
     title: string;
     content: string;
     tags: TagResponse[];
+    timestamp: string;
 }
 
 export interface NewsRequest {

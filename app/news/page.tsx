@@ -69,17 +69,16 @@ export default function NewsPage() {
                                 </p>
                               )}
                               <p className="text-[16px] opacity-90">
-                                {new Date(newsItem.publishedAt).toLocaleDateString()}
+                                {new Date(newsItem.timestamp).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
                           <div className="p-6">
                             <p className="text-[14px] text-[#4a4e69] mb-2 line-clamp-3">
-                              {newsItem.description || 'Read more about this tournament...'}
+                              {newsItem.content || 'Read more about this tournament...'}
                             </p>
                             <div className="flex justify-between text-[12px] text-[#9a8c98]">
-                              <span>By: {newsItem.author?.firstName || 'Admin'} {newsItem.author?.lastName || ''}</span>
-                              <span>{newsItem.views || 0} views</span>
+                              <span>By: {newsItem.user.username || 'Admin'}</span>
                             </div>
                           </div>
                         </div>

@@ -57,24 +57,6 @@ export default function TournamentDetailPage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsDropdownRef = useRef<HTMLDivElement>(null)
 
-  const handleInviteUser = () => {
-    if (inviteEmail.trim()) {
-      // Здесь будет логика отправки приглашения
-      console.log('Inviting user:', inviteEmail)
-      setInviteEmail('')
-    }
-  }
-
-  const handleRemoveUser = (userId: number) => {
-    setInvitedUsers(invitedUsers.filter(user => user.id !== userId))
-  }
-
-  const copyInviteLink = () => {
-    const link = `${window.location.origin}/tournament/invite/123`
-    navigator.clipboard.writeText(link)
-    // Можно добавить уведомление об успешном копировании
-  }
-
   const handleAddPost = () => {
     const isAnnouncement = modalContext === 'announcements'
     const isValidAnnouncement = isAnnouncement && postTitle.trim() && postDescription.trim()
@@ -327,8 +309,7 @@ export default function TournamentDetailPage() {
             <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
               <LoadingState
                 isLoading={announcementsLoading}
-                fallback={<Skeleton className="h-32 w-full" />}
-              >
+                fallback={<Skeleton className="h-32 w-full" />} children={undefined}></LoadingState>
                 {announcementsError ? (
                   <div className="text-center text-red-500 text-[16px] py-20">
                     Failed to load announcements
@@ -340,7 +321,7 @@ export default function TournamentDetailPage() {
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="text-[#0D1321] text-[20px] font-bold">{announcement.title}</h3>
                           <span className="text-[#9a8c98] text-[14px]">
-                            {new Date(announcement.createdAt).toLocaleDateString()}
+                            {new Date(announcement.timestamp).toLocaleDateString()}
                           </span>
                         </div>
                         <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{announcement.content}</p>
@@ -500,7 +481,7 @@ export default function TournamentDetailPage() {
                             <h4 className="font-medium text-[16px] mb-1">{announcement.title}</h4>
                             <p className="text-[14px] text-[#4a4e69]">{announcement.content}</p>
                             <span className="text-[12px] text-[#9a8c98]">
-                              {new Date(announcement.createdAt).toLocaleDateString()}
+                              {new Date(announcement.timestamp).toLocaleDateString()}
                             </span>
                           </div>
                         ))}
@@ -562,17 +543,8 @@ export default function TournamentDetailPage() {
                   ) : teams && teams.content.length > 0 ? (
                     teams.content.map((team) => (
                       <tr key={team.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.name}</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">
-                      {team.members?.[0]?.firstName} {team.members?.[0]?.lastName}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">
-                      {team.members?.[1]?.firstName} {team.members?.[1]?.lastName}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.institution || 'N/A'}</td>
-                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.club || 'N/A'}</td>
-                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.city || 'N/A'}</td>
-                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.phone || 'N/A'}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.name}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.club.name || 'N/A'}</td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <span
                             className={`text-lg cursor-pointer ${checkInStatus[team.id] ? 'text-green-500' : 'text-red-500'}`}
@@ -1920,48 +1892,6 @@ export default function TournamentDetailPage() {
                 Copy link
               </button>
             </div>
-
-            {/* Invite Tab Content */}
-            {inviteModalTab === 'invite' && (
-              <div className="mb-6">
-                <div className="flex">
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
-                    onKeyPress={(e) => e.key === 'Enter' && handleInviteUser()}
-                  />
-                  <button
-                    onClick={handleInviteUser}
-                    className="px-6 py-3 bg-[#3E5C76] text-white rounded-r-lg hover:bg-[#2D3748] font-medium transition-colors"
-                  >
-                    Invite
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Copy Link Tab Content */}
-            {inviteModalTab === 'copy-link' && (
-              <div className="mb-6">
-                <div className="flex">
-                  <input
-                    type="text"
-                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/tournament/invite/123`}
-                    readOnly
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg bg-gray-50 text-[#4a4e69]"
-                  />
-                  <button
-                    onClick={copyInviteLink}
-                    className="px-6 py-3 bg-[#3E5C76] text-white rounded-r-lg hover:bg-[#2D3748] font-medium transition-colors"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Who Has Access Section */}
             <div>
