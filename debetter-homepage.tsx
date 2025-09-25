@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
-import { useUpcomingTournaments, useLeaderboard } from "../hooks/use-api"
-import { LoadingState, CardSkeleton, LeaderboardSkeleton } from "../components/ui/loading"
-import { ErrorState } from "../components/ui/error"
+import { useUpcomingTournaments, useLeaderboard } from "@/hooks/use-api"
+import { LoadingState, CardSkeleton, LeaderboardSkeleton } from "@/components/ui/loading"
+import { ErrorState } from "@/components/ui/error"
 
 export default function Component() {
   const router = useRouter()
