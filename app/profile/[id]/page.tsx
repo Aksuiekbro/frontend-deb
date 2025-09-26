@@ -1,5 +1,6 @@
 import Header from "../../../components/Header";
 import { LogOut } from "lucide-react";
+import AvatarWithEdit from "../../../components/profile/AvatarWithEdit";
 import SocialsManager from "../../../components/profile/SocialsManager";
 
 type ProfilePageProps = { params: Promise<{ id: string }> };
@@ -33,10 +34,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           {/* Top profile row */}
           <div className="flex flex-wrap items-center justify-between gap-6 px-6 md:px-8 py-6">
             <div className="flex items-center gap-4">
-              <div className="h-[72px] w-[72px] rounded-full overflow-hidden bg-black/5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={user.avatarUrl} alt="User avatar" className="h-full w-full object-cover" />
-              </div>
+              <AvatarWithEdit src={user.avatarUrl} sizePx={72} />
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-3">
                   <h2 className="text-[24px] font-medium text-[#0D1321]">{user.shortName}</h2>
