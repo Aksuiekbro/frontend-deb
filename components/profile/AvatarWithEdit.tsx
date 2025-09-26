@@ -65,7 +65,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="http://localhost:3845/assets/fdbaa9c45393513c6098b68c487c00d8466b804f.png"
+              src="/images/avatar-placeholder.png"
               alt="Edit avatar prompt"
               className="w-full rounded-[8px] border border-black/10 object-contain mb-4"
             />
@@ -73,17 +73,20 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
               <button
                 type="button"
                 className="px-4 py-2 rounded-md border border-black/10 text-[#0D1321] hover:bg-black/5"
-                onClick={() => setOpen(false)}
+                onClick={() => inputRef.current?.click()}
               >
-                Cancel
+                Change image
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-md bg-[#0D1321] text-white hover:opacity-90"
+                className="px-4 py-2 rounded-md bg-[#3E5C76] text-white hover:bg-[#4a6d8f]"
                 onClick={() => inputRef.current?.click()}
               >
                 Upload new
               </button>
+            </div>
+            <div className="mt-3 flex justify-center">
+              <button type="button" className="text-[#FF4800] hover:opacity-90">Delete image</button>
             </div>
           </div>
         </div>
