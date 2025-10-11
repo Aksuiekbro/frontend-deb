@@ -40,8 +40,10 @@ export default function TournamentDetailPage() {
     error?: string
   }>>([])
   const [uploadErrors, setUploadErrors] = useState<string[]>([])
+  const [dzAnimate, setDzAnimate] = useState(false)
 
   const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+  const CHECK_ICON_URL = 'http://localhost:3845/assets/34c9396e092463c20579b8768a873faee7143b0b.svg'
 
   function formatBytes(bytes: number) {
     return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
@@ -123,6 +125,9 @@ export default function TournamentDetailPage() {
       reader.onload = () => {
         const src = typeof reader.result === 'string' ? reader.result : ''
         setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, src, progress: 100, status: 'done' } : p))
+        // trigger dropzone right-border slide animation on load complete
+        setDzAnimate(true)
+        setTimeout(() => setDzAnimate(false), 800)
       }
       reader.onerror = () => {
         setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, status: 'error', error: 'Failed to load preview' } : p))
@@ -1818,12 +1823,14 @@ export default function TournamentDetailPage() {
                 <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">
                   Attach Images
                 </label>
-                <div
+                <div className="md:flex md:items-start md:gap-6">
+                  <div
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#3E5C76] transition-colors cursor-pointer"
+                  className={`relative border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#3E5C76] transition-colors cursor-pointer w-full md:flex-1 md:min-h-[360px] ${dzAnimate ? 'dz-animate' : ''}`}
                   onClick={() => document.getElementById('file-input')?.click()}
                 >
+                  
                   <div className="flex flex-col items-center space-y-4">
                     <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -1844,36 +1851,50 @@ export default function TournamentDetailPage() {
                   />
                 </div>
                 
-                {/* Display uploaded images (Figma-style previews) */}
+                {/* File list (Figma-style) */}
                 {imagePreviews.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {imagePreviews.map((img) => (
-                      <div key={img.key} className="relative rounded-lg overflow-hidden bg-gray-100">
-                        {img.src ? (
-                          <img src={img.src} alt={img.name} className="w-full h-24 object-cover" />
-                        ) : (
-                          <div className="w-full h-24 flex items-center justify-center text-gray-400">Loading…</div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeImageByKey(img.key)}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center"
-                        >
-                          ×
-                        </button>
-                        <div className="px-2 py-2 bg-white">
-                          <div className="text-[12px] text-[#0D1321] truncate" title={img.name}>{img.name}</div>
-                          <div className="text-[11px] text-[#9a8c98]">{formatBytes(img.sizeBytes)}</div>
+                  <div className="mt-4 md:mt-0 md:w-[260px] space-y-4">
+                    {imagePreviews.map((img) => {
+                      const ext = img.name.includes('.') ? img.name.split('.').pop()?.toUpperCase() : ''
+                      return (
+                        <div key={img.key} className="relative">
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-16 rounded-md border border-gray-300 bg-white flex items-center justify-center overflow-hidden">
+                              {img.src ? (
+                                <img src={img.src} alt={img.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[12px] font-medium text-[#0D1321]">{ext}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[20px] text-[#0D1321] font-medium truncate" title={img.name}>{img.name}</div>
+                              <div className="text-[14px] text-[#0D1321]/60">{formatBytes(img.sizeBytes)}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => (img.status === 'done' ? undefined : removeImageByKey(img.key))}
+                              className={`ml-auto w-6 h-6 aspect-square shrink-0 rounded-full overflow-hidden flex items-center justify-center ${img.status === 'done' ? '' : 'bg-black/60 text-white'}`}
+                              aria-label={img.status === 'done' ? 'Uploaded' : 'Remove'}
+                              title={img.status === 'done' ? 'Uploaded' : 'Remove'}
+                            >
+                              {img.status === 'done' ? (
+                                <img src={CHECK_ICON_URL} alt="Uploaded" className="w-full h-full object-contain" />
+                              ) : (
+                                '×'
+                              )}
+                            </button>
+                          </div>
                           {img.status !== 'done' && (
-                            <div className="mt-1 h-1 bg-gray-200 rounded">
+                            <div className="ml-[76px] mt-1 h-1 bg-gray-200 rounded">
                               <div className="h-1 bg-[#3E5C76] rounded" style={{ width: `${img.progress}%` }} />
                             </div>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
+                </div>
                 {uploadErrors.length > 0 && (
                   <ul className="mt-2 text-[12px] text-red-600 space-y-1">
                     {uploadErrors.map((e, i) => (<li key={i}>{e}</li>))}
