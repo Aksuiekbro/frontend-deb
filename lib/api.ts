@@ -247,7 +247,7 @@ export const api = {
     deleteRound: (tournamentId: number, roundGroupId: number, id: number) => deleteReq<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${id}`),
 
     //MATCHES
-    getMatches: (tournamentId: number, roundGroupId: number, roundId: number, pageable?: Pageable) => getPageable<MatchResponse>(`tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches`, pageable),
+    getMatches: (tournamentId: number, roundGroupId: number, roundId: number, pageable?: Pageable) => getPageable<MatchResponse>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches`, pageable),
 
     submitMatchResults: (tournamentId: number, roundGroupId: number, roundId: number, body: MatchResultRequest[]) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/results`, body),
 
