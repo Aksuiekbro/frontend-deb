@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 export interface FAQItem {
@@ -36,7 +37,7 @@ const defaultFaq: FAQItem[] = [
 
 export default function OrganizerBelow(props: OrganizerBelowProps) {
 	const {
-		imageSrc = "/placeholder-1280x720.png",
+        imageSrc = "/organizer_placeholder.png",
 		faq = defaultFaq,
 		initialOpenIndex = 0,
 		className,
@@ -61,12 +62,12 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 					>
 						Join Debates
 					</button>
-					<button
-						type="button"
-						className="px-4 py-2 rounded-md border border-black/20 text-sm md:text-base font-medium hover:bg-black/5 transition-colors"
-					>
-						Host Debate
-					</button>
+                  <Link
+                    href="/create-tournament"
+                    className="px-4 py-2 rounded-md border border-black/20 text-sm md:text-base font-medium hover:bg-black/5 transition-colors"
+                  >
+                    Host Debate
+                  </Link>
 				</div>
 				<div aria-hidden className="text-sm text-black/60">Connect Us</div>
 			</div>

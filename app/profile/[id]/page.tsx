@@ -2,6 +2,7 @@ import Header from "../../../components/Header";
 import { LogOut } from "lucide-react";
 import AvatarWithEdit from "../../../components/profile/AvatarWithEdit";
 import SocialsManager from "../../../components/profile/SocialsManager";
+import LogoutButton from "@/components/profile/LogoutButton";
 
 type ProfilePageProps = { params: Promise<{ id: string }> };
 
@@ -67,10 +68,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
           {/* Footer actions */}
           <div className="px-6 md:px-8 py-5 flex items-center justify-between">
-            <button type="button" className="flex items-center gap-2 text-[#0D1321] hover:opacity-80">
-              <LogOut className="h-5 w-5" />
-              <span className="text-[18px]">Log out</span>
-            </button>
+            <LogoutButton />
             <button type="button" className="text-[18px] text-[#FF4800] hover:opacity-90">Delete account</button>
           </div>
         </section>

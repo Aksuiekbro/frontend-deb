@@ -164,6 +164,7 @@ export const api = {
     //AUTH
     register: (body: UserRegistrationRequest) => post<UserResponse>("/auth/register", body),
     login: (body: UserLoginRequest) => post<UserResponse>("/auth/login", body),
+    logout: () => post<void>("/auth/logout"),
 
     //USERS
     getUsers: (params?: UserGetParams, pageable?: Pageable) => getPageable<UserResponse>("/users", params, pageable),

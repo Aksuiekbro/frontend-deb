@@ -269,6 +269,8 @@ export default function TournamentDetailPage() {
                 <button
                   onClick={() => {
                     setSelectedResultsOption('LD')
+                    setActiveResultsSection('1/16')
+                    setSelectedRound('1/16')
                     setIsResultsDropdownOpen(false)
                   }}
                   className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
