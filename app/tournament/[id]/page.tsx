@@ -30,6 +30,22 @@ export default function TournamentDetailPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [invitedUsers, setInvitedUsers] = useState([])
+  const [imagePreviews, setImagePreviews] = useState<Array<{
+    key: string
+    name: string
+    sizeBytes: number
+    src: string
+    progress: number
+    status: 'loading' | 'done' | 'error'
+    error?: string
+  }>>([])
+  const [uploadErrors, setUploadErrors] = useState<string[]>([])
+
+  const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+
+  function formatBytes(bytes: number) {
+    return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
+  }
 
   // Get tournament organizers and participants for invited users
   const tournamentMembers = participants?.content.slice(0, 5).map(participant => ({
@@ -80,10 +96,43 @@ export default function TournamentDetailPage() {
   }
 
   const handleImageUpload = (files: FileList | null) => {
-    if (files) {
-      const newImages = Array.from(files)
-      setPostImages(prev => [...prev, ...newImages])
-    }
+    if (!files) return
+    const nextErrors: string[] = []
+    const validFiles: File[] = []
+    const nextPreviews: typeof imagePreviews = []
+
+    Array.from(files).forEach((file) => {
+      const key = `${file.name}-${file.lastModified}-${file.size}`
+      if (!file.type.startsWith('image/')) {
+        nextErrors.push(`${file.name}: not an image`)
+        return
+      }
+      if (file.size > MAX_SIZE) {
+        nextErrors.push(`${file.name}: exceeds 10MB`)
+        return
+      }
+      validFiles.push(file)
+      nextPreviews.push({ key, name: file.name, sizeBytes: file.size, src: '', progress: 0, status: 'loading' })
+
+      const reader = new FileReader()
+      reader.onprogress = (e) => {
+        if (!e.lengthComputable) return
+        const pct = Math.min(100, Math.round((e.loaded / e.total) * 100))
+        setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, progress: pct } : p))
+      }
+      reader.onload = () => {
+        const src = typeof reader.result === 'string' ? reader.result : ''
+        setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, src, progress: 100, status: 'done' } : p))
+      }
+      reader.onerror = () => {
+        setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, status: 'error', error: 'Failed to load preview' } : p))
+      }
+      reader.readAsDataURL(file)
+    })
+
+    if (nextErrors.length) setUploadErrors(nextErrors)
+    if (nextPreviews.length) setImagePreviews((prev) => [...prev, ...nextPreviews])
+    if (validFiles.length) setPostImages((prev) => [...prev, ...validFiles])
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -94,6 +143,11 @@ export default function TournamentDetailPage() {
     e.preventDefault()
     const files = e.dataTransfer.files
     handleImageUpload(files)
+  }
+
+  const removeImageByKey = (key: string) => {
+    setImagePreviews((prev) => prev.filter(p => p.key !== key))
+    setPostImages((prev) => prev.filter(f => `${f.name}-${f.lastModified}-${f.size}` !== key))
   }
 
   useEffect(() => {
@@ -109,6 +163,12 @@ export default function TournamentDetailPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      setImagePreviews([])
     }
   }, [])
 
@@ -1784,26 +1844,40 @@ export default function TournamentDetailPage() {
                   />
                 </div>
                 
-                {/* Display uploaded images */}
-                {postImages.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    {postImages.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg"
-                        />
+                {/* Display uploaded images (Figma-style previews) */}
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {imagePreviews.map((img) => (
+                      <div key={img.key} className="relative rounded-lg overflow-hidden bg-gray-100">
+                        {img.src ? (
+                          <img src={img.src} alt={img.name} className="w-full h-24 object-cover" />
+                        ) : (
+                          <div className="w-full h-24 flex items-center justify-center text-gray-400">Loading…</div>
+                        )}
                         <button
                           type="button"
-                          onClick={() => setPostImages(prev => prev.filter((_, i) => i !== index))}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                          onClick={() => removeImageByKey(img.key)}
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center"
                         >
                           ×
                         </button>
+                        <div className="px-2 py-2 bg-white">
+                          <div className="text-[12px] text-[#0D1321] truncate" title={img.name}>{img.name}</div>
+                          <div className="text-[11px] text-[#9a8c98]">{formatBytes(img.sizeBytes)}</div>
+                          {img.status !== 'done' && (
+                            <div className="mt-1 h-1 bg-gray-200 rounded">
+                              <div className="h-1 bg-[#3E5C76] rounded" style={{ width: `${img.progress}%` }} />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
+                )}
+                {uploadErrors.length > 0 && (
+                  <ul className="mt-2 text-[12px] text-red-600 space-y-1">
+                    {uploadErrors.map((e, i) => (<li key={i}>{e}</li>))}
+                  </ul>
                 )}
               </div>
 
