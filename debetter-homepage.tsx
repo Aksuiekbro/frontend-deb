@@ -3,12 +3,30 @@
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
+import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
+import { useUpcomingTournaments } from "@/hooks/use-api"
+import { LoadingState, CardSkeleton } from "@/components/ui/loading"
+import { ErrorState } from "@/components/ui/error"
 
 export default function Component() {
   const router = useRouter()
   const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
+  const [expandedDebates, setExpandedDebates] = useState<{[key: number]: boolean}>({})
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+  const [isSwiping, setIsSwiping] = useState(false)
+  const [activeSlide, setActiveSlide] = useState<number>(0)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" })
+
+  // API hooks
+  const { upcomingTournaments, isLoading: tournamentsLoading, error: tournamentsError } = useUpcomingTournaments(6)
+
+  const toggleDebateDetails = (debateId: number) => {
+    setExpandedDebates(prev => ({
+      ...prev,
+      [debateId]: !prev[debateId]
+    }))
+  }
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -31,20 +49,38 @@ export default function Component() {
 
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    const onSelect = () => setActiveSlide(emblaApi.selectedScrollSnap())
+    const onScroll = () => setIsSwiping(true)
+    const onSettle = () => setIsSwiping(false)
+    emblaApi.on('select', onSelect)
+    emblaApi.on('reInit', onSelect)
+    emblaApi.on('scroll', onScroll)
+    emblaApi.on('settle', onSettle)
+    onSelect()
+    return () => {
+      emblaApi.off('select', onSelect)
+      emblaApi.off('reInit', onSelect)
+      emblaApi.off('scroll', onScroll)
+      emblaApi.off('settle', onSettle)
+    }
+  }, [emblaApi])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       {/* Header */}
       <header className="flex items-center justify-between px-12 py-4">
         <div className="flex items-center space-x-16">
           <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
-          <nav className="flex space-x-12">
-            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+          <nav className="flex space-x-16">
+            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               Join Debates
             </Link>
-            <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               Rating
             </Link>
-            <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               News
             </Link>
           </nav>
@@ -52,7 +88,7 @@ export default function Component() {
         <div className="flex items-center space-x-6">
           <div className="relative">
             <select
-              className="border border-[#3E5C76] rounded-[8px] px-4 py-2 text-[#0D1321] bg-white text-[14px] font-medium appearance-none bg-no-repeat bg-right bg-[length:16px] pr-10 hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20 transition-all duration-200 cursor-pointer min-w-[100px] shadow-sm"
+              className="border border-[#3E5C76] rounded-none px-4 py-2 text-[#0D1321] bg-white text-[14px] font-medium font-hikasami appearance-none bg-no-repeat bg-right bg-[length:20px] pr-4 hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20 transition-all duration-200 cursor-pointer min-w-[100px] shadow-sm"
               style={{
                 backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%233E5C76%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")',
               }}
@@ -64,13 +100,13 @@ export default function Component() {
           </div>
           <button 
             onClick={() => router.push('/auth?mode=register')}
-            className="bg-[#3E5C76] text-white px-6 py-3 rounded-lg hover:bg-[#22223b] text-[14px] font-normal"
+            className="bg-[#3E5C76] text-white px-8 py-4 rounded-lg hover:bg-[#22223b] text-[14px] font-normal font-hikasami"
           >
             Registration
           </button>
           <button 
             onClick={() => router.push('/auth?mode=login')}
-            className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-lg hover:bg-[#4a4e69] hover:text-white text-[14px] font-normal"
+            className="border border-[#3E5C76] text-[#3E5C76] px-8 py-4 rounded-lg hover:bg-[#3E5C76] hover:text-white text-[14px] font-normal font-hikasami"
           >
             Log In
           </button>
@@ -79,249 +115,194 @@ export default function Component() {
 
       {/* Hero Section */}
       <section className="text-center py-8">
-        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
+        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8 font-hikasami">Welcome to DeBetter</h1>
 
-        <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
-          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8">
-            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
-            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
-          </h2>
-
-          <div className="flex justify-center space-x-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
-              Join Debates
-            </Link>
-            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
-              Host Debate
-            </button>
+        <div className="relative mx-8">
+          <div ref={emblaRef} className="overflow-hidden rounded-[16px]">
+            <div className="flex">
+              {[0, 1].map((i) => (
+                <div key={i} className="min-w-0 flex-[0_0_100%]">
+                  <div
+                    className="rounded-[16px] py-16 px-8 relative h-[311px] overflow-hidden"
+                    style={{ boxShadow: '0px 10px 28px 4px rgba(43, 63, 108, 0.25)' }}
+                  >
+                    {i === 1 ? (
+                      // Second slide: exact frame image
+                      <img
+                        src="/images/Frame 78.png"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover rounded-[16px]"
+                      />
+                    ) : (
+                      <>
+                        {/* First slide: gradient background + content */}
+                        <div className="absolute inset-0 rounded-[16px] bg-gradient-to-r from-[#0D1321] to-[#2B3F6C] z-10" />
+                        <div className="relative z-20 h-full flex flex-col justify-center">
+                          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8 font-hikasami">
+                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
+                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
+                          </h2>
+                          <div className="flex justify-center space-x-4 mb-8">
+                            <Link href="/join" className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
+                              Join Debate
+                            </Link>
+                            <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
+                              Create Tournament
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Pagination dots */}
-          <div className="flex justify-center space-x-2">
-            <div className="w-[8px] h-[8px] bg-[#4a4e69] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#FFFFFF] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#4a4e69] rounded-full"></div>
+          {/* Pagination indicators (clickable, overlay) */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-2 z-20">
+            <button
+              type="button"
+              aria-label="Slide 1"
+              onClick={() => emblaApi && emblaApi.scrollTo(0)}
+              className={`h-[4px] rounded transition-all duration-200 ${activeSlide === 0 ? 'w-[28px] bg-white' : 'w-[24px] bg-[#3E5C76]'}`}
+            />
+            <button
+              type="button"
+              aria-label="Slide 2"
+              onClick={() => emblaApi && emblaApi.scrollTo(1)}
+              className={`h-[4px] rounded transition-all duration-200 ${activeSlide === 1 ? 'w-[28px] bg-white' : 'w-[24px] bg-[#3E5C76]'}`}
+            />
           </div>
         </div>
       </section>
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Upcoming Debates</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Upcoming Debates</h3>
 
-        <div className="relative">
-          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
-            <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
-          </button>
+        <LoadingState
+          isLoading={tournamentsLoading}
+          fallback={
+            <div className="flex space-x-6 px-16">
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          }
+        >
+          {tournamentsError ? (
+            <ErrorState
+              error={tournamentsError}
+              onRetry={() => window.location.reload()}
+              message="Failed to load upcoming tournaments"
+            />
+          ) : upcomingTournaments && upcomingTournaments.content.length > 0 ? (
+            <div className="relative">
+              <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
+                <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
+              </button>
 
-          <div className="flex space-x-6 overflow-hidden">
-            {[1, 2].map((item) => (
-              <div key={item} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
-                <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">AITU Kerek</h4>
-                <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">Almaty, Zhandosov 52</p>
-                <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">10.11.2027</p>
+              <div className="flex space-x-6 overflow-hidden px-16">
+                {upcomingTournaments.content.slice(0, 2).map((tournament) => (
+                  <div key={tournament.id} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
+                    <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2 font-hikasami">{tournament.name}</h4>
+                    <p className="text-[#9a8c98] mb-1 text-[16px] font-normal font-hikasami">{tournament.location || "Location TBA"}</p>
+                    <p className="text-[#9a8c98] mb-4 text-[16px] font-normal font-hikasami">
+                      {tournament.startDate ? new Date(tournament.startDate).toLocaleDateString() : "Date TBA"}
+                    </p>
 
-                <div className="flex space-x-2 mb-6">
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">БПА</span>
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">АПА</span>
-                  <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">БПА</span>
-                  {item === 1 && (
-                    <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">А</span>
-                  )}
-                </div>
+                    <div className="flex space-x-2 mb-6">
+                      <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">
+                        {tournament.preliminaryFormat}
+                      </span>
+                      <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">
+                        {tournament.teamElimintationFormat}
+                      </span>
+                      <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">
+                        {tournament.league}
+                      </span>
+                    </div>
 
-                <div className="space-y-3">
-                  <div className="flex justify-start">
-                    <a href="#" className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal">
-                      More...
-                    </a>
+                    {/* Expandable content */}
+                    {expandedDebates[tournament.id] && (
+                      <div className="mb-4 p-4 bg-[#0D1321] rounded-lg">
+                        <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2 font-hikasami">Tournament Details</h5>
+                        <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
+                          Description: {tournament.description || "No description available"}
+                        </p>
+                        <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
+                          Registration deadline: {tournament.registrationDeadline ? new Date(tournament.registrationDeadline).toLocaleDateString() : "TBA"}
+                        </p>
+                        <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
+                          Team limit: {tournament.teamLimit ? `${tournament.teamLimit} teams` : "No limit"}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <div className="flex justify-start">
+                        <button
+                          onClick={() => toggleDebateDetails(tournament.id)}
+                          className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal font-hikasami"
+                        >
+                          {expandedDebates[tournament.id] ? 'Less...' : 'More...'}
+                        </button>
+                      </div>
+                      <div className="flex justify-start space-x-2">
+                        <Link
+                          href={`/tournament/${tournament.id}`}
+                          className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center"
+                        >
+                          View Details
+                        </Link>
+                        <Link
+                          href="/join"
+                          className="inline-block border border-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#3E5C76] text-[14px] font-normal font-hikasami text-center"
+                        >
+                          Join Tournament
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-start">
-                    <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
-                      Join Debates
-                    </Link>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
-            <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
-          </button>
+              <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
+                <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-[#4a4e69] text-[18px] font-hikasami">No upcoming tournaments available</p>
+              <Link
+                href="/tournament/create"
+                className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
+              >
+                Create Tournament
+              </Link>
+            </div>
+          )}
+        </LoadingState>
+      </section>
+
+      {/* Testimonials (leaderboard disabled) */}
+      <section className="px-8 py-12">
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Community Voices</h3>
+        <div className="text-center py-12">
+          <p className="text-[#4a4e69] text-[18px] font-hikasami">Community testimonials will appear as more users join tournaments</p>
+          <Link
+            href="/tournaments"
+            className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
+          >
+            Join a Tournament
+          </Link>
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Leader Board (disabled) */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Testimonials</h3>
-
-        <div className="relative">
-          <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
-            <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
-          </button>
-
-          <div className="flex space-x-6 overflow-hidden">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-white border border-[#9a8c98] rounded-[12px] p-6 flex-1 min-w-0">
-                <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4"></div>
-                <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1">Zheksembek Abdolla</h6>
-                <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4">Debatter</p>
-                <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi posuere ipsum vel mattis mollis. In sit
-                  amet orci ac dui viverra lobortis ac at mi. Nulla a enim rutrum, vehicula. And I simply want to end
-                  this shill! Hahahahahaha
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg z-10">
-            <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
-          </button>
-        </div>
-      </section>
-
-      {/* Leader Board */}
-      <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Leader Board</h3>
-
-        <div className="relative">
-          <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-start justify-center pt-8">
-            Champions
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
-            {/* 2nd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-2 md:order-1">
-              <div 
-                className="h-[96px] relative overflow-hidden"
-                id="gradient-2nd"
-                ref={el => gradientRefs.current['gradient-2nd'] = el}
-              >
-                <div 
-                  className="h-full transition-all duration-1000"
-                  style={{
-                    background: 'linear-gradient(to right, #3E5C76, #748CAB)',
-                    width: visibleGradients['gradient-2nd'] ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">2nd</span>
-              </div>
-              <div className="p-6 pt-[48px]">
-                <div
-                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
-                  style={{
-                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                    transform: "rotate(90deg)",
-                  }}
-                ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
-                <div className="flex justify-between mb-6">
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
-                  </div>
-                </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
-                  Profile
-                </button>
-              </div>
-            </div>
-
-            {/* 1st Place */}
-            <div className="bg-white rounded-[12px] shadow-lg relative w-full transform md:-translate-y-8 order-1 md:order-2">
-              <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-              <div 
-                className="h-[96px] relative rounded-t-[12px] overflow-hidden"
-                id="gradient-1st"
-                ref={el => gradientRefs.current['gradient-1st'] = el}
-              >
-                <div 
-                  className="h-full transition-all duration-1000 rounded-t-[12px]"
-                  style={{
-                    background: 'linear-gradient(to right, #0D1321, #3E5C76)',
-                    width: visibleGradients['gradient-1st'] ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">1st</span>
-              </div>
-              <div className="p-6 pt-[48px]">
-                <div
-                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
-                  style={{
-                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                    transform: "rotate(90deg)",
-                  }}
-                ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
-                <div className="flex justify-between mb-6">
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
-                  </div>
-                </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
-                  Profile
-                </button>
-              </div>
-            </div>
-
-            {/* 3rd Place */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full order-3">
-              <div 
-                className="h-[96px] relative overflow-hidden"
-                id="gradient-3rd"
-                ref={el => gradientRefs.current['gradient-3rd'] = el}
-              >
-                <div 
-                  className="h-full transition-all duration-1000"
-                  style={{
-                    background: 'linear-gradient(to right, #748CAB, #c9ada7)',
-                    width: visibleGradients['gradient-3rd'] ? '100%' : '0%',
-                    transform: 'translateX(0)',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">3rd</span>
-              </div>
-              <div className="p-6 pt-[48px]">
-                <div
-                  className="w-[64px] h-[64px] bg-[#c9ada7] absolute left-4 top-[64px] z-10"
-                  style={{
-                    clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                    transform: "rotate(90deg)",
-                  }}
-                ></div>
-                <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">Kris Robertson</h6>
-                <div className="flex justify-between mb-6">
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">20</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">debates</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#4a4e69] text-[30px] font-medium">1829</div>
-                    <div className="text-[#9a8c98] text-[20px] font-medium">Average Score</div>
-                  </div>
-                </div>
-                <button className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal">
-                  Profile
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="text-center py-12">
+          <p className="text-[#4a4e69] text-[18px] font-hikasami">Leaderboard is disabled until ratings are supported.</p>
         </div>
       </section>
 
@@ -358,7 +339,7 @@ export default function Component() {
             </div>
           </div>
 
-          <div className="flex justify-between items-center text-[14px] font-normal">
+          <div className="flex justify-between items-center text-[14px] font-normal font-hikasami">
             <div>Contact us: debetter@gmail.com</div>
             <div>© 2025 all rights reserved</div>
             <div>Privacy Policy</div>

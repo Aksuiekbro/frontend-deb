@@ -1,11 +1,157 @@
 "use client"
 
 import { Search, MapPin, Calendar, Users, Filter, X } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import Header from "../../components/Header"
+import { api } from "@/lib/api"
+import { SimpleTournamentResponse, TournamentGetParams, TournamentLeague } from "@/types/tournament/tournament"
 
 export default function JoinDebatesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null)
+  const [tournaments, setTournaments] = useState<SimpleTournamentResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+
+  // Registration form state
+  const [teamName, setTeamName] = useState('')
+  const [clubName, setClubName] = useState('')
+  const [speakerOneUsername, setSpeakerOneUsername] = useState('')
+  const [speakerTwoUsername, setSpeakerTwoUsername] = useState('')
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [registrationError, setRegistrationError] = useState<string | null>(null)
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+
+  // Filter states
+  const [startDateFrom, setStartDateFrom] = useState<string>("")
+  const [startDateTo, setStartDateTo] = useState<string>("")
+  const [registrationDeadlineFrom, setRegistrationDeadlineFrom] = useState<string>("")
+  const [registrationDeadlineTo, setRegistrationDeadlineTo] = useState<string>("")
+  const [searchLocation, setSearchLocation] = useState<string>("")
+  const [selectedLeagues, setSelectedLeagues] = useState<TournamentLeague[]>([])
+  const [searchName, setSearchName] = useState<string>("")
+  const [nonFull, setNonFull] = useState<boolean>(false)
+  const [sortBy, setSortBy] = useState<string>("startDate,desc") // Default to Most Recent
+
+  // Fetch tournaments with all filter parameters
+  const fetchTournaments = useCallback(async (reset = false) => {
+    setLoading(true)
+    try {
+      const currentPage = reset ? 0 : page;
+      const params: TournamentGetParams = {
+        searchName: searchName || undefined,
+        searchLocation: searchLocation || undefined,
+        tags: undefined, // Add state for tags if you implement them in filters
+        startDateFrom: startDateFrom || undefined,
+        startDateTo: startDateTo || undefined,
+        registrationDeadlineFrom: registrationDeadlineFrom || undefined,
+        registrationDeadlineTo: registrationDeadlineTo || undefined,
+        league: selectedLeagues.length > 0 ? selectedLeagues[0] : undefined, // Assuming single league filter for simplicity
+        nonFull: nonFull || undefined,
+      }
+      
+      const response = await api.getTournaments(params, { page: currentPage, size: 10, sort: sortBy }) // Pass all params directly
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+
+      if (reset) {
+        setTournaments(data.content)
+      } else {
+        setTournaments((prevTournaments) => [...prevTournaments, ...data.content])
+      }
+      setHasMore(!data.last)
+      setPage(currentPage + 1)
+    } catch (error) {
+      console.error("Failed to fetch tournaments:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [
+      page, sortBy, searchName, searchLocation, startDateFrom, startDateTo,
+      registrationDeadlineFrom, registrationDeadlineTo, selectedLeagues, nonFull
+  ])
+
+  useEffect(() => {
+    fetchTournaments(true) // Initial load and when filters change
+  }, [fetchTournaments]) // Depend on fetchTournaments to re-run when its dependencies change
+
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      fetchTournaments()
+    }
+  }
+
+  const handleLeagueChange = (league: TournamentLeague) => {
+    setSelectedLeagues((prev) =>
+      prev.includes(league) ? prev.filter((l) => l !== league) : [...prev, league]
+    )
+  }
+
+  const handleRegistrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!selectedTournamentId) {
+      setRegistrationError('No tournament selected')
+      return
+    }
+
+    if (!teamName.trim() || !clubName.trim()) {
+      setRegistrationError('Team name and club name are required')
+      return
+    }
+
+    setIsRegistering(true)
+    setRegistrationError(null)
+
+    try {
+      const invitedParticipants = []
+
+      // Add speakers if usernames provided
+      if (speakerOneUsername.trim()) {
+        invitedParticipants.push({ username: speakerOneUsername.trim() })
+      }
+      if (speakerTwoUsername.trim()) {
+        invitedParticipants.push({ username: speakerTwoUsername.trim() })
+      }
+
+      const response = await api.registerTeam(selectedTournamentId, {
+        name: teamName.trim(),
+        club: clubName.trim(),
+        creatorId: 1, // TODO: Get current user ID from auth context
+        invitedParticipants: invitedParticipants.length > 0 ? invitedParticipants : undefined
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setRegistrationError(errorData.message || 'Registration failed')
+        return
+      }
+
+      setRegistrationSuccess(true)
+      // Reset form
+      setTeamName('')
+      setClubName('')
+      setSpeakerOneUsername('')
+      setSpeakerTwoUsername('')
+
+      // Close modal after success message
+      setTimeout(() => {
+        setIsModalOpen(false)
+        setRegistrationSuccess(false)
+      }, 2000)
+
+    } catch (error) {
+      console.error('Registration error:', error)
+      setRegistrationError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       <Header />
@@ -26,26 +172,59 @@ export default function JoinDebatesPage() {
                 <h2 className="text-[#FFFFFF] text-[24px] font-medium">Filters</h2>
               </div>
 
-              {/* Date Filter */}
+              {/* Start Date Filter */}
               <div className="mb-6">
-                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Date:</h3>
+                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Start Date:</h3>
                 <div className="space-y-3">
                   <div>
-                    <label htmlFor="start-date" className="sr-only">Start date</label>
+                    <label htmlFor="start-date-from" className="sr-only">Start date from</label>
                     <input
-                      id="start-date"
+                      id="start-date-from"
                       type="date"
-                      placeholder="Start date"
+                      placeholder="Start date from"
                       className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                      value={startDateFrom}
+                      onChange={(e) => setStartDateFrom(e.target.value + "T00:00:00")}
                     />
                   </div>
                   <div>
-                    <label htmlFor="end-date" className="sr-only">End date</label>
+                    <label htmlFor="start-date-to" className="sr-only">Start date to</label>
                     <input
-                      id="end-date"
+                      id="start-date-to"
                       type="date"
-                      placeholder="End date"
+                      placeholder="Start date to"
                       className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                      value={startDateTo}
+                      onChange={(e) => setStartDateTo(e.target.value + "T23:59:59")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Registration Deadline Filter */}
+              <div className="mb-6">
+                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Registration Deadline:</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="reg-deadline-from" className="sr-only">Registration deadline from</label>
+                    <input
+                      id="reg-deadline-from"
+                      type="date"
+                      placeholder="Registration deadline from"
+                      className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                      value={registrationDeadlineFrom}
+                      onChange={(e) => setRegistrationDeadlineFrom(e.target.value + "T00:00:00")}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="reg-deadline-to" className="sr-only">Registration deadline to</label>
+                    <input
+                      id="reg-deadline-to"
+                      type="date"
+                      placeholder="Registration deadline to"
+                      className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                      value={registrationDeadlineTo}
+                      onChange={(e) => setRegistrationDeadlineTo(e.target.value + "T23:59:59")}
                     />
                   </div>
                 </div>
@@ -60,6 +239,8 @@ export default function JoinDebatesPage() {
                   type="text"
                   placeholder="Place/City"
                   className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
                 />
               </div>
 
@@ -68,14 +249,37 @@ export default function JoinDebatesPage() {
                 <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">League:</h3>
                 <div className="space-y-2">
                   <label className="flex items-center text-[#FFFFFF] text-[14px] font-normal">
-                    <input type="checkbox" className="mr-3 w-4 h-4" />
+                    <input
+                      type="checkbox"
+                      className="mr-3 w-4 h-4"
+                      checked={selectedLeagues.includes(TournamentLeague.SCHOOL)}
+                      onChange={() => handleLeagueChange(TournamentLeague.SCHOOL)}
+                    />
                     School
                   </label>
                   <label className="flex items-center text-[#FFFFFF] text-[14px] font-normal">
-                    <input type="checkbox" className="mr-3 w-4 h-4" />
+                    <input
+                      type="checkbox"
+                      className="mr-3 w-4 h-4"
+                      checked={selectedLeagues.includes(TournamentLeague.UNIVERSITY)}
+                      onChange={() => handleLeagueChange(TournamentLeague.UNIVERSITY)}
+                    />
                     University
                   </label>
                 </div>
+              </div>
+
+              {/* Non-full Filter */}
+              <div className="mb-6">
+                <label className="flex items-center text-[#FFFFFF] text-[18px] font-medium">
+                  <input
+                    type="checkbox"
+                    className="mr-3 w-4 h-4"
+                    checked={nonFull}
+                    onChange={(e) => setNonFull(e.target.checked)}
+                  />
+                  Show Non-Full Debates
+                </label>
               </div>
             </div>
           </div>
@@ -88,15 +292,24 @@ export default function JoinDebatesPage() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#9a8c98]" />
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder="Search by name"
                   className="w-full pl-12 pr-40 py-3 rounded-[12px] border border-[#9a8c98] text-[#4a4e69] text-[16px] font-normal"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                  <select className="appearance-none bg-[#3E5C76] text-white px-4 py-2 rounded-full text-[14px] font-normal pr-8 focus:outline-none cursor-pointer">
-                <option>Most Recent</option>
-                <option>Upcoming</option>
-                <option>Popular</option>
-              </select>
+                  <select
+                    className="appearance-none bg-[#3E5C76] text-white px-4 py-2 rounded-full text-[14px] font-normal pr-8 focus:outline-none cursor-pointer"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="name,asc">Name (A-Z)</option>
+                    <option value="name,desc">Name (Z-A)</option>
+                    <option value="startDate,desc">Most Recent</option>
+                    <option value="startDate,asc">Upcoming</option>
+                    {/* Note: 'popularity' sorting would require backend support. 
+                        If not available, these options will sort by startDate. */}
+                  </select>
                   <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-white pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
@@ -106,51 +319,64 @@ export default function JoinDebatesPage() {
 
             {/* Debate Cards */}
             <div className="space-y-6">
-              {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="bg-[#0D1321] rounded-[16px] p-8 relative">
+              {tournaments.length === 0 && !loading && (
+                <p className="text-[#0D1321] text-center text-[20px]">No debates found matching your criteria.</p>
+              )}
+              {tournaments.map((tournament) => (
+                <div key={tournament.id} className="bg-[#0D1321] rounded-[16px] p-8 relative">
                   {/* Debate Info */}
                   <div className="flex items-start mb-6">
                     <div className="w-[150px] h-[150px] bg-[#FFFFFF] rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
                       <img 
-                        src="/the-talking-logo.png" 
-                        alt="The Talking Logo"
+                        src={tournament.imageUrl?.url || "/the-talking-logo.png"} // Use API image if available
+                        alt={tournament.name}
                         className="w-full h-full object-cover absolute inset-0"
                       />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-[#FFFFFF] text-[32px] font-medium mb-2">AITU Kerek</h3>
+                      <h3 className="text-[#FFFFFF] text-[32px] font-medium mb-2">{tournament.name}</h3>
                       <div className="text-[#9a8c98] text-[16px] font-normal space-y-1 mb-4">
                         <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          <span>Almaty, Zhandosov 52</span>
+                          <Users className="w-4 h-4 mr-2" />
+                          <span>League: {tournament.league}</span> 
                         </div>
                         <div className="flex items-center">
+                          {/* As SimpleTournamentResponse does not include startDate or location,
+                              these will show N/A. To display actual dates/locations here, 
+                              SimpleTournamentResponse would need to be updated on the backend. */}
                           <Calendar className="w-4 h-4 mr-2" />
-                          <span>10.11.2027</span>
+                          <span>Start Date: N/A</span> 
+                        </div>
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-2" />
+                          <span>Location: N/A</span> 
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">БПА</span>
-                        <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">АПА</span>
-                        <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">БПА</span>
-                        <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal">А</span>
+                      <div className="flex flex-wrap gap-2"> {/* Use flex-wrap for tags */}
+                        {tournament.tags && tournament.tags.map(tag => (
+                            <span key={tag.name} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">
+                                {tag.name}
+                            </span>
+                        ))}
                       </div>
                     </div>
                   </div>
 
                   {/* Description */}
                   <p className="text-[#9a8c98] text-[16px] font-normal mb-4 leading-relaxed">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum pulvinar nisl vitae mi congue, eu egestas urna rutrum. 
-                    Mauris eros velit, pellentesque vel scelerisque risus viverra. Vivamus eros velit, pellentesque ne...
+                    {tournament.description.length > 200 ? `${tournament.description.substring(0, 200)}...` : tournament.description}
                   </p>
 
                   {/* Actions */}
                   <div className="flex items-center justify-between">
-                    <a href={`/tournament/${item}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
+                    <Link href={`/tournament/${tournament.id}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
                       More...
-                    </a>
-                    <button 
-                      onClick={() => setIsModalOpen(true)}
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setSelectedTournamentId(tournament.id)
+                        setIsModalOpen(true)
+                      }}
                       className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
                     >
                       Join Debates
@@ -158,14 +384,23 @@ export default function JoinDebatesPage() {
                   </div>
                 </div>
               ))}
+              {loading && (
+                <p className="text-[#0D1321] text-center text-[20px]">Loading more debates...</p>
+              )}
             </div>
 
             {/* Load More */}
-            <div className="text-center mt-12">
-              <button className="bg-[#3E5C76] text-[#FFFFFF] px-8 py-3 rounded-lg hover:bg-[#22223b] text-[16px] font-normal">
-                Load More Debates
-              </button>
-            </div>
+            {hasMore && (
+              <div className="text-center mt-12">
+                <button
+                  onClick={handleLoadMore}
+                  className="bg-[#3E5C76] text-[#FFFFFF] px-8 py-3 rounded-lg hover:bg-[#22223b] text-[16px] font-normal"
+                  disabled={loading}
+                >
+                  Load More Debates
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -222,79 +457,88 @@ export default function JoinDebatesPage() {
               <X className="w-6 h-6" />
             </button>
             
-            <h2 className="text-[#0D1321] text-[32px] font-bold text-center mb-8">Registration</h2>
-            
-            <form className="space-y-4">
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Team Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
+            <h2 className="text-[#0D1321] text-[32px] font-bold text-center mb-8">
+              {registrationSuccess ? 'Registration Successful!' : 'Tournament Registration'}
+            </h2>
+
+            {registrationSuccess ? (
+              <div className="text-center py-8">
+                <div className="text-green-600 text-[18px] mb-4">✓ Your team has been registered successfully!</div>
+                <p className="text-[#4a4e69] text-[14px]">You will receive a confirmation email shortly.</p>
               </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Club Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">1st Speaker Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Speaker Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">School/University Name:</label>
-                <input 
-                  type="text" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Phone Number:</label>
-                <input 
-                  type="tel" 
-                  className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">City:</label>
-                <select className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76] appearance-none bg-white">
-                  <option value="">Select City</option>
-                  <option value="almaty">Almaty</option>
-                  <option value="astana">Astana</option>
-                  <option value="shymkent">Shymkent</option>
-                </select>
-              </div>
-              
-              <div className="pt-6">
-                <button 
-                  type="submit"
-                  className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
+            ) : (
+              <form onSubmit={handleRegistrationSubmit} className="space-y-4">
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Team Name:</label>
+                  <input
+                    type="text"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    required
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Enter team name"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Club Name:</label>
+                  <input
+                    type="text"
+                    value={clubName}
+                    onChange={(e) => setClubName(e.target.value)}
+                    required
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Enter club/institution name"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">1st Speaker:</label>
+                  <input
+                    type="text"
+                    value={speakerOneUsername}
+                    onChange={(e) => setSpeakerOneUsername(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Username (optional)"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Speaker:</label>
+                  <input
+                    type="text"
+                    value={speakerTwoUsername}
+                    onChange={(e) => setSpeakerTwoUsername(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                    placeholder="Username (optional)"
+                  />
+                </div>
+
+                <div className="text-[#9a8c98] text-[14px] px-2">
+                  <p className="mb-2">• Speaker usernames are optional - you can invite team members later</p>
+                  <p>• Only team name and club name are required for registration</p>
+                </div>
+
+                {registrationError && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <p className="text-red-600 text-[14px]">{registrationError}</p>
+                  </div>
+                )}
+
+                <div className="pt-6">
+                  <button
+                    type="submit"
+                    disabled={isRegistering}
+                    className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRegistering ? 'Registering...' : 'Register Team'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
     </div>
   )
-} 
+}

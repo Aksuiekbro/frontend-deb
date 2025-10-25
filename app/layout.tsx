@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import StagewiseToolbarClient from '../components/StagewiseToolbarClient'
+import SWRProvider from '../components/providers/swr-provider'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 const stagewiseConfig = {
   plugins: []
 };
+
 
 export default function RootLayout({
   children,
@@ -30,7 +32,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} font-hikasami`}>
-        {children}
+        <SWRProvider>
+          {children}
+        </SWRProvider>
         {process.env.NODE_ENV === 'development' && (
           <StagewiseToolbarClient config={stagewiseConfig} />
         )}

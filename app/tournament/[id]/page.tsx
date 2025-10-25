@@ -1,9 +1,23 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useParams } from "next/navigation"
 import Header from "../../../components/Header"
+import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements, useRoundGroups, useRounds, useMatches, useNews } from "../../../hooks/use-api"
+import { api } from "../../../lib/api"
+import { LoadingState, Skeleton } from "../../../components/ui/loading"
+import { ErrorState } from "../../../components/ui/error"
 
 export default function TournamentDetailPage() {
+  const params = useParams()
+  const tournamentId = parseInt(params.id as string)
+
+  // API hooks
+  const { tournament, isLoading: tournamentLoading, error: tournamentError } = useTournament(tournamentId)
+  const { participants, isLoading: participantsLoading, error: participantsError } = useTournamentParticipants(tournamentId)
+  const { teams, isLoading: teamsLoading, error: teamsError } = useTournamentTeams(tournamentId)
+  const { announcements, isLoading: announcementsLoading, error: announcementsError } = useTournamentAnnouncements(tournamentId)
+
   const [activeTab, setActiveTab] = useState('Main Info')
   const [isMainInfoDropdownOpen, setIsMainInfoDropdownOpen] = useState(false)
   const [selectedMainInfoOption, setSelectedMainInfoOption] = useState('Announcements')
@@ -16,11 +30,32 @@ export default function TournamentDetailPage() {
   const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
-  const [invitedUsers, setInvitedUsers] = useState([
-    { id: 1, name: 'Who Has Access', avatar: '/avatar1.jpg' },
-    { id: 2, name: 'Who Has Access', avatar: '/avatar2.jpg' },
-    { id: 3, name: 'Who Has Access', avatar: '/avatar3.jpg' }
-  ])
+  const [invitedUsers, setInvitedUsers] = useState([])
+  const [imagePreviews, setImagePreviews] = useState<Array<{
+    key: string
+    name: string
+    sizeBytes: number
+    src: string
+    progress: number
+    status: 'loading' | 'done' | 'error'
+    error?: string
+  }>>([])
+  const [uploadErrors, setUploadErrors] = useState<string[]>([])
+  const [dzAnimate, setDzAnimate] = useState(false)
+
+  const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+  const CHECK_ICON_URL = 'http://localhost:3845/assets/34c9396e092463c20579b8768a873faee7143b0b.svg'
+
+  function formatBytes(bytes: number) {
+    return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
+  }
+
+  // Get tournament organizers and participants for invited users
+  const tournamentMembers = participants?.content.slice(0, 5).map(participant => ({
+    id: participant.id,
+    name: `${participant.user.firstName} ${participant.user.lastName}`,
+    avatar: participant.user.imageUrl?.url || '/avatar-placeholder.jpg'
+  })) || []
   const [inviteModalTab, setInviteModalTab] = useState('invite')  
   // Check-in state for each participant row
   const [checkInStatus, setCheckInStatus] = useState<{[key: number]: boolean}>({})
@@ -41,51 +76,89 @@ export default function TournamentDetailPage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsDropdownRef = useRef<HTMLDivElement>(null)
 
-  const handleInviteUser = () => {
-    if (inviteEmail.trim()) {
-      // Здесь будет логика отправки приглашения
-      console.log('Inviting user:', inviteEmail)
-      setInviteEmail('')
-    }
-  }
+  // Pairing & Matches: selected IDs for round group and round
+  const [selectedRoundGroupId, setSelectedRoundGroupId] = useState<number | null>(null)
+  const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null)
 
-  const handleRemoveUser = (userId: number) => {
-    setInvitedUsers(invitedUsers.filter(user => user.id !== userId))
-  }
+  // News modal: category tag
+  const [selectedNewsCategory, setSelectedNewsCategory] = useState<'Important' | 'Update' | 'Info'>('Info')
 
-  const copyInviteLink = () => {
-    const link = `${window.location.origin}/tournament/invite/123`
-    navigator.clipboard.writeText(link)
-    // Можно добавить уведомление об успешном копировании
-  }
-
-  const handleAddPost = () => {
+  const handleAddPost = async () => {
     const isAnnouncement = modalContext === 'announcements'
+    const isNews = modalContext === 'news'
     const isValidAnnouncement = isAnnouncement && postTitle.trim() && postDescription.trim()
-    const isValidOther = !isAnnouncement // Schedule and map just need images
-    
-    if (isValidAnnouncement || isValidOther) {
-      // Здесь будет логика добавления поста
-      const postData = modalContext === 'announcements' 
-        ? { title: postTitle, description: postDescription, images: postImages, type: modalContext }
-        : { images: postImages, type: modalContext }
-      console.log(`Adding ${modalContext}:`, postData)
-      
-      if (modalContext === 'announcements') {
-        setPostTitle('')
-        setPostDescription('')
+    const isValidNews = isNews && postTitle.trim() && postDescription.trim() && postImages.length > 0
+    const isValidOther = !isAnnouncement && !isNews // Schedule and map just need images
+
+    try {
+      if (isValidAnnouncement || isValidNews || isValidOther) {
+        if (isNews) {
+          const [thumbnail, ...images] = postImages
+          const body = {
+            title: postTitle,
+            content: postDescription,
+            tags: [`tournament:${tournamentId}`, selectedNewsCategory],
+          }
+          await api.createNews(body as any, thumbnail, images)
+          await mutateNews()
+        }
+
+        if (isAnnouncement) {
+          // reset text fields for announcements form
+          setPostTitle('')
+          setPostDescription('')
+        }
+        // reset common fields
+        setPostImages([])
+        setIsAddPostModalOpen(false)
+        setModalContext('')
       }
-      setPostImages([])
-      setIsAddPostModalOpen(false)
-      setModalContext('')
+    } catch (e) {
+      console.error('Failed to submit content', e)
     }
   }
 
   const handleImageUpload = (files: FileList | null) => {
-    if (files) {
-      const newImages = Array.from(files)
-      setPostImages(prev => [...prev, ...newImages])
-    }
+    if (!files) return
+    const nextErrors: string[] = []
+    const validFiles: File[] = []
+    const nextPreviews: typeof imagePreviews = []
+
+    Array.from(files).forEach((file) => {
+      const key = `${file.name}-${file.lastModified}-${file.size}`
+      if (!file.type.startsWith('image/')) {
+        nextErrors.push(`${file.name}: not an image`)
+        return
+      }
+      if (file.size > MAX_SIZE) {
+        nextErrors.push(`${file.name}: exceeds 10MB`)
+        return
+      }
+      validFiles.push(file)
+      nextPreviews.push({ key, name: file.name, sizeBytes: file.size, src: '', progress: 0, status: 'loading' })
+
+      const reader = new FileReader()
+      reader.onprogress = (e) => {
+        if (!e.lengthComputable) return
+        const pct = Math.min(100, Math.round((e.loaded / e.total) * 100))
+        setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, progress: pct } : p))
+      }
+      reader.onload = () => {
+        const src = typeof reader.result === 'string' ? reader.result : ''
+        setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, src, progress: 100, status: 'done' } : p))
+        // trigger dropzone right-border slide animation on load complete
+        setDzAnimate(true)
+        setTimeout(() => setDzAnimate(false), 800)
+      }
+      reader.onerror = () => {
+        setImagePreviews((prev) => prev.map(p => p.key === key ? { ...p, status: 'error', error: 'Failed to load preview' } : p))
+      }
+      reader.readAsDataURL(file)
+    })
+
+    if (nextErrors.length) setUploadErrors(nextErrors)
+    if (nextPreviews.length) setImagePreviews((prev) => [...prev, ...nextPreviews])
+    if (validFiles.length) setPostImages((prev) => [...prev, ...validFiles])
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -96,6 +169,11 @@ export default function TournamentDetailPage() {
     e.preventDefault()
     const files = e.dataTransfer.files
     handleImageUpload(files)
+  }
+
+  const removeImageByKey = (key: string) => {
+    setImagePreviews((prev) => prev.filter(p => p.key !== key))
+    setPostImages((prev) => prev.filter(f => `${f.name}-${f.lastModified}-${f.size}` !== key))
   }
 
   useEffect(() => {
@@ -114,6 +192,58 @@ export default function TournamentDetailPage() {
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      setImagePreviews([])
+    }
+  }, [])
+
+  // Fetch round groups/rounds/matches IDs based on UI selection
+  const { roundGroups } = useRoundGroups(tournamentId)
+
+  useEffect(() => {
+    if (!roundGroups || roundGroups.length === 0) return
+    const isElimination = ['1/16', '1/8', '1/4', '1/2'].includes(selectedRound)
+    const preferredType = isElimination ? 'TEAM_ELIMINATION' : 'PRELIMINARY'
+    const preferredGroup = roundGroups.find(rg => rg.type === preferredType) || roundGroups[0]
+    if (preferredGroup && preferredGroup.id !== selectedRoundGroupId) {
+      setSelectedRoundGroupId(preferredGroup.id)
+    }
+  }, [roundGroups, selectedRound, selectedRoundGroupId])
+
+  const { rounds } = useRounds(tournamentId, selectedRoundGroupId ?? undefined)
+
+  useEffect(() => {
+    if (!rounds || rounds.length === 0) return
+    // Try match by name first (e.g., '1/16', '1/8', ...)
+    let next = rounds.find(r => r.name === selectedRound)
+    // Fallback to roundNumber if UI label is like 'Round N'
+    if (!next && selectedRound.startsWith('Round ')) {
+      const num = parseInt(selectedRound.replace('Round ', ''))
+      if (!Number.isNaN(num)) {
+        next = rounds.find(r => r.roundNumber === num)
+      }
+    }
+    // Fallback to first round
+    next = next || rounds[0]
+    if (next && next.id !== selectedRoundId) {
+      setSelectedRoundId(next.id)
+    }
+  }, [rounds, selectedRound, selectedRoundId])
+
+  const { matches, isLoading: matchesLoading, error: matchesError } = useMatches(
+    tournamentId,
+    selectedRoundGroupId ?? undefined,
+    selectedRoundId ?? undefined,
+    { page: 0, size: 50 }
+  )
+
+  // Tournament-specific news
+  const { news, isLoading: newsLoading, error: newsError, mutate: mutateNews } = useNews(
+    { tags: [`tournament:${tournamentId}`] } as any,
+    { page: 0, size: 20, sort: ['timestamp,desc'] }
+  )
+
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       <Header />
@@ -121,7 +251,13 @@ export default function TournamentDetailPage() {
       {/* Page Title */}
       <section className="px-12 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: Lorem ipsum dolores sit amit</h1>
+          {tournamentLoading ? (
+            <Skeleton className="h-12 w-96" />
+          ) : tournamentError ? (
+            <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: Error loading data</h1>
+          ) : (
+            <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: {tournament?.name || "Unknown Tournament"}</h1>
+          )}
           <button 
             onClick={() => setIsInviteModalOpen(true)}
             className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
@@ -265,6 +401,8 @@ export default function TournamentDetailPage() {
                 <button
                   onClick={() => {
                     setSelectedResultsOption('LD')
+                    setActiveResultsSection('1/16')
+                    setSelectedRound('1/16')
                     setIsResultsDropdownOpen(false)
                   }}
                   className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
@@ -303,10 +441,37 @@ export default function TournamentDetailPage() {
           <div>
             <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
             <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
-              {/* Empty state for announcements */}
-              <div className="text-center text-[#9a8c98] text-[16px] py-20">
-                No announcements yet
-              </div>
+              <LoadingState
+                isLoading={announcementsLoading}
+                fallback={<Skeleton className="h-32 w-full" />} children={undefined}></LoadingState>
+                {announcementsError ? (
+                  <div className="text-center text-red-500 text-[16px] py-20">
+                    Failed to load announcements
+                  </div>
+                ) : announcements && announcements.content.length > 0 ? (
+                  <div className="space-y-6">
+                    {announcements.content.map((announcement) => (
+                      <div key={announcement.id} className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="text-[#0D1321] text-[20px] font-bold">{announcement.title}</h3>
+                          <span className="text-[#9a8c98] text-[14px]">
+                            {new Date(announcement.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{announcement.content}</p>
+                        {announcement.user && (
+                          <div className="text-[#9a8c98] text-[14px]">
+                            Posted by {announcement.user.firstName} {announcement.user.lastName}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-[#9a8c98] text-[16px] py-20">
+                    No announcements yet
+                  </div>
+                )}
               
               {/* Add announcement button */}
               <button 
@@ -382,24 +547,50 @@ export default function TournamentDetailPage() {
               {/* Details Section */}
               <div className="mb-8">
                 <h2 className="text-[#0D1321] text-[24px] font-bold mb-4">Details</h2>
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vel turpis urna. Duis vulputate egestas sodales. Phasellus lectus tortor, fringilla sed est 
-                  non, accumsan maximus nisl. Pellentesque dapibus, est quis congue maximus, leo nisl dictum augue, dapibus dapibus nisl ex eget nulla. Aliquam tempus, 
-                  sem vulputate sagittis scelerisque, urna risus efficitur nisl, nec imperdiet quam arcu nec odio. Phasellus ut consequat turpis, vitae gravida lorem. Donec 
-                  molestudda nisl sit amet aliquam ornare. Donec tincidunt eros ut tellus sagittis, eu lobortis tellus consequat. Fusce commodo viverra dolor, vitae ultrices orci 
-                  mollis eget. Vivamus interdum tortor a elit dignissim iaculis. Fusce tincidunt nisl quis tellus pharetra, id varius neque porttitor. Curabitur tincidunt enim 
-                  dapibus eros ullamcorper, at gravida ligula mattis. Fusce odio nisl, ornare eget tortor in, gravida mattis neque.
-                </p>
+                <LoadingState
+                  isLoading={tournamentLoading}
+                  fallback={<Skeleton className="h-24 w-full" />}
+                >
+                  {tournamentError ? (
+                    <p className="text-red-500 text-[16px]">Unable to load tournament details</p>
+                  ) : tournament ? (
+                    <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
+                      {tournament.description || "No description available for this tournament."}
+                    </p>
+                  ) : (
+                    <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
+                      Tournament details will appear here once loaded.
+                    </p>
+                  )}
+                </LoadingState>
 
                 {/* Dates and Location */}
                 <div className="flex space-x-12 mb-8">
                   <div>
                     <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Dates</h3>
-                    <p className="text-[#4a4e69] text-[16px]">November 25, 2024 - February 10, 2025</p>
+                    <LoadingState
+                      isLoading={tournamentLoading}
+                      fallback={<Skeleton className="h-6 w-48" />}
+                    >
+                      <p className="text-[#4a4e69] text-[16px]">
+                        {tournament ? (
+                          tournament.endDate ?
+                            `${new Date(tournament.startDate).toLocaleDateString()} - ${new Date(tournament.endDate).toLocaleDateString()}` :
+                            new Date(tournament.startDate).toLocaleDateString()
+                        ) : "Tournament dates TBA"}
+                      </p>
+                    </LoadingState>
                   </div>
                   <div>
                     <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Location</h3>
-                    <p className="text-[#4a4e69] text-[16px]">Astana, Mynbaeva 48</p>
+                    <LoadingState
+                      isLoading={tournamentLoading}
+                      fallback={<Skeleton className="h-6 w-32" />}
+                    >
+                      <p className="text-[#4a4e69] text-[16px]">
+                        {tournament?.location || "Location TBA"}
+                      </p>
+                    </LoadingState>
                   </div>
                 </div>
               </div>
@@ -411,10 +602,30 @@ export default function TournamentDetailPage() {
                 {/* Announcements */}
                 <div>
                   <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Announcements</h2>
-                  <div className="text-[#0D1321] text-[18px] leading-relaxed">
-                    <p className="mb-2">объявления и распис</p>
-                    <p>пусть стоят как и стояли</p>
-                  </div>
+                  <LoadingState
+                    isLoading={announcementsLoading}
+                    fallback={<Skeleton className="h-20 w-full" />}
+                  >
+                    {announcementsError ? (
+                      <p className="text-red-500 text-[16px]">Unable to load announcements</p>
+                    ) : announcements && announcements.content.length > 0 ? (
+                      <div className="text-[#0D1321] text-[18px] leading-relaxed space-y-4">
+                        {announcements.content.slice(0, 3).map((announcement) => (
+                          <div key={announcement.id} className="border-b border-gray-200 pb-2 mb-2 last:border-b-0">
+                            <h4 className="font-medium text-[16px] mb-1">{announcement.title}</h4>
+                            <p className="text-[14px] text-[#4a4e69]">{announcement.content}</p>
+                            <span className="text-[12px] text-[#9a8c98]">
+                              {new Date(announcement.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[#9a8c98] text-[16px] py-8">
+                        No announcements yet
+                      </div>
+                    )}
+                  </LoadingState>
                 </div>
 
                 {/* Schedule */}
@@ -443,193 +654,48 @@ export default function TournamentDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">team1</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">NIS PhMD</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Alma</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Almaty</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">87756278927</td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[1] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[1] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">realme</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Madiar</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Madiar</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">NIS HBD</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Altpa</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Astana</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[2] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(2)}
-                      >
-                        {checkInStatus[2] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Supreme</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Zhekse...</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Zhekse...</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[3] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(3)}
-                      >
-                        {checkInStatus[3] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Babniki</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(4)}
-                      >
-                        {checkInStatus[4] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Soslik</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Taldybai</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Taldybai</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Wasabi</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Rafaketch</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Rafaketch</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Tallfayev</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Karibozin</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Karibozin</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">15454351312</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Bubek</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Bubek</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">505</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Besktas</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Besktas</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">HZHZHZ</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Z. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Z. Abdulla</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">Rasega</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">T. Nurasyl</td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]"></td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <span 
-                        className={`text-lg cursor-pointer ${checkInStatus[5] ? 'text-green-500' : 'text-red-500'}`}
-                        onClick={() => toggleCheckIn(1)}
-                      >
-                        {checkInStatus[5] ? '✓' : '✕'}
-                      </span>
-                    </td>
-                  </tr>
+                  {teamsLoading ? (
+                    // Loading skeleton rows
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                        <td className="border border-gray-300 px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="border border-gray-300 px-4 py-3 text-center"><Skeleton className="h-4 w-4 mx-auto" /></td>
+                      </tr>
+                    ))
+                  ) : teamsError ? (
+                    <tr>
+                      <td colSpan={8} className="border border-gray-300 px-4 py-8 text-center text-red-500">
+                        Failed to load teams
+                      </td>
+                    </tr>
+                  ) : teams && teams.content.length > 0 ? (
+                    teams.content.map((team) => (
+                      <tr key={team.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.name}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.club.name || 'N/A'}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <span
+                            className={`text-lg cursor-pointer ${checkInStatus[team.id] ? 'text-green-500' : 'text-red-500'}`}
+                            onClick={() => toggleCheckIn(team.id)}
+                          >
+                            {checkInStatus[team.id] ? '✓' : '✕'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="border border-gray-300 px-4 py-8 text-center text-[#4a4e69]">
+                        No teams registered yet
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -649,56 +715,9 @@ export default function TournamentDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Alma</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[10] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(10)}
-                        >
-                          {checkInStatus[10] ? '✓' : '✕'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Aitpa</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[11] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(11)}
-                        >
-                          {checkInStatus[11] ? '✓' : '✕'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">рудольф</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[12] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(12)}
-                        >
-                          {checkInStatus[12] ? '✓' : '✕'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Плюсплюс</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">87756278927</td>
-                      <td className="border border-gray-300 px-6 py-4 text-center">
-                        <span 
-                          className={`text-lg cursor-pointer ${checkInStatus[4] ? 'text-green-500' : 'text-red-500'}`}
-                          onClick={() => toggleCheckIn(4)}
-                        >
-                          {checkInStatus[4] ? '✓' : '✕'}
-                        </span>
+                    <tr>
+                      <td colSpan={4} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+                        No judges assigned yet
                       </td>
                     </tr>
                   </tbody>
@@ -729,30 +748,28 @@ export default function TournamentDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Hooley</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Alma</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">208</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Qyrandar</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Aitpa</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">991A</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">45For45</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Rudolf</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">121B</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Fate Sealers</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">PlusPlus</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">12</td>
-                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                    </tr>
+                    {matchesLoading ? (
+                      <tr>
+                        <td colSpan={4} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">Loading matches...</td>
+                      </tr>
+                    ) : matchesError ? (
+                      <tr>
+                        <td colSpan={4} className="border border-gray-300 px-6 py-6 text-center text-red-500">Failed to load matches</td>
+                      </tr>
+                    ) : matches && matches.content.length > 0 ? (
+                      matches.content.map((m) => (
+                        <tr key={m.id} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{m.team1?.name ?? '-'}</td>
+                          <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{m.team2?.name ?? '-'}</td>
+                          <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{m.location ?? '-'}</td>
+                          <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{m.judge?.fullName ?? '-'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">No matches</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1436,97 +1453,47 @@ export default function TournamentDetailPage() {
 
             {/* News Items */}
             <div className="space-y-6">
-              <article className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-[#0D1321] text-[24px] font-bold mb-2">Tournament Schedule Update</h3>
-                    <div className="flex items-center text-[#9a8c98] text-[14px] space-x-4">
-                      <span>Posted by Admin</span>
-                      <span>•</span>
-                      <span>November 20, 2024</span>
-                      <span>•</span>
-                      <span>3:45 PM</span>
-                    </div>
-                  </div>
-                  <span className="bg-[#3E5C76] text-white px-3 py-1 rounded-full text-[12px] font-medium">
-                    Important
-                  </span>
+              {newsLoading ? (
+                <div className="space-y-4">
+                  <div className="h-28 bg-gray-100 rounded" />
+                  <div className="h-28 bg-gray-100 rounded" />
+                  <div className="h-28 bg-gray-100 rounded" />
                 </div>
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
-                  Due to venue availability changes, Round 3 has been rescheduled to start at 2:00 PM instead of 1:30 PM. 
-                  Please make sure all participants and judges are informed about this change. The break between rounds 
-                  has been extended to 45 minutes to accommodate lunch.
-                </p>
-                <div className="flex items-center space-x-4 text-[#9a8c98] text-[14px]">
-                  <button className="hover:text-[#3E5C76] transition-colors">
-                    <span className="mr-1">👍</span> 12 likes
-                  </button>
-                  <button className="hover:text-[#3E5C76] transition-colors">
-                    <span className="mr-1">💬</span> 3 comments
-                  </button>
-                </div>
-              </article>
-
-              <article className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-[#0D1321] text-[24px] font-bold mb-2">New Judge Assignment</h3>
-                    <div className="flex items-center text-[#9a8c98] text-[14px] space-x-4">
-                      <span>Posted by Tournament Director</span>
-                      <span>•</span>
-                      <span>November 19, 2024</span>
-                      <span>•</span>
-                      <span>10:20 AM</span>
-                    </div>
-                  </div>
-                  <span className="bg-[#9a8c98] text-white px-3 py-1 rounded-full text-[12px] font-medium">
-                    Update
-                  </span>
-                </div>
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
-                  We are pleased to announce that Professor Elena Mikhailova from Nazarbayev University will be joining 
-                  our judging panel for the final rounds. She brings over 15 years of debate experience and will be 
-                  presiding over the semi-final matches.
-                </p>
-                <div className="flex items-center space-x-4 text-[#9a8c98] text-[14px]">
-                  <button className="hover:text-[#3E5C76] transition-colors">
-                    <span className="mr-1">👍</span> 8 likes
-                  </button>
-                  <button className="hover:text-[#3E5C76] transition-colors">
-                    <span className="mr-1">💬</span> 1 comment
-                  </button>
-                </div>
-              </article>
-
-              <article className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-[#0D1321] text-[24px] font-bold mb-2">Lunch and Refreshments</h3>
-                    <div className="flex items-center text-[#9a8c98] text-[14px] space-x-4">
-                      <span>Posted by Organizers</span>
-                      <span>•</span>
-                      <span>November 18, 2024</span>
-                      <span>•</span>
-                      <span>4:15 PM</span>
-                    </div>
-                  </div>
-                  <span className="bg-green-500 text-white px-3 py-1 rounded-full text-[12px] font-medium">
-                    Info
-                  </span>
-                </div>
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">
-                  Complimentary lunch will be provided in the main cafeteria from 12:00 PM to 1:30 PM. We have 
-                  vegetarian and halal options available. Please bring your participant badge for identification.
-                </p>
-                <div className="flex items-center space-x-4 text-[#9a8c98] text-[14px]">
-                  <button className="hover:text-[#3E5C76] transition-colors">
-                    <span className="mr-1">👍</span> 15 likes
-                  </button>
-                  <button className="hover:text-[#3E5C76] transition-colors">
-                    <span className="mr-1">💬</span> 5 comments
-                  </button>
-                </div>
-              </article>
+              ) : newsError ? (
+                <div className="text-center text-red-500">Failed to load news</div>
+              ) : news && news.content.length > 0 ? (
+                news.content.map((n) => {
+                  const tags = (n.tags || []).map(t => t.name)
+                  const category = tags.find(t => !t.startsWith('tournament:')) || 'Info'
+                  const badgeClass = category === 'Important' ? 'bg-[#3E5C76] text-white' : category === 'Update' ? 'bg-[#9a8c98] text-white' : 'bg-green-500 text-white'
+                  const dt = new Date(n.timestamp)
+                  const dateStr = dt.toLocaleDateString()
+                  const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  const authorName = n.user ? `${n.user.firstName} ${n.user.lastName ?? ''}`.trim() : 'Organizer'
+                  return (
+                    <article key={n.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-[#0D1321] text-[24px] font-bold mb-2">{n.title}</h3>
+                          <div className="flex items-center text-[#9a8c98] text-[14px] space-x-4">
+                            <span>Posted by {authorName}</span>
+                            <span>•</span>
+                            <span>{dateStr}</span>
+                            <span>•</span>
+                            <span>{timeStr}</span>
+                          </div>
+                        </div>
+                        <span className={`${badgeClass} px-3 py-1 rounded-full text-[12px] font-medium`}>
+                          {category}
+                        </span>
+                      </div>
+                      <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{n.content}</p>
+                    </article>
+                  )
+                })
+              ) : (
+                <div className="text-center text-[#9a8c98]">No news yet</div>
+              )}
             </div>
           </div>
         </div>
@@ -1871,12 +1838,14 @@ export default function TournamentDetailPage() {
                 <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">
                   Attach Images
                 </label>
-                <div
+                <div className="md:flex md:items-start md:gap-6">
+                  <div
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#3E5C76] transition-colors cursor-pointer"
+                  className={`relative border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#3E5C76] transition-colors cursor-pointer w-full md:flex-1 md:min-h-[360px] ${dzAnimate ? 'dz-animate' : ''}`}
                   onClick={() => document.getElementById('file-input')?.click()}
                 >
+                  
                   <div className="flex flex-col items-center space-y-4">
                     <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -1897,31 +1866,59 @@ export default function TournamentDetailPage() {
                   />
                 </div>
                 
-                {/* Display uploaded images */}
-                {postImages.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    {postImages.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setPostImages(prev => prev.filter((_, i) => i !== index))}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                {/* File list (Figma-style) */}
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4 md:mt-0 md:w-[260px] space-y-4">
+                    {imagePreviews.map((img) => {
+                      const ext = img.name.includes('.') ? img.name.split('.').pop()?.toUpperCase() : ''
+                      return (
+                        <div key={img.key} className="relative">
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-16 rounded-md border border-gray-300 bg-white flex items-center justify-center overflow-hidden">
+                              {img.src ? (
+                                <img src={img.src} alt={img.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[12px] font-medium text-[#0D1321]">{ext}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[20px] text-[#0D1321] font-medium truncate" title={img.name}>{img.name}</div>
+                              <div className="text-[14px] text-[#0D1321]/60">{formatBytes(img.sizeBytes)}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => (img.status === 'done' ? undefined : removeImageByKey(img.key))}
+                              className={`ml-auto w-6 h-6 aspect-square shrink-0 rounded-full overflow-hidden flex items-center justify-center ${img.status === 'done' ? '' : 'bg-black/60 text-white'}`}
+                              aria-label={img.status === 'done' ? 'Uploaded' : 'Remove'}
+                              title={img.status === 'done' ? 'Uploaded' : 'Remove'}
+                            >
+                              {img.status === 'done' ? (
+                                <img src={CHECK_ICON_URL} alt="Uploaded" className="w-full h-full object-contain" />
+                              ) : (
+                                '×'
+                              )}
+                            </button>
+                          </div>
+                          {img.status !== 'done' && (
+                            <div className="ml-[76px] mt-1 h-1 bg-gray-200 rounded">
+                              <div className="h-1 bg-[#3E5C76] rounded" style={{ width: `${img.progress}%` }} />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
+                )}
+                </div>
+                {uploadErrors.length > 0 && (
+                  <ul className="mt-2 text-[12px] text-red-600 space-y-1">
+                    {uploadErrors.map((e, i) => (<li key={i}>{e}</li>))}
+                  </ul>
                 )}
               </div>
 
-              {/* Title and Description - Only for Announcements */}
-              {modalContext === 'announcements' && (
+              {/* Title and Description - For Announcements and News */}
+              {(modalContext === 'announcements' || modalContext === 'news') && (
                 <>
                   {/* Title Input */}
                   <div>
@@ -1952,6 +1949,23 @@ export default function TournamentDetailPage() {
                       required
                     />
                   </div>
+                  {/* Category for News */}
+                  {modalContext === 'news' && (
+                    <div>
+                      <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">
+                        Category
+                      </label>
+                      <select
+                        value={selectedNewsCategory}
+                        onChange={(e) => setSelectedNewsCategory(e.target.value as any)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
+                      >
+                        <option value="Important">Important</option>
+                        <option value="Update">Update</option>
+                        <option value="Info">Info</option>
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -2008,70 +2022,39 @@ export default function TournamentDetailPage() {
               </button>
             </div>
 
-            {/* Invite Tab Content */}
-            {inviteModalTab === 'invite' && (
-              <div className="mb-6">
-                <div className="flex">
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
-                    onKeyPress={(e) => e.key === 'Enter' && handleInviteUser()}
-                  />
-                  <button
-                    onClick={handleInviteUser}
-                    className="px-6 py-3 bg-[#3E5C76] text-white rounded-r-lg hover:bg-[#2D3748] font-medium transition-colors"
-                  >
-                    Invite
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Copy Link Tab Content */}
-            {inviteModalTab === 'copy-link' && (
-              <div className="mb-6">
-                <div className="flex">
-                  <input
-                    type="text"
-                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/tournament/invite/123`}
-                    readOnly
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg bg-gray-50 text-[#4a4e69]"
-                  />
-                  <button
-                    onClick={copyInviteLink}
-                    className="px-6 py-3 bg-[#3E5C76] text-white rounded-r-lg hover:bg-[#2D3748] font-medium transition-colors"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Who Has Access Section */}
             <div>
               <h3 className="text-[#0D1321] text-[16px] font-medium mb-4">Who Has Access</h3>
               <div className="space-y-3">
-                {invitedUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {user.name.charAt(0)}
-                        </span>
+                {tournamentMembers.length > 0 ? (
+                  tournamentMembers.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {user.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {user.name.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-[#4a4e69] text-[16px]">{user.name}</span>
                       </div>
-                      <span className="text-[#4a4e69] text-[16px]">{user.name}</span>
+                      <span className="text-[#9a8c98] text-[14px]">
+                        Participant
+                      </span>
                     </div>
-                    <button
-                      onClick={() => handleRemoveUser(user.id)}
-                      className="text-[#9a8c98] hover:text-red-500 text-[14px] font-medium transition-colors"
-                    >
-                      Remove
-                    </button>
+                  ))
+                ) : (
+                  <div className="text-center text-[#9a8c98] text-[14px] py-4">
+                    No tournament members yet
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
