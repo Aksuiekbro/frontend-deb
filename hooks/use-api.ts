@@ -6,10 +6,12 @@ import {
   SimpleTournamentResponse,
   TournamentResponse,
   TournamentGetParams,
+} from '@/types/tournament/tournament'
+import {
   TournamentParticipantGetParams,
   SimpleTournamentParticipantResponse,
   TournamentParticipantResponse
-} from '@/types/tournament/tournament'
+} from '@/types/tournament/tournament-participant'
 import { UserResponse, UserGetParams, SimpleUserResponse } from '@/types/user/user'
 import { NewsResponse, NewsGetParams } from '@/types/news'
 import { Pageable, PageResult } from '@/types/page'
