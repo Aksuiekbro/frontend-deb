@@ -257,24 +257,19 @@ export function useTournamentAnnouncements(
   }
 }
 
-// Leaderboard hook (top users by rating/score)
-export function useLeaderboard(limit: number = 10) {
-  const { data, error, isLoading, mutate } = useSWR(
-    ['leaderboard', limit],
-    () => fetcher<PageResult<UserResponse>>(() =>
-      api.getUsers(undefined, { page: 0, size: limit, sort: ['rating,desc'] })
-    ),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  )
+// Leaderboard hook disabled: backend has no rating field. Prevent any rating-based fetching/sorting.
+export function useLeaderboard(_limit: number = 10) {
+  // Passing a null key disables SWR fetching entirely.
+  const { data, error, isLoading, mutate } = useSWR<PageResult<UserResponse>>(null, null, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  })
 
   return {
     leaderboard: data,
     isLoading,
     error,
-    mutate
+    mutate,
   }
 }
 

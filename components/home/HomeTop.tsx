@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import useEmblaCarousel from "embla-carousel-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useUpcomingTournaments, useLeaderboard } from "@/hooks/use-api"
-import { LoadingState, CardSkeleton, LeaderboardSkeleton } from "@/components/ui/loading"
+import { useUpcomingTournaments } from "@/hooks/use-api"
+import { LoadingState, CardSkeleton } from "@/components/ui/loading"
 import { ErrorState } from "@/components/ui/error"
 
 type HomeTopProps = { includeTestimonials?: boolean; aboveUpcoming?: ReactNode }
@@ -18,7 +18,6 @@ export default function HomeTop({ includeTestimonials = true, aboveUpcoming }: H
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
 
   const { upcomingTournaments, isLoading: tournamentsLoading, error: tournamentsError } = useUpcomingTournaments(6)
-  const { leaderboard, isLoading: leaderboardLoading, error: leaderboardError } = useLeaderboard(3)
 
   // Helpers to read fields that may not exist on our typed interfaces
   const getTournamentLocation = (t: unknown) => (t as any)?.location as string | undefined
@@ -140,44 +139,11 @@ export default function HomeTop({ includeTestimonials = true, aboveUpcoming }: H
         </LoadingState>
       </section>
 
-      {/* Testimonials (optional) */}
+      {/* Testimonials (optional; leaderboard disabled) */}
       {includeTestimonials && (
         <section className="px-8 py-12">
           <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Community Voices</h3>
-          <LoadingState isLoading={leaderboardLoading} fallback={<div className="flex space-x-12 overflow-hidden px-16">{[1,2,3].map(i => (<div key={i} className="bg-gray-200 animate-pulse border border-[#9a8c98] rounded-[12px] py-16 px-16 flex-1 min-w-0 h-64"></div>))}</div>}>
-            {leaderboardError ? (
-              <div className="text-center py-12"><p className="text-[#4a4e69] text-[18px] font-hikasami">Community voices will appear here</p></div>
-            ) : leaderboard && leaderboard.content.length > 0 ? (
-              <div className="relative">
-                <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10"><ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" /></button>
-                <div className="flex space-x-12 overflow-hidden px-16">
-                  {leaderboard.content.slice(0, 3).map((user, index) => {
-                    const testimonials = [
-                      `DeBetter has transformed my debating skills! With ${getUserTournamentsParticipated(user) || 0} tournaments under my belt and a rating of ${getUserRating(user) || 0}, I've grown tremendously as a debater.`,
-                      `I love how DeBetter brings the debate community together. Participating in ${getUserTournamentsParticipated(user) || 0} tournaments has been an incredible journey.`,
-                      `DeBetter is the perfect platform for serious debaters. Having competed in ${getUserTournamentsParticipated(user) || 0} tournaments, I can confidently say this platform offers the best support.`
-                    ]
-                    const roles = ['Top Debater', 'Rising Champion', 'Community Leader']
-                    return (
-                      <div key={user.id} className="bg-white border border-[#9a8c98] rounded-[12px] py-16 px-16 flex-1 min-w-0">
-                        {user.imageUrl ? (
-                          <img src={user.imageUrl.url} alt={`${user.firstName} ${user.lastName} testimonial`} className="w-[64px] h-[64px] rounded-full mx-auto mb-4 object-cover" />
-                        ) : (
-                          <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-xl">{user.firstName?.[0]}{user.lastName?.[0]}</div>
-                        )}
-                        <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1 font-hikasami">{user.firstName} {user.lastName}</h6>
-                        <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4 font-hikasami">{roles[index]} • {getUserTournamentsParticipated(user) || 0} Tournaments</p>
-                        <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed font-hikasami">{testimonials[index]}</p>
-                      </div>
-                    )
-                  })}
-                </div>
-                <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10"><ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" /></button>
-              </div>
-            ) : (
-              <div className="text-center py-12"><p className="text-[#4a4e69] text-[18px] font-hikasami">Community testimonials will appear as more users join tournaments</p></div>
-            )}
-          </LoadingState>
+          <div className="text-center py-12"><p className="text-[#4a4e69] text-[18px] font-hikasami">Community testimonials will appear as more users join tournaments</p></div>
         </section>
       )}
     </>
