@@ -1,8 +1,10 @@
+"use client"
+
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 import Link from "next/link"
 import Header from "../../components/Header"
 import { useCurrentUser, useUpcomingTournaments, useLeaderboard, useTournaments } from "../../hooks/use-api"
-import { LoadingState, UserStatsSkeleton, TournamentCardSkeleton, LeaderboardSkeleton } from "../../components/ui/loading"
+import { LoadingState, CardSkeleton, LeaderboardSkeleton, LoadingSpinner } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
 
 export default function Dashboard() {
@@ -12,7 +14,7 @@ export default function Dashboard() {
   const { leaderboard, isLoading: leaderboardLoading, error: leaderboardError } = useLeaderboard(3)
 
   // Get past tournaments
-  const currentDate = new Date().toISOString().split('T')[0]
+  const currentDate = new Date().toISOString().slice(0,19)
   const { tournaments: pastTournamentsData, isLoading: pastLoading, error: pastError } = useTournaments(
     { startDateTo: currentDate },
     { page: 0, size: 6, sort: ['startDate,desc'] }
@@ -77,7 +79,7 @@ export default function Dashboard() {
           <div className="relative z-10">
             <LoadingState
               isLoading={userLoading}
-              fallback={<UserStatsSkeleton />}
+            fallback={<LoadingSpinner size="lg" />}
             >
               {userError ? (
                 <ErrorState
@@ -184,7 +186,7 @@ export default function Dashboard() {
           fallback={
             <div className="flex space-x-6 overflow-hidden">
               {[1, 2].map(i => (
-                <TournamentCardSkeleton key={i} />
+                <CardSkeleton key={i} />
               ))}
             </div>
           }
