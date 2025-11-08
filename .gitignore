@@ -13,3 +13,4 @@ node_modules
 .next/routes-manifest.json
 .next/trace
 .next/types/
+docker/*.tar

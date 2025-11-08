@@ -1,18 +1,19 @@
+"use client"
+
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 import Link from "next/link"
 import Header from "../../components/Header"
-import { useCurrentUser, useUpcomingTournaments, useLeaderboard, useTournaments } from "../../hooks/use-api"
-import { LoadingState, UserStatsSkeleton, TournamentCardSkeleton, LeaderboardSkeleton } from "../../components/ui/loading"
+import { useCurrentUser, useUpcomingTournaments, useTournaments } from "../../hooks/use-api"
+import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
 
 export default function Dashboard() {
   // API hooks
   const { user: currentUser, isLoading: userLoading, error: userError } = useCurrentUser()
   const { upcomingTournaments, isLoading: upcomingLoading, error: upcomingError } = useUpcomingTournaments(6)
-  const { leaderboard, isLoading: leaderboardLoading, error: leaderboardError } = useLeaderboard(3)
 
   // Get past tournaments
-  const currentDate = new Date().toISOString().split('T')[0]
+  const currentDate = new Date().toISOString().slice(0,19)
   const { tournaments: pastTournamentsData, isLoading: pastLoading, error: pastError } = useTournaments(
     { startDateTo: currentDate },
     { page: 0, size: 6, sort: ['startDate,desc'] }
@@ -77,7 +78,7 @@ export default function Dashboard() {
           <div className="relative z-10">
             <LoadingState
               isLoading={userLoading}
-              fallback={<UserStatsSkeleton />}
+            fallback={<LoadingSpinner size="lg" />}
             >
               {userError ? (
                 <ErrorState
@@ -184,7 +185,7 @@ export default function Dashboard() {
           fallback={
             <div className="flex space-x-6 overflow-hidden">
               {[1, 2].map(i => (
-                <TournamentCardSkeleton key={i} />
+                <CardSkeleton key={i} />
               ))}
             </div>
           }
@@ -320,70 +321,15 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials (Leaderboard disabled) */}
       <section className="px-8 py-12">
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Community Highlights</h3>
-
-        <LoadingState
-          isLoading={leaderboardLoading}
-          fallback={
-            <div className="flex space-x-6 overflow-hidden">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-gray-200 animate-pulse rounded-[12px] py-8 px-6 flex-1 min-w-0 h-48"></div>
-              ))}
-            </div>
-          }
-        >
-          {leaderboardError ? (
-            <div className="bg-white border border-[#9a8c98] rounded-[12px] py-8 px-6 text-center">
-              <p className="text-[#0D1321] text-[16px] font-normal">Unable to load community highlights</p>
-            </div>
-          ) : leaderboard && leaderboard.content.length > 0 ? (
-            <div className="relative">
-              <div className="flex space-x-6 overflow-hidden">
-                {leaderboard.content.slice(0, 3).map((user, index) => {
-                  const achievements = [
-                    'Top Debater',
-                    'Rising Star',
-                    'Active Participant'
-                  ]
-
-                  return (
-                    <div key={user.id} className="bg-white border border-[#9a8c98] rounded-[12px] py-8 px-6 flex-1 min-w-0">
-                      {user.imageUrl ? (
-                        <img
-                          src={user.imageUrl.url}
-                          alt={`${user.firstName} ${user.lastName}`}
-                          className="w-[64px] h-[64px] rounded-full mx-auto mb-4 object-cover"
-                        />
-                      ) : (
-                        <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-xl">
-                          {user.firstName?.[0]}{user.lastName?.[0]}
-                        </div>
-                      )}
-                      <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1">
-                        {user.firstName} {user.lastName}
-                      </h6>
-                      <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4">
-                        {achievements[index]} • Rating: {user.rating || 0}
-                      </p>
-                      <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed">
-                        Participated in {user.tournamentsParticipated || 0} tournaments and achieved excellent results in debate competitions.
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white border border-[#9a8c98] rounded-[12px] py-8 px-6 text-center">
-              <p className="text-[#0D1321] text-[16px] font-normal">Community highlights will appear here as users participate in tournaments</p>
-            </div>
-          )}
-        </LoadingState>
+        <div className="bg-white border border-[#9a8c98] rounded-[12px] py-8 px-6 text-center">
+          <p className="text-[#0D1321] text-[16px] font-normal">Community highlights will appear here as users participate in tournaments</p>
+        </div>
       </section>
 
-      {/* Leader Board */}
+      {/* Leader Board (disabled) */}
       <section className="px-8 py-12">
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-[#0D1321] text-[38px] font-semibold">Leader Board</h3>
@@ -391,94 +337,9 @@ export default function Dashboard() {
             View Full Leaderboard
           </Link>
         </div>
-
-        <LoadingState
-          isLoading={leaderboardLoading}
-          fallback={
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-16 w-[90%] mx-auto">
-              <LeaderboardSkeleton />
-              <LeaderboardSkeleton />
-              <LeaderboardSkeleton />
-            </div>
-          }
-        >
-          {leaderboardError ? (
-            <ErrorState
-              error={leaderboardError}
-              onRetry={() => window.location.reload()}
-              message="Failed to load leaderboard"
-            />
-          ) : leaderboard && leaderboard.content.length > 0 ? (
-            <div className="relative">
-              <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-20 absolute inset-0 z-0 flex items-start justify-center pt-8">
-                Champions
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
-                {leaderboard.content.slice(0, 3).map((user, index) => {
-                  const position = index + 1
-                  const gradients = [
-                    'from-yellow-300 via-yellow-200 to-green-300', // 1st place
-                    'from-blue-400 via-blue-300 to-cyan-300',      // 2nd place
-                    'from-orange-400 via-red-300 to-pink-300',     // 3rd place
-                  ]
-                  const orders = ['order-1 md:order-2', 'order-2 md:order-1', 'order-3'] // 1st, 2nd, 3rd
-
-                  return (
-                    <div
-                      key={user.id}
-                      className={`bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full ${orders[index]} ${position === 1 ? 'transform md:-translate-y-8' : ''}`}
-                    >
-                      {position === 1 && (
-                        <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-                      )}
-                      <div className={`h-[96px] bg-gradient-to-r ${gradients[index]} relative ${position === 1 ? 'rounded-t-[12px]' : ''}`}>
-                        <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold">
-                          {position === 1 ? '1st' : position === 2 ? '2nd' : '3rd'}
-                        </span>
-                      </div>
-                      <div className="p-6 pt-[48px]">
-                        <div
-                          className="w-[96px] h-[96px] bg-[#c9ada7] absolute left-4 top-[48px] z-10"
-                          style={{
-                            clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                            transform: "rotate(30deg)",
-                          }}
-                        ></div>
-                        <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-center">
-                          {user.firstName} {user.lastName}
-                        </h6>
-                        <div className="flex justify-between mb-6">
-                          <div className="text-center">
-                            <div className="text-[#4a4e69] text-[30px] font-medium">{user.tournamentsParticipated || 0}</div>
-                            <div className="text-[#9a8c98] text-[20px] font-medium">tournaments</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-[#4a4e69] text-[30px] font-medium">{user.rating || 0}</div>
-                            <div className="text-[#9a8c98] text-[20px] font-medium">Rating</div>
-                          </div>
-                        </div>
-                        <Link
-                          href={`/profile/${user.id}`}
-                          className="border border-[#4a4e69] text-[#4a4e69] px-4 py-2 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[14px] font-normal text-center block transition-colors"
-                        >
-                          View Profile
-                        </Link>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            <EmptyState
-              title="No leaderboard data available"
-              description="Participate in tournaments to see rankings"
-              actionText="Browse Tournaments"
-              actionHref="/tournaments"
-            />
-          )}
-        </LoadingState>
+        <div className="bg-white border border-[#9a8c98] rounded-[12px] py-16 px-6 text-center">
+          <p className="text-[#0D1321] text-[16px] font-normal">Leaderboard is disabled until ratings are supported.</p>
+        </div>
       </section>
     </div>
   )

@@ -164,6 +164,7 @@ export const api = {
     //AUTH
     register: (body: UserRegistrationRequest) => post<UserResponse>("/auth/register", body),
     login: (body: UserLoginRequest) => post<UserResponse>("/auth/login", body),
+    logout: () => post<void>("/auth/logout"),
 
     //USERS
     getUsers: (params?: UserGetParams, pageable?: Pageable) => getPageable<UserResponse>("/users", params, pageable),
@@ -246,7 +247,7 @@ export const api = {
     deleteRound: (tournamentId: number, roundGroupId: number, id: number) => deleteReq<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${id}`),
 
     //MATCHES
-    getMatches: (tournamentId: number, roundGroupId: number, roundId: number, pageable?: Pageable) => getPageable<MatchResponse>(`tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches`, pageable),
+    getMatches: (tournamentId: number, roundGroupId: number, roundId: number, pageable?: Pageable) => getPageable<MatchResponse>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches`, pageable),
 
     submitMatchResults: (tournamentId: number, roundGroupId: number, roundId: number, body: MatchResultRequest[]) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/results`, body),
 

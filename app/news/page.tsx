@@ -1,3 +1,5 @@
+"use client"
+
 import Header from "../../components/Header"
 import { useNews } from "../../hooks/use-api"
 import { LoadingState, CardSkeleton } from "../../components/ui/loading"

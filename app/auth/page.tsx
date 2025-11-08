@@ -71,7 +71,8 @@ export default function AuthPage() {
       } else {
         setSignUpSuccess('Account created successfully! Redirecting...')
         setTimeout(() => {
-          router.push('/dashboard')
+          if (role === Role.ORGANIZER) router.push('/organizer')
+          else router.push('/dashboard')
         }, 2000)
         return                      // prevent setState in finally
       }

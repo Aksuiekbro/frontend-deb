@@ -50,6 +50,7 @@ export default function Header() {
         <nav className="flex space-x-12">
           {/* Nav Links */}
           <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Join Debates</Link>
+          <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Host Debate</Link>
           <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Rating</Link>
           <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">News</Link>
         </nav>

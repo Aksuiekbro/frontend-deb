@@ -1,3 +1,5 @@
+"use client"
+
 import useSWR from 'swr'
 import { api } from '@/lib/api'
 import {
@@ -12,6 +14,9 @@ import { UserResponse, UserGetParams, SimpleUserResponse } from '@/types/user/us
 import { NewsResponse, NewsGetParams } from '@/types/news'
 import { Pageable, PageResult } from '@/types/page'
 import { AnnouncementResponse } from '@/types/tournament/announcement/announcement'
+import { RoundGroupResponse } from '@/types/tournament/round/round-group'
+import { SimpleRoundResponse } from '@/types/tournament/round/round'
+import { MatchResponse } from '@/types/tournament/match'
 import { TeamResponse, SimpleTeamResponse } from '@/types/tournament/team'
 
 // Fetcher function for SWR
@@ -252,24 +257,88 @@ export function useTournamentAnnouncements(
   }
 }
 
-// Leaderboard hook (top users by rating/score)
-export function useLeaderboard(limit: number = 10) {
-  const { data, error, isLoading, mutate } = useSWR(
-    ['leaderboard', limit],
-    () => fetcher<PageResult<UserResponse>>(() =>
-      api.getUsers(undefined, { page: 0, size: limit, sort: ['rating,desc'] })
-    ),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  )
+// Leaderboard hook disabled: backend has no rating field. Prevent any rating-based fetching/sorting.
+export function useLeaderboard(_limit: number = 10) {
+  // Passing a null key disables SWR fetching entirely.
+  const { data, error, isLoading, mutate } = useSWR<PageResult<UserResponse>>(null, null, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  })
 
   return {
     leaderboard: data,
     isLoading,
     error,
-    mutate
+    mutate,
+  }
+}
+
+// Round groups
+export function useRoundGroups(tournamentId?: number) {
+  const enabled = typeof tournamentId === 'number' && !Number.isNaN(tournamentId)
+  const { data, error, isLoading, mutate } = useSWR(
+    enabled ? ['round-groups', tournamentId] : null,
+    () => fetcher<RoundGroupResponse[]>(() => api.getRoundGroups(tournamentId!)),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
+  return {
+    roundGroups: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+// Rounds within a round group
+export function useRounds(tournamentId?: number, roundGroupId?: number) {
+  const enabled =
+    typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
+    typeof roundGroupId === 'number' && !Number.isNaN(roundGroupId)
+
+  const { data, error, isLoading, mutate } = useSWR(
+    enabled ? ['rounds', tournamentId, roundGroupId] : null,
+    () => fetcher<SimpleRoundResponse[]>(() => api.getRounds(tournamentId!, roundGroupId!)),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
+  return {
+    rounds: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+// Matches within a round
+export function useMatches(
+  tournamentId?: number,
+  roundGroupId?: number,
+  roundId?: number,
+  pageable?: Pageable
+) {
+  const enabled =
+    typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
+    typeof roundGroupId === 'number' && !Number.isNaN(roundGroupId) &&
+    typeof roundId === 'number' && !Number.isNaN(roundId)
+
+  const { data, error, isLoading, mutate } = useSWR(
+    enabled ? ['matches', tournamentId, roundGroupId, roundId, pageable] : null,
+    () => fetcher<PageResult<MatchResponse>>(() => api.getMatches(tournamentId!, roundGroupId!, roundId!, pageable)),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
+  return {
+    matches: data,
+    isLoading,
+    error,
+    mutate,
   }
 }
 

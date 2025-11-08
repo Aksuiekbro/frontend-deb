@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
-import { useUpcomingTournaments, useLeaderboard } from "../hooks/use-api"
-import { LoadingState, CardSkeleton, LeaderboardSkeleton } from "../components/ui/loading"
-import { ErrorState } from "../components/ui/error"
+import { useUpcomingTournaments } from "@/hooks/use-api"
+import { LoadingState, CardSkeleton } from "@/components/ui/loading"
+import { ErrorState } from "@/components/ui/error"
 
 export default function Component() {
   const router = useRouter()
@@ -20,7 +20,6 @@ export default function Component() {
 
   // API hooks
   const { upcomingTournaments, isLoading: tournamentsLoading, error: tournamentsError } = useUpcomingTournaments(6)
-  const { leaderboard, isLoading: leaderboardLoading, error: leaderboardError } = useLeaderboard(3)
 
   const toggleDebateDetails = (debateId: number) => {
     setExpandedDebates(prev => ({
@@ -286,200 +285,25 @@ export default function Component() {
         </LoadingState>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials (leaderboard disabled) */}
       <section className="px-8 py-12">
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Community Voices</h3>
-
-        <LoadingState
-          isLoading={leaderboardLoading}
-          fallback={
-            <div className="flex space-x-12 overflow-hidden px-16">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-gray-200 animate-pulse border border-[#9a8c98] rounded-[12px] py-16 px-16 flex-1 min-w-0 h-64"></div>
-              ))}
-            </div>
-          }
-        >
-          {leaderboardError ? (
-            <div className="text-center py-12">
-              <p className="text-[#4a4e69] text-[18px] font-hikasami">Community voices will appear here</p>
-            </div>
-          ) : leaderboard && leaderboard.content.length > 0 ? (
-            <div className="relative">
-              <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
-                <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
-              </button>
-
-              <div className="flex space-x-12 overflow-hidden px-16">
-                {leaderboard.content.slice(0, 3).map((user, index) => {
-                  // Create personalized testimonials based on user achievements
-                  const testimonials = [
-                    `DeBetter has transformed my debating skills! With ${user.tournamentsParticipated || 0} tournaments under my belt and a rating of ${user.rating || 0}, I've grown tremendously as a debater. The platform makes it easy to find quality competitions and connect with fellow debaters.`,
-                    `I love how DeBetter brings the debate community together. Participating in ${user.tournamentsParticipated || 0} tournaments has been an incredible journey. The organized structure and competitive environment have helped me achieve my current rating of ${user.rating || 0}.`,
-                    `DeBetter is the perfect platform for serious debaters. Having competed in ${user.tournamentsParticipated || 0} tournaments, I can confidently say this platform offers the best tournament organization and community support. My rating of ${user.rating || 0} reflects the growth I've experienced here.`
-                  ]
-
-                  const roles = ['Top Debater', 'Rising Champion', 'Community Leader']
-
-                  return (
-                    <div key={user.id} className="bg-white border border-[#9a8c98] rounded-[12px] py-16 px-16 flex-1 min-w-0">
-                      {user.imageUrl ? (
-                        <img
-                          src={user.imageUrl.url}
-                          alt={`${user.firstName} ${user.lastName} testimonial`}
-                          className="w-[64px] h-[64px] rounded-full mx-auto mb-4 object-cover"
-                        />
-                      ) : (
-                        <div className="w-[64px] h-[64px] bg-[#c9ada7] rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-xl">
-                          {user.firstName?.[0]}{user.lastName?.[0]}
-                        </div>
-                      )}
-                      <h6 className="text-[#0D1321] text-[20px] font-medium text-center mb-1 font-hikasami">
-                        {user.firstName} {user.lastName}
-                      </h6>
-                      <p className="text-[#0D1321] text-[14px] font-normal text-center mb-4 font-hikasami">
-                        {roles[index]} • {user.tournamentsParticipated || 0} Tournaments
-                      </p>
-                      <p className="text-[#0D1321] text-[14px] font-normal text-center leading-relaxed font-hikasami">
-                        {testimonials[index]}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
-                <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-[#4a4e69] text-[18px] font-hikasami">Community testimonials will appear as more users join tournaments</p>
-              <Link
-                href="/tournaments"
-                className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
-              >
-                Join a Tournament
-              </Link>
-            </div>
-          )}
-        </LoadingState>
+        <div className="text-center py-12">
+          <p className="text-[#4a4e69] text-[18px] font-hikasami">Community testimonials will appear as more users join tournaments</p>
+          <Link
+            href="/tournaments"
+            className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
+          >
+            Join a Tournament
+          </Link>
+        </div>
       </section>
 
-      {/* Leader Board */}
+      {/* Leader Board (disabled) */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Leader Board</h3>
-
-        <LoadingState
-          isLoading={leaderboardLoading}
-          fallback={
-            <div className="relative">
-              <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-60 absolute inset-0 z-0 flex items-start justify-center pt-8 font-hikasami">
-                Champions
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
-                <LeaderboardSkeleton />
-                <LeaderboardSkeleton />
-                <LeaderboardSkeleton />
-              </div>
-            </div>
-          }
-        >
-          {leaderboardError ? (
-            <ErrorState
-              error={leaderboardError}
-              onRetry={() => window.location.reload()}
-              message="Failed to load leaderboard"
-            />
-          ) : leaderboard && leaderboard.content.length > 0 ? (
-            <div className="relative">
-              <h3 className="text-[#c9ada7] text-[96px] font-semibold text-center mb-8 opacity-60 absolute inset-0 z-0 flex items-start justify-center pt-8 font-hikasami">
-                Champions
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-12 justify-items-center relative z-10 pt-32 w-[90%] mx-auto">
-                {leaderboard.content.slice(0, 3).map((user, index) => {
-                  const position = index + 1
-                  const gradientId = `gradient-${position}`
-                  const gradients = [
-                    'linear-gradient(to right, #0D1321, #3E5C76)', // 1st place
-                    'linear-gradient(to right, #3E5C76, #748CAB)', // 2nd place
-                    'linear-gradient(to right, #748CAB, #c9ada7)', // 3rd place
-                  ]
-                  const orders = ['order-1 md:order-2', 'order-2 md:order-1', 'order-3'] // 1st, 2nd, 3rd
-
-                  return (
-                    <div
-                      key={user.id}
-                      className={`bg-white rounded-[12px] overflow-hidden shadow-lg relative w-full ${orders[index]} ${position === 1 ? 'transform md:-translate-y-8' : ''}`}
-                    >
-                      {position === 1 && (
-                        <Crown className="absolute -top-[64px] left-1/2 transform -translate-x-1/2 w-[48px] h-[48px] text-[#fca311] z-20" />
-                      )}
-                      <div
-                        className={`h-[150px] relative overflow-hidden ${position === 1 ? 'rounded-t-[12px]' : ''}`}
-                        id={gradientId}
-                        ref={el => { gradientRefs.current[gradientId] = el }}
-                      >
-                        <div
-                          className={`h-full transition-all duration-1000 ${position === 1 ? 'rounded-t-[12px]' : ''}`}
-                          style={{
-                            background: gradients[index],
-                            width: visibleGradients[gradientId] ? '100%' : '0%',
-                            transform: 'translateX(0)',
-                            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                          }}
-                        />
-                        <span className="absolute top-4 right-4 text-[#22223b] text-[56px] font-bold font-hikasami">
-                          {position === 1 ? '1st' : position === 2 ? '2nd' : '3rd'}
-                        </span>
-                      </div>
-                      <div className="p-6 pt-[48px]">
-                        <div
-                          className="w-[96px] h-[96px] bg-[#c9ada7] absolute left-4 top-[102px] z-10"
-                          style={{
-                            clipPath: "polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)",
-                            transform: "rotate(90deg)",
-                          }}
-                        ></div>
-                        <h6 className="text-[#4a4e69] text-[30px] font-medium mb-6 text-left font-hikasami">
-                          {user.firstName} {user.lastName}
-                        </h6>
-                        <div className="flex justify-between mb-6">
-                          <div className="text-center">
-                            <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">
-                              {user.tournamentsParticipated || 0}
-                            </div>
-                            <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">tournaments</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-[#4a4e69] text-[30px] font-medium font-hikasami">
-                              {user.rating || 0}
-                            </div>
-                            <div className="text-[#9a8c98] text-[20px] font-medium font-hikasami">Rating</div>
-                          </div>
-                        </div>
-                        <Link
-                          href={`/profile/${user.id}`}
-                          className="border border-[#4a4e69] text-[#4a4e69] px-6 py-3 rounded-[8px] hover:bg-[#4a4e69] hover:text-[#FFFFFF] w-full text-[16px] font-normal font-hikasami text-center block transition-colors"
-                        >
-                          View Profile
-                        </Link>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-[#4a4e69] text-[18px] font-hikasami">No leaderboard data available yet</p>
-              <p className="text-[#9a8c98] text-[14px] font-hikasami mt-2">
-                Participate in tournaments to see rankings
-              </p>
-            </div>
-          )}
-        </LoadingState>
+        <div className="text-center py-12">
+          <p className="text-[#4a4e69] text-[18px] font-hikasami">Leaderboard is disabled until ratings are supported.</p>
+        </div>
       </section>
 
       {/* Footer */}

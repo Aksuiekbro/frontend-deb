@@ -1,3 +1,16 @@
+/* Dropzone sweep animation (uses element background, no extra border elements) */
+.dz-animate {
+  background-image: linear-gradient(to left, #3E5C76 0 0);
+  background-repeat: no-repeat;
+  background-size: 3px 100%;
+  background-position: right top;
+  animation: dz-sweep 0.7s ease-out forwards;
+}
+
+@keyframes dz-sweep {
+  from { background-position-x: 100%; }
+  to { background-position-x: 0%; }
+}
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;200;300;400;500;600;700;800;900&family=M+PLUS+1p:wght@100;300;400;500;700;800;900&display=swap');
 
 /* Hikasami Sans Local Font */
