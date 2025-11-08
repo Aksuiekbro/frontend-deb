@@ -26,3 +26,8 @@ export interface OrganizerInvitationRequest {
     tournamentId: number;
 }
 
+export interface ParticipantInvitationRequest {
+    inviteeId: number;
+    teamId: number;
+}
+

@@ -13,7 +13,7 @@ import { DebateFormatRequest, SimpleTournamentResponse, TournamentGetParams, Tou
 import { SimpleTournamentParticipantResponse, TournamentParticipantGetParams, TournamentParticipantResponse } from "@/types/tournament/tournament-participant";
 import { CityResponse, InstitutionResponse, OrganizerProfileResponse, ParticipantProfileResponse } from "@/types/user/profile";
 import { SimpleUserResponse, UserGetParams, UserLoginRequest, UserRegistrationRequest, UserResponse, UserUpdateRequest } from "@/types/user/user";
-import { OrganizerInvitationResponse, ParticipantInvitationResponse } from "@/types/util/request/invitation";
+import { OrganizerInvitationRequest, OrganizerInvitationResponse, ParticipantInvitationRequest, ParticipantInvitationResponse } from "@/types/util/request/invitation";
 import { SocialPlatform, SocialProfileRequest } from "@/types/util/socials/social-profile";
 import { register } from "module";
 
@@ -311,6 +311,16 @@ export const api = {
     getSentOrganizerInvitations: (pageable?: Pageable) => getPageable<OrganizerInvitationResponse>(`/organizer-invitations/sent`, pageable),
     getReceivedOrganizerInvitations: (pageable?: Pageable) => getPageable<OrganizerInvitationResponse>(`/organizer-invitations/received`, pageable),
 
+    sendOrganizerInvitation: (body: OrganizerInvitationRequest) => post<void>(`/organizer-invitations`, body),
+
+    acceptOrganizerInvitation: (id: number) => post<void>(`/organizer-invitations/${id}/accept`),
+    rejectOrganizerInvitation: (id: number) => post<void>(`/organizer-invitations/${id}/reject`),
+
     getSentParticipantInvitations: (pageable?: Pageable) => getPageable<ParticipantInvitationResponse>(`/participant-invitations/sent`, pageable),
     getReceivedParticipantInvitations: (pageable?: Pageable) => getPageable<ParticipantInvitationResponse>(`/participant-invitations/received`, pageable),
+
+    sendParticipantInvitation: (body: ParticipantInvitationRequest) => post<void>(`/participant-invitations`, body),
+
+    acceptParticipantInvitation: (id: number) => post<void>(`/participant-invitations/${id}/accept`),
+    rejectParticipantInvitation: (id: number) => post<void>(`/participant-invitations/${id}/reject`),
 }
