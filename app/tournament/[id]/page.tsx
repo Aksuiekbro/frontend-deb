@@ -266,19 +266,20 @@ export default function TournamentDetailPage() {
     setToggleTournamentLoading(true)
 
     try {
-      if (nextValue) {
-        await api.enableTournament(tournament.id)
-        toast({
-          title: "Tournament enabled",
-          description: `${tournament.name} is now visible to participants.`,
-        })
-      } else {
-        await api.disableTournament(tournament.id)
-        toast({
-          title: "Tournament disabled",
-          description: `${tournament.name} is now hidden from participants.`,
-        })
+      const response = nextValue
+        ? await api.enableTournament(tournament.id)
+        : await api.disableTournament(tournament.id)
+
+      if (!response.ok) {
+        throw new Error("Failed to update tournament visibility")
       }
+
+      toast({
+        title: nextValue ? "Tournament enabled" : "Tournament disabled",
+        description: nextValue
+          ? `${tournament.name} is now visible to participants.`
+          : `${tournament.name} is now hidden from participants.`,
+      })
     } catch (error) {
       console.error("Failed to toggle tournament status", error)
       setIsTournamentEnabled(previousValue)
