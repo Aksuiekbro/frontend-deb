@@ -1,5 +1,8 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+
 import { LoadingState, Skeleton } from "@/components/ui/loading"
 import type { PageResult } from "@/types/page"
 import type { AnnouncementResponse } from "@/types/tournament/announcement/announcement"
@@ -33,43 +36,89 @@ export function MainInfoSection({
   const isSpecialOption = (option: string): option is SpecialOption =>
     SPECIAL_OPTIONS.includes(option as SpecialOption)
 
+  const sortedAnnouncements = useMemo(
+    () =>
+      (announcements?.content ?? [])
+        .slice()
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+    [announcements]
+  )
+  const [activeAnnouncementIndex, setActiveAnnouncementIndex] = useState(0)
+
+  useEffect(() => {
+    setActiveAnnouncementIndex(0)
+  }, [sortedAnnouncements.length])
+
+  const currentAnnouncement = sortedAnnouncements[activeAnnouncementIndex]
+
   if (selectedOption === "Announcements") {
     return (
       <div>
         <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
-        <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
-          <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-32 w-full" />}>
+        <div className="relative rounded-3xl border border-[#CFD6EA] bg-white p-6">
+          <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-72 w-full rounded-2xl" />}>
             {announcementsError ? (
               <div className="text-center text-red-500 text-[16px] py-20">Failed to load announcements</div>
-            ) : announcements && announcements.content.length > 0 ? (
-              <div className="space-y-6">
-                {announcements.content.map((announcement) => (
-                  <div key={announcement.id} className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-[#0D1321] text-[20px] font-bold">{announcement.title}</h3>
-                      <span className="text-[#9a8c98] text-[14px]">
-                        {new Date(announcement.timestamp).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{announcement.content}</p>
-                    {announcement.user && (
-                      <div className="text-[#9a8c98] text-[14px]">
-                        Posted by {announcement.user.firstName} {announcement.user.lastName}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
+            ) : sortedAnnouncements.length === 0 ? (
               <div className="text-center text-[#9a8c98] text-[16px] py-20">No announcements yet</div>
+            ) : (
+              <>
+                <div className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border border-[#D6DEEF] bg-[#1F5957]">
+                  {currentAnnouncement?.imageUrl?.url ? (
+                    <img
+                      src={currentAnnouncement.imageUrl.url}
+                      alt={currentAnnouncement.title}
+                      className="h-[320px] w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-[320px] w-full bg-[#1F5957]" />
+                  )}
+
+                  <button
+                    className="absolute left-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 text-white transition hover:bg-white/10 disabled:opacity-50"
+                    onClick={() => setActiveAnnouncementIndex((prev) => Math.max(prev - 1, 0))}
+                    disabled={activeAnnouncementIndex === 0}
+                    aria-label="Previous announcement"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="absolute right-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 text-white transition hover:bg-white/10 disabled:opacity-50"
+                    onClick={() =>
+                      setActiveAnnouncementIndex((prev) => Math.min(prev + 1, sortedAnnouncements.length - 1))
+                    }
+                    disabled={activeAnnouncementIndex === sortedAnnouncements.length - 1}
+                    aria-label="Next announcement"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="mx-auto mt-6 max-w-4xl">
+                  <div className="flex items-center justify-between text-sm text-[#8A91A8]">
+                    <span>
+                      {new Date(currentAnnouncement.timestamp).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span>
+                      {activeAnnouncementIndex + 1}/{sortedAnnouncements.length}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 text-2xl font-semibold text-[#0B1327]">{currentAnnouncement.title}</h3>
+                  <p className="mt-3 text-lg leading-relaxed text-[#3A4156]">{currentAnnouncement.content}</p>
+                </div>
+              </>
             )}
           </LoadingState>
 
           <button
             onClick={() => onOpenModal("announcements")}
-            className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+            className="absolute bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
