@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, type ReactNode } from "react"
+import { useState, useEffect, useRef, type ReactNode, type FormEvent } from "react"
 import { useParams } from "next/navigation"
 import Header from "../../../components/Header"
 import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements, useRoundGroups, useRounds, useMatches, useNews, useCurrentUser } from "../../../hooks/use-api"
@@ -76,10 +76,12 @@ export default function TournamentDetailPage() {
   }
   
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState(false)
+  const [isAddJudgeModalOpen, setIsAddJudgeModalOpen] = useState(false)
   const [modalContext, setModalContext] = useState('')
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
   const [postImages, setPostImages] = useState<File[]>([])
+  const [judgeForm, setJudgeForm] = useState({ name: '', club: '', phone: '' })
   const [deletingTeamId, setDeletingTeamId] = useState<number | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsDropdownRef = useRef<HTMLDivElement>(null)
@@ -126,6 +128,28 @@ export default function TournamentDetailPage() {
     } catch (e) {
       console.error('Failed to submit content', e)
     }
+  }
+
+  const handleAddJudge = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const hasAllFields = Object.values(judgeForm).every((value) => value.trim())
+
+    if (!hasAllFields) {
+      toast({
+        title: 'Missing information',
+        description: 'Please fill in name, club, and phone.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    toast({
+      title: 'Judge submitted',
+      description: 'This action will be wired to the backend soon.'
+    })
+
+    setJudgeForm({ name: '', club: '', phone: '' })
+    setIsAddJudgeModalOpen(false)
   }
 
   const handleImageUpload = (files: FileList | null) => {
@@ -866,7 +890,12 @@ export default function TournamentDetailPage() {
               
               {/* Add Judge Button */}
               <div className="absolute bottom-6 right-6">
-                <button className="w-14 h-14 bg-[#3E5C76] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setIsAddJudgeModalOpen(true)}
+                  className="w-14 h-14 bg-[#3E5C76] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+                  aria-label="Add judge"
+                >
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -1921,6 +1950,76 @@ export default function TournamentDetailPage() {
           </div>
         </div>
       )}
+
+      {isAddJudgeModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddJudgeModalOpen(false)
+                setJudgeForm({ name: '', club: '', phone: '' })
+              }}
+              className="absolute top-3 right-4 text-3xl text-[#9a8c98] hover:text-[#0D1321] transition"
+              aria-label="Close add judge modal"
+            >
+              ×
+            </button>
+            <h2 className="text-center text-[32px] font-bold text-[#0D1321] mb-8">Add Judge</h2>
+
+            <form onSubmit={handleAddJudge} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[#0D1321] text-[16px] font-medium" htmlFor="judge-name">
+                  Name
+                </label>
+                <input
+                  id="judge-name"
+                  type="text"
+                  value={judgeForm.name}
+                  onChange={(e) => setJudgeForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-[#0D1321] text-[16px] focus:border-[#3E5C76] focus:ring-2 focus:ring-[#3E5C76]/20 outline-none transition-all"
+                  placeholder="Enter judge name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[#0D1321] text-[16px] font-medium" htmlFor="judge-club">
+                  Club
+                </label>
+                <input
+                  id="judge-club"
+                  type="text"
+                  value={judgeForm.club}
+                  onChange={(e) => setJudgeForm((prev) => ({ ...prev, club: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-[#0D1321] text-[16px] focus:border-[#3E5C76] focus:ring-2 focus:ring-[#3E5C76]/20 outline-none transition-all"
+                  placeholder="Enter club name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[#0D1321] text-[16px] font-medium" htmlFor="judge-phone">
+                  Phone
+                </label>
+                <input
+                  id="judge-phone"
+                  type="tel"
+                  value={judgeForm.phone}
+                  onChange={(e) => setJudgeForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-[#0D1321] text-[16px] focus:border-[#3E5C76] focus:ring-2 focus:ring-[#3E5C76]/20 outline-none transition-all"
+                  placeholder="Enter phone number"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#3E5C76] hover:bg-[#2f4858] text-white text-[18px] font-semibold py-3 rounded-2xl transition-colors shadow-md"
+              >
+                Submit
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
-} 
+}
