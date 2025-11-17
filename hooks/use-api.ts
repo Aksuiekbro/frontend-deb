@@ -22,6 +22,7 @@ import { RoundGroupResponse, RoundGroupType } from '@/types/tournament/round/rou
 import { SimpleRoundResponse } from '@/types/tournament/round/round'
 import { MatchResponse } from '@/types/tournament/match'
 import { TeamResponse, SimpleTeamResponse } from '@/types/tournament/team'
+import { JudgeGetParams, JudgeResponse } from '@/types/tournament/judge'
 import { UrlResponse } from '@/types/util/url'
 import { TagResponse } from '@/types/tag'
 import { OrganizerProfileResponse, ParticipantProfileResponse, CityResponse, InstitutionResponse } from '@/types/user/profile'
