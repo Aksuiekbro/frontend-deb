@@ -22,7 +22,7 @@ interface ResultsSectionProps {
   deletingTeamId: number | null
 }
 
-const LD_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
+const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
 
 export function ResultsSection({
   selectedResultsOption,
@@ -109,11 +109,104 @@ export function ResultsSection({
     </tr>
   )
 
+  const isEliminationRound =
+    selectedResultsOption !== "LD" &&
+    ELIMINATION_ROUNDS.includes(activeResultsSection as (typeof ELIMINATION_ROUNDS)[number])
+
+  type TeamWithEliminationResult = SimpleTeamResponse & {
+    eliminationResult?: {
+      winnerTeamId?: number
+      winnerName?: string
+    }
+  }
+
+  const getEliminationResult = (team?: SimpleTeamResponse) =>
+    team ? (team as TeamWithEliminationResult).eliminationResult : undefined
+
+  const hasWinnerData = teamRows.some((team) => {
+    const result = getEliminationResult(team)
+    return typeof result?.winnerTeamId === "number" || typeof result?.winnerName === "string"
+  })
+
+  const resolveWinnerName = (fraction1?: SimpleTeamResponse, fraction2?: SimpleTeamResponse) => {
+    if (!hasWinnerData) {
+      return fraction2 ? "—" : fraction1?.name ?? "—"
+    }
+
+    const candidates = [fraction1, fraction2]
+    for (const team of candidates) {
+      const result = getEliminationResult(team)
+      if (!result) continue
+      if (typeof result.winnerName === "string") {
+        return result.winnerName
+      }
+      if (typeof result.winnerTeamId === "number") {
+        if (fraction1?.id === result.winnerTeamId) return fraction1.name
+        if (fraction2?.id === result.winnerTeamId) return fraction2?.name ?? "—"
+        return team?.name ?? "—"
+      }
+    }
+
+    return fraction2 ? "—" : fraction1?.name ?? "—"
+  }
+
+  const renderEliminationTable = () => {
+    const pairs = []
+    for (let i = 0; i < teamRows.length; i += 2) {
+      const fraction1 = teamRows[i]
+      if (!fraction1) break
+      const fraction2 = teamRows[i + 1]
+      pairs.push({ fraction1, fraction2 })
+    }
+
+    if (!pairs.length) {
+      return (
+        <tr>
+          <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+            No matches scheduled for this round
+          </td>
+        </tr>
+      )
+    }
+
+    return pairs.map(({ fraction1, fraction2 }, index) => (
+      <tr key={`${fraction1.id}-${index}`} className="hover:bg-gray-50">
+        <td className="border border-gray-300 px-6 py-4 text-[16px] text-[#0B1327] font-medium">{fraction1.name}</td>
+        <td className="border border-gray-300 px-6 py-4 text-[16px] text-[#0B1327]">{fraction2?.name ?? "—"}</td>
+        {hasWinnerData && (
+          <td className="border border-gray-300 px-6 py-4 text-[16px] text-[#0B1327]">{resolveWinnerName(fraction1, fraction2)}</td>
+        )}
+      </tr>
+    ))
+  }
+
   return (
     <div className="p-8">
       <h2 className="text-[#0D1321] text-[32px] font-bold mb-8">{selectedResultsOption}</h2>
 
       <div className="relative">
+        {isEliminationRound ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
+                <thead>
+                  <tr className="bg-white text-[14px] uppercase tracking-[0.08em] text-[#4A5168]">
+                    <th className="border border-gray-300 px-6 py-4 text-left">Fraction 1</th>
+                    <th className="border border-gray-300 px-6 py-4 text-left">Fraction 2</th>
+                    {hasWinnerData && <th className="border border-gray-300 px-6 py-4 text-left">Winner</th>}
+                  </tr>
+                </thead>
+                <tbody>{renderEliminationTable()}</tbody>
+              </table>
+            </div>
+            <div className="flex justify-end mt-8 mb-8">
+              <button className="px-8 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors">
+                Submit
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
         {selectedResultsOption === "APF" && activeResultsSection === "APF Speaker Score" && (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
@@ -210,7 +303,7 @@ export function ResultsSection({
           </div>
         )}
 
-        {selectedResultsOption === "LD" && (
+        {selectedResultsOption === "LD" && !isEliminationRound && (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
@@ -236,13 +329,19 @@ export function ResultsSection({
             Submit
           </button>
         </div>
+          </>
+        )}
 
         <div className="bg-[#0D1321] rounded-lg p-4">
           <div className="flex items-center justify-center gap-2">
             {selectedResultsOption !== "LD" && (
               <>
                 <button
-                  className={`px-4 py-2 ${activeResultsSection === `${selectedResultsOption} Results` ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"} rounded text-[14px] font-medium transition-colors`}
+                  className={`px-4 py-2 ${
+                    activeResultsSection === `${selectedResultsOption} Results`
+                      ? "bg-white text-[#0D1321]"
+                      : "text-white hover:bg-[#3E5C76]"
+                  } rounded text-[14px] font-medium transition-colors`}
                   onClick={() => {
                     onActiveResultsSectionChange(`${selectedResultsOption} Results`)
                     onResultsSubTabChange("Results")
@@ -251,7 +350,11 @@ export function ResultsSection({
                   {selectedResultsOption} Results
                 </button>
                 <button
-                  className={`px-4 py-2 ${activeResultsSection === `${selectedResultsOption} Speaker Score` ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"} rounded text-[14px] font-medium transition-colors`}
+                  className={`px-4 py-2 ${
+                    activeResultsSection === `${selectedResultsOption} Speaker Score`
+                      ? "bg-white text-[#0D1321]"
+                      : "text-white hover:bg-[#3E5C76]"
+                  } rounded text-[14px] font-medium transition-colors`}
                   onClick={() => {
                     onActiveResultsSectionChange(`${selectedResultsOption} Speaker Score`)
                     onResultsSubTabChange("Speaker Score")
@@ -263,13 +366,16 @@ export function ResultsSection({
               </>
             )}
 
-            {LD_ROUNDS.map((round) => (
+            {ELIMINATION_ROUNDS.map((round) => (
               <button
                 key={round}
-                className={`px-3 py-2 ${selectedRound === round ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"} rounded text-[14px] font-medium transition-colors`}
+                className={`px-3 py-2 ${
+                  activeResultsSection === round ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"
+                } rounded text-[14px] font-medium transition-colors`}
                 onClick={() => {
                   onActiveResultsSectionChange(round)
                   onSelectedRoundChange(round)
+                  onResultsSubTabChange("Results")
                 }}
               >
                 {round}

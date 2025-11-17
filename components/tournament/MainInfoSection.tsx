@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 
 import { LoadingState, Skeleton } from "@/components/ui/loading"
 import type { PageResult } from "@/types/page"
@@ -50,6 +50,15 @@ export function MainInfoSection({
   }, [sortedAnnouncements.length])
 
   const currentAnnouncement = sortedAnnouncements[activeAnnouncementIndex]
+  const [removedScheduleImages, setRemovedScheduleImages] = useState<Set<number>>(new Set())
+
+  const handleRemoveScheduleImage = (scheduleId: number) => {
+    setRemovedScheduleImages((prev) => {
+      const next = new Set(prev)
+      next.add(scheduleId)
+      return next
+    })
+  }
 
   if (selectedOption === "Announcements") {
     return (
@@ -128,16 +137,64 @@ export function MainInfoSection({
   }
 
   if (selectedOption === "Schedule") {
+    const sortedSchedules = sortedAnnouncements
     return (
       <div>
         <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Schedule</h2>
-        <div className="relative bg-white rounded-lg border border-gray-300 min-h-[500px] p-6">
-          <div className="h-full" />
+        <div className="relative rounded-3xl border border-[#CFD6EA] bg-white p-6">
+          <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-80 w-full rounded-2xl" />}>
+            {announcementsError ? (
+              <div className="text-center text-red-500 text-[16px] py-20">Failed to load schedule</div>
+            ) : sortedSchedules.length === 0 ? (
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">No schedule entries yet</div>
+            ) : (
+              <div className="flex max-h-[480px] flex-col gap-6 overflow-y-auto pr-2">
+                {sortedSchedules.map((schedule) => (
+                  <div
+                    key={schedule.id}
+                    className="flex flex-col overflow-hidden rounded-2xl border border-[#E3E8F6] bg-[#F7F9FF] shadow-sm"
+                  >
+                    {schedule.imageUrl?.url && !removedScheduleImages.has(schedule.id) ? (
+                      <div className="group relative">
+                        <img
+                          src={schedule.imageUrl.url}
+                          alt={schedule.title}
+                          className="h-64 w-full object-cover transition duration-300 group-hover:blur-sm group-hover:brightness-75"
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-300 group-hover:opacity-100"
+                          onClick={() => handleRemoveScheduleImage(schedule.id)}
+                          aria-label="Remove schedule image"
+                        >
+                          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-black/40 text-white">
+                            <Trash2 className="h-5 w-5" />
+                          </span>
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="space-y-2 px-6 py-5">
+                      <div className="text-sm text-[#8A91A8]">
+                        {new Date(schedule.timestamp).toLocaleDateString(undefined, {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#0B1327]">{schedule.title}</h3>
+                      <p className="text-[#3A4156]">{schedule.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </LoadingState>
+
           <button
             onClick={() => onOpenModal("schedule")}
-            className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+            className="absolute bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>

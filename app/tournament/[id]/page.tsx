@@ -15,6 +15,7 @@ import { ResultsSection } from "@/components/tournament/ResultsSection"
 import { TeamsSection } from "@/components/tournament/TeamsSection"
 import { TournamentHeader } from "@/components/tournament/TournamentHeader"
 import { TournamentTabs } from "@/components/tournament/TournamentTabs"
+import { EditTeamModal } from "@/components/tournament/EditTeamModal"
 import { useTournamentVisibility } from "@/hooks/tournament/useTournamentVisibility"
 import { useImageUpload } from "@/hooks/tournament/useImageUpload"
 import { useRoundSelection } from "@/hooks/tournament/useRoundSelection"
@@ -22,6 +23,7 @@ import { useTournament, useTournamentParticipants, useTournamentTeams, useTourna
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Role } from "@/types/user/user"
+import type { SimpleTeamResponse, TeamUpdateParticipantRequest } from "@/types/tournament/team"
 
 export default function TournamentDetailPage() {
   const params = useParams()
@@ -45,6 +47,8 @@ export default function TournamentDetailPage() {
   const [bpfSubTab] = useState('BPF Results')
   const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [teamEditModalData, setTeamEditModalData] = useState<{ id: number; name: string; club: string } | null>(null)
+  const [isSavingTeam, setIsSavingTeam] = useState(false)
 
   const {
     imagePreviews,
@@ -161,6 +165,7 @@ export default function TournamentDetailPage() {
 
 
   const canManageTeams = currentUser?.role === Role.ORGANIZER
+  const isDebater = currentUser?.role === Role.PARTICIPANT
 
   const closeJudgeModal = () => {
     setIsAddJudgeModalOpen(false)
@@ -197,6 +202,58 @@ export default function TournamentDetailPage() {
       })
     } finally {
       setDeletingTeamId(null)
+    }
+  }
+
+  const handleEditTeam = (team: SimpleTeamResponse) => {
+    setTeamEditModalData({
+      id: team.id,
+      name: team.name,
+      club: team.club?.name ?? "",
+    })
+  }
+
+  const handleSaveEditedTeam = async ({ name, club }: { name: string; club: string }) => {
+    if (!teamEditModalData || isSavingTeam) return
+
+    const trimmedName = name.trim()
+    const trimmedClub = club.trim()
+    const payload: TeamUpdateParticipantRequest = {}
+
+    if (trimmedName && trimmedName !== teamEditModalData.name) {
+      payload.name = trimmedName
+    }
+
+    if (trimmedClub !== teamEditModalData.club) {
+      payload.club = trimmedClub
+    }
+
+    if (!Object.keys(payload).length) {
+      toast({
+        title: 'No changes to save',
+        description: 'Update the team details before saving.',
+      })
+      return
+    }
+
+    try {
+      setIsSavingTeam(true)
+      await api.updateTeam_Participant(tournamentId, teamEditModalData.id, payload)
+      await mutateTeams()
+      toast({
+        title: 'Team updated',
+        description: `${payload.name ?? teamEditModalData.name} (${trimmedClub || 'No club'}) has been updated.`,
+      })
+      setTeamEditModalData(null)
+    } catch (error) {
+      console.error('Failed to update team', error)
+      toast({
+        title: 'Failed to update team',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSavingTeam(false)
     }
   }
 
@@ -308,6 +365,14 @@ export default function TournamentDetailPage() {
             teamsError={teamsError}
             checkInStatus={checkInStatus}
             onToggleCheckIn={toggleCheckIn}
+            onDeleteTeam={canManageTeams ? (teamId => {
+              const team = teams?.content.find((t) => t.id === teamId)
+              if (team) {
+                void handleDeleteTeam(teamId, team.name)
+              }
+            }) : undefined}
+            onEditTeam={isDebater ? handleEditTeam : undefined}
+            isDebaterView={isDebater}
           />
         )}
 
@@ -355,6 +420,15 @@ export default function TournamentDetailPage() {
       )}
 
       {activeTab === 'Feedback' && <FeedbackSection />}
+
+      <EditTeamModal
+        isOpen={!!teamEditModalData}
+        teamName={teamEditModalData?.name}
+        clubName={teamEditModalData?.club}
+        isSaving={isSavingTeam}
+        onClose={() => setTeamEditModalData(null)}
+        onSave={handleSaveEditedTeam}
+      />
 
       <AddPostModal
         isOpen={isAddPostModalOpen}
