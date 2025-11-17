@@ -64,11 +64,19 @@ export function PairingsSection({ matches, matchesLoading, matchesError, selecte
 
       <div className="bg-[#0D1321] rounded-lg p-4">
         <div className="flex items-center justify-center gap-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <button key={index} className={`px-4 py-2 ${index === 0 ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"} rounded text-[14px] font-medium transition-colors`}>
-              Round {index + 1}
-            </button>
-          ))}
+          {Array.from({ length: 4 }).map((_, index) => {
+            const roundLabel = `Round ${index + 1}`
+
+            return (
+              <button
+                key={roundLabel}
+                className={`px-4 py-2 ${selectedRound === roundLabel ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"} rounded text-[14px] font-medium transition-colors`}
+                onClick={() => onSelectRound(roundLabel)}
+              >
+                {roundLabel}
+              </button>
+            )
+          })}
           <span className="text-white mx-2">|</span>
           {ELIMINATION_ROUNDS.map((round) => (
             <button
