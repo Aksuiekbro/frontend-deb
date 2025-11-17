@@ -30,6 +30,7 @@ export interface TournamentResponse extends SimpleTournamentResponse {
     registrationDeadline: string;
     location: string;
     teamLimit: number;
+    enabled?: boolean;
 }
 
 export interface DebateFormatRequest {

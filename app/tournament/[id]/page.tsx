@@ -3,14 +3,19 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Header from "../../../components/Header"
-import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements, useRoundGroups, useRounds, useMatches, useNews } from "../../../hooks/use-api"
+import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements, useRoundGroups, useRounds, useMatches, useNews, useCurrentUser } from "../../../hooks/use-api"
 import { api } from "../../../lib/api"
 import { LoadingState, Skeleton } from "../../../components/ui/loading"
 import { ErrorState } from "../../../components/ui/error"
+import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/hooks/use-toast"
+import { Role } from "@/types/user/user"
 
 export default function TournamentDetailPage() {
   const params = useParams()
   const tournamentId = parseInt(params.id as string)
+  const { user: currentUser } = useCurrentUser()
+  const { toast } = useToast()
 
   // API hooks
   const { tournament, isLoading: tournamentLoading, error: tournamentError } = useTournament(tournamentId)
@@ -82,6 +87,8 @@ export default function TournamentDetailPage() {
 
   // News modal: category tag
   const [selectedNewsCategory, setSelectedNewsCategory] = useState<'Important' | 'Update' | 'Info'>('Info')
+  const [isTournamentEnabled, setIsTournamentEnabled] = useState(false)
+  const [toggleTournamentLoading, setToggleTournamentLoading] = useState(false)
 
   const handleAddPost = async () => {
     const isAnnouncement = modalContext === 'announcements'
@@ -244,6 +251,47 @@ export default function TournamentDetailPage() {
     { page: 0, size: 20, sort: ['timestamp,desc'] }
   )
 
+  useEffect(() => {
+    if (typeof tournament?.enabled === 'boolean') {
+      setIsTournamentEnabled(tournament.enabled)
+    }
+  }, [tournament?.enabled])
+
+  const isOrganizer = currentUser?.role === Role.ORGANIZER
+
+  const handleTournamentToggle = async (nextValue: boolean) => {
+    if (!tournament) return
+    const previousValue = isTournamentEnabled
+    setIsTournamentEnabled(nextValue)
+    setToggleTournamentLoading(true)
+
+    try {
+      if (nextValue) {
+        await api.enableTournament(tournament.id)
+        toast({
+          title: "Tournament enabled",
+          description: `${tournament.name} is now visible to participants.`,
+        })
+      } else {
+        await api.disableTournament(tournament.id)
+        toast({
+          title: "Tournament disabled",
+          description: `${tournament.name} is now hidden from participants.`,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to toggle tournament status", error)
+      setIsTournamentEnabled(previousValue)
+      toast({
+        title: "Unable to update tournament",
+        description: "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setToggleTournamentLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       <Header />
@@ -258,12 +306,27 @@ export default function TournamentDetailPage() {
           ) : (
             <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: {tournament?.name || "Unknown Tournament"}</h1>
           )}
-          <button 
-            onClick={() => setIsInviteModalOpen(true)}
-            className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
-          >
-            Invite
-          </button>
+          <div className="flex items-center gap-4">
+            {isOrganizer && (
+              <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+                <span className="text-sm font-medium text-[#0D1321]">
+                  {isTournamentEnabled ? "Tournament enabled" : "Tournament disabled"}
+                </span>
+                <Switch
+                  checked={isTournamentEnabled}
+                  onCheckedChange={handleTournamentToggle}
+                  disabled={toggleTournamentLoading || tournamentLoading}
+                  aria-label="Toggle tournament visibility"
+                />
+              </div>
+            )}
+            <button 
+              onClick={() => setIsInviteModalOpen(true)}
+              className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
+            >
+              Invite
+            </button>
+          </div>
         </div>
         
         {/* Tabs */}
