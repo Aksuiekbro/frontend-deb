@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import { useParams } from "next/navigation"
 import Header from "../../../components/Header"
 import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements, useRoundGroups, useRounds, useMatches, useNews, useCurrentUser } from "../../../hooks/use-api"
@@ -9,7 +9,9 @@ import { LoadingState, Skeleton } from "../../../components/ui/loading"
 import { ErrorState } from "../../../components/ui/error"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
+import { SimpleTeamResponse } from "@/types/tournament/team"
 import { Role } from "@/types/user/user"
+import { Trash2 } from "lucide-react"
 
 export default function TournamentDetailPage() {
   const params = useParams()
@@ -20,7 +22,7 @@ export default function TournamentDetailPage() {
   // API hooks
   const { tournament, isLoading: tournamentLoading, error: tournamentError } = useTournament(tournamentId)
   const { participants, isLoading: participantsLoading, error: participantsError } = useTournamentParticipants(tournamentId)
-  const { teams, isLoading: teamsLoading, error: teamsError } = useTournamentTeams(tournamentId)
+  const { teams, isLoading: teamsLoading, error: teamsError, mutate: mutateTeams } = useTournamentTeams(tournamentId)
   const { announcements, isLoading: announcementsLoading, error: announcementsError } = useTournamentAnnouncements(tournamentId)
 
   const [activeTab, setActiveTab] = useState('Main Info')
@@ -78,6 +80,7 @@ export default function TournamentDetailPage() {
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
   const [postImages, setPostImages] = useState<File[]>([])
+  const [deletingTeamId, setDeletingTeamId] = useState<number | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -181,6 +184,79 @@ export default function TournamentDetailPage() {
   const removeImageByKey = (key: string) => {
     setImagePreviews((prev) => prev.filter(p => p.key !== key))
     setPostImages((prev) => prev.filter(f => `${f.name}-${f.lastModified}-${f.size}` !== key))
+  }
+
+  const canManageTeams = currentUser?.role === Role.ORGANIZER
+  const teamRows = teams?.content ?? []
+
+  const renderTeamRows = (
+    columnCount: number,
+    renderRow: (team: SimpleTeamResponse) => ReactNode
+  ) => {
+    if (teamsLoading) {
+      return (
+        <tr>
+          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+            Loading teams...
+          </td>
+        </tr>
+      )
+    }
+
+    if (teamsError) {
+      return (
+        <tr>
+          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+            Failed to load teams
+          </td>
+        </tr>
+      )
+    }
+
+    if (!teamRows.length) {
+      return (
+        <tr>
+          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+            No teams found
+          </td>
+        </tr>
+      )
+    }
+
+    return teamRows.map(renderRow)
+  }
+
+  const handleDeleteTeam = async (teamId: number, teamName: string) => {
+    if (!canManageTeams) {
+      toast({
+        title: 'Insufficient permissions',
+        description: 'Only organizers can remove teams.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to delete ${teamName}?`)
+    if (!confirmed) return
+
+    try {
+      setDeletingTeamId(teamId)
+      await api.removeTeam(tournamentId, teamId)
+      await mutateTeams()
+      toast({
+        title: 'Team removed',
+        description: `${teamName} has been removed.`,
+      })
+    } catch (error) {
+      console.error('Failed to remove team', error)
+      toast({
+        title: 'Failed to remove team',
+        description: 'Please try again later.',
+        variant: 'destructive'
+      })
+    } finally {
+      setDeletingTeamId(null)
+    }
   }
 
   useEffect(() => {
@@ -915,100 +991,35 @@ export default function TournamentDetailPage() {
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 3</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Overall</th>
+                          {canManageTeams && (
+                            <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Ermuratov B.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Hooler</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">100</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Iskander L.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">544</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Trarala M.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">-54</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Byubs K.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Cookeu</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">losk</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/8 */}
-                        {selectedRound === '1/8' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Ermuratov B.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Hooler</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">150</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Iskander L.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">320</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/4 */}
-                        {selectedRound === '1/4' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Ermuratov B.</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Hooler</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">200</td>
+                        {renderTeamRows(canManageTeams ? 8 : 7, (team) => (
+                          <tr key={team.id} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">{team.club?.name ?? team.name}</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{team.name}</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">—</td>
+                            {canManageTeams && (
+                              <td className="border border-gray-300 px-6 py-4 text-center">
+                                <button
+                                  aria-label={`Delete team ${team.name}`}
+                                  className="inline-flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition"
+                                  onClick={() => handleDeleteTeam(team.id, team.name)}
+                                  disabled={deletingTeamId === team.id}
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
-                        )}
-                        
-                        {/* Данные для раунда 1/2 */}
-                        {selectedRound === '1/2' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Ermuratov B.</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Hooler</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">250</td>
-                          </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1027,91 +1038,35 @@ export default function TournamentDetailPage() {
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 3</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Overall</th>
+                          {canManageTeams && (
+                            <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Johnson A.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Alpha</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">85</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">78</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">82</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">79</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">324</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Smith B.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Beta</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">76</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">81</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">77</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">83</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">317</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Wilson C.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Gamma</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">72</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">75</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">74</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">71</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">292</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/8 */}
-                        {selectedRound === '1/8' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Johnson A.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Alpha</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">87</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">84</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">86</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">85</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">342</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Smith B.</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Beta</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">78</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">80</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">79</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">82</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">319</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/4 */}
-                        {selectedRound === '1/4' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Johnson A.</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Alpha</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">89</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">88</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">90</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">87</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">354</td>
+                        {renderTeamRows(canManageTeams ? 8 : 7, (team) => (
+                          <tr key={team.id} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">{team.club?.name ?? team.name}</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{team.name}</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">—</td>
+                            {canManageTeams && (
+                              <td className="border border-gray-300 px-6 py-4 text-center">
+                                <button
+                                  aria-label={`Delete team ${team.name}`}
+                                  className="inline-flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition"
+                                  onClick={() => handleDeleteTeam(team.id, team.name)}
+                                  disabled={deletingTeamId === team.id}
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
-                        )}
-                        
-                        {/* Данные для раунда 1/2 */}
-                        {selectedRound === '1/2' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Johnson A.</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">Team Alpha</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">91</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">90</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">92</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">89</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">362</td>
-                          </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1130,100 +1085,35 @@ export default function TournamentDetailPage() {
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
                           <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                          {canManageTeams && (
+                            <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
-                            </tr>
-                            <tr className="bg-gradient-to-r from-[#748CAB] to-[#8a9ba8] hover:from-[#8a9ba8] hover:to-[#9cacba]">
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">Goner</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px]">L. Lomonosov</td>
-                            </tr>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">K. Butov</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/8 */}
-                        {selectedRound === '1/8' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">CL clan</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/4 */}
-                        {selectedRound === '1/4' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">3</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
+                        {renderTeamRows(canManageTeams ? 8 : 7, (team) => (
+                          <tr key={team.id} className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">{team.name}</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">{team.club?.name ?? '—'}</td>
+                            {canManageTeams && (
+                              <td className="border border-gray-300 px-6 py-4 text-center">
+                                <button
+                                  aria-label={`Delete team ${team.name}`}
+                                  className="inline-flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition"
+                                  onClick={() => handleDeleteTeam(team.id, team.name)}
+                                  disabled={deletingTeamId === team.id}
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
-                        )}
-                        
-                        {/* Данные для раунда 1/2 */}
-                        {selectedRound === '1/2' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">4</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                          </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1242,63 +1132,35 @@ export default function TournamentDetailPage() {
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
                           <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                          {canManageTeams && (
+                            <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Fate Sealers</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для других раундов */}
-                        {selectedRound !== '1/16' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">BPF Team {selectedRound}</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">{selectedRound === '1/8' ? 2 : selectedRound === '1/4' ? 3 : 4}</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">BPF Judge {selectedRound}</td>
+                        {renderTeamRows(canManageTeams ? 8 : 7, (team) => (
+                          <tr key={team.id} className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">{team.name}</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">{team.club?.name ?? '—'}</td>
+                            {canManageTeams && (
+                              <td className="border border-gray-300 px-6 py-4 text-center">
+                                <button
+                                  aria-label={`Delete team ${team.name}`}
+                                  className="inline-flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition"
+                                  onClick={() => handleDeleteTeam(team.id, team.name)}
+                                  disabled={deletingTeamId === team.id}
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1318,100 +1180,35 @@ export default function TournamentDetailPage() {
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round 4</th>
                           <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
                           <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                          {canManageTeams && (
+                            <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Данные для раунда 1/16 */}
-                        {selectedRound === '1/16' && (
-                          <>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]">
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] font-medium">Qyrandar</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-white text-[16px]">A. Gurgabay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Fate Sealers</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">0</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/8 */}
-                        {selectedRound === '1/8' && (
-                          <>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">2</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">T. Salybay</td>
-                            </tr>
-                            <tr className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">45For45</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">1</td>
-                              <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">A. Gurgabay</td>
-                            </tr>
-                          </>
-                        )}
-                        
-                        {/* Данные для раунда 1/4 */}
-                        {selectedRound === '1/4' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
+                        {renderTeamRows(canManageTeams ? 8 : 7, (team) => (
+                          <tr key={team.id} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">{team.name}</td>
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
                             <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">3</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">L. Lomonosov</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">—</td>
+                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{team.club?.name ?? '—'}</td>
+                            {canManageTeams && (
+                              <td className="border border-gray-300 px-6 py-4 text-center">
+                                <button
+                                  aria-label={`Delete team ${team.name}`}
+                                  className="inline-flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition"
+                                  onClick={() => handleDeleteTeam(team.id, team.name)}
+                                  disabled={deletingTeamId === team.id}
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
-                        )}
-                        
-                        {/* Данные для раунда 1/2 */}
-                        {selectedRound === '1/2' && (
-                          <tr className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">Hooley</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">4</td>
-                            <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">K. Butov</td>
-                          </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
