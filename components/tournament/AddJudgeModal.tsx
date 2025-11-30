@@ -1,22 +1,19 @@
 "use client"
 
 import type { FormEvent } from "react"
-
-interface JudgeForm {
-  name: string
-  club: string
-  phone: string
-}
+import type { JudgeRequest } from "@/types/tournament/judge"
 
 interface AddJudgeModalProps {
   isOpen: boolean
-  form: JudgeForm
+  form: JudgeRequest
   onClose: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
-  onChange: (field: keyof JudgeForm, value: string) => void
+  onChange: (field: keyof JudgeRequest, value: string) => void
+  isSubmitting?: boolean
+  errorMessage?: string | null
 }
 
-export function AddJudgeModal({ isOpen, form, onClose, onSubmit, onChange }: AddJudgeModalProps) {
+export function AddJudgeModal({ isOpen, form, onClose, onSubmit, onChange, isSubmitting, errorMessage }: AddJudgeModalProps) {
   if (!isOpen) return null
 
   return (
@@ -30,29 +27,29 @@ export function AddJudgeModal({ isOpen, form, onClose, onSubmit, onChange }: Add
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[#0D1321] text-[16px] font-medium" htmlFor="judge-name">
-              Name
+              Full name
             </label>
             <input
               id="judge-name"
               type="text"
-              value={form.name}
-              onChange={(event) => onChange("name", event.target.value)}
+              value={form.fullName ?? ""}
+              onChange={(event) => onChange("fullName", event.target.value)}
               className="w-full rounded-xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-[#0D1321] text-[16px] focus:border-[#3E5C76] focus:ring-2 focus:ring-[#3E5C76]/20 outline-none transition-all"
               placeholder="Enter judge name"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px] font-medium" htmlFor="judge-club">
-              Club
+            <label className="text-[#0D1321] text-[16px] font-medium" htmlFor="judge-email">
+              Email
             </label>
             <input
-              id="judge-club"
-              type="text"
-              value={form.club}
-              onChange={(event) => onChange("club", event.target.value)}
+              id="judge-email"
+              type="email"
+              value={form.email ?? ""}
+              onChange={(event) => onChange("email", event.target.value)}
               className="w-full rounded-xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-[#0D1321] text-[16px] focus:border-[#3E5C76] focus:ring-2 focus:ring-[#3E5C76]/20 outline-none transition-all"
-              placeholder="Enter club name"
+              placeholder="Enter email"
             />
           </div>
 
@@ -63,14 +60,18 @@ export function AddJudgeModal({ isOpen, form, onClose, onSubmit, onChange }: Add
             <input
               id="judge-phone"
               type="tel"
-              value={form.phone}
-              onChange={(event) => onChange("phone", event.target.value)}
+              value={form.phoneNumber ?? ""}
+              onChange={(event) => onChange("phoneNumber", event.target.value)}
               className="w-full rounded-xl border border-gray-200 bg-[#F8F8F8] px-4 py-3 text-[#0D1321] text-[16px] focus:border-[#3E5C76] focus:ring-2 focus:ring-[#3E5C76]/20 outline-none transition-all"
               placeholder="Enter phone number"
             />
           </div>
 
-          <button type="submit" className="w-full bg-[#3E5C76] hover:bg-[#2f4858] text-white text-[18px] font-semibold py-3 rounded-2xl transition-colors shadow-md">
+          {errorMessage && (
+            <p className="text-sm text-red-500" role="alert">{errorMessage}</p>
+          )}
+
+          <button type="submit" disabled={isSubmitting} className="w-full bg-[#3E5C76] hover:bg-[#2f4858] text-white text-[18px] font-semibold py-3 rounded-2xl transition-colors shadow-md disabled:opacity-60">
             Submit
           </button>
         </form>

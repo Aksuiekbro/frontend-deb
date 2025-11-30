@@ -1,16 +1,12 @@
 "use client"
 
-interface TournamentMember {
-  id: number
-  name: string
-  avatar?: string
-}
+import type { SimpleTournamentParticipantResponse } from "@/types/tournament/tournament-participant"
 
 type InviteModalTab = "invite" | "copy-link"
 
 interface InviteModalProps {
   isOpen: boolean
-  members: TournamentMember[]
+  members: SimpleTournamentParticipantResponse[]
   activeTab: InviteModalTab
   onTabChange: (tab: InviteModalTab) => void
   onClose: () => void
@@ -47,21 +43,25 @@ export function InviteModal({ isOpen, members, activeTab, onTabChange, onClose }
           <h3 className="text-[#0D1321] text-[16px] font-medium mb-4">Who Has Access</h3>
           <div className="space-y-3">
             {members.length > 0 ? (
-              members.map((user) => (
-                <div key={user.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">{user.name.charAt(0)}</span>
-                      </div>
-                    )}
-                    <span className="text-[#4a4e69] text-[16px]">{user.name}</span>
+              members.map((participant) => {
+                const name = `${participant.user.firstName ?? ""} ${participant.user.lastName ?? ""}`.trim() || participant.user.username
+                const avatar = participant.user.imageUrl?.url
+                return (
+                  <div key={participant.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {avatar ? (
+                        <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">{name.charAt(0)}</span>
+                        </div>
+                      )}
+                      <span className="text-[#4a4e69] text-[16px]">{name}</span>
+                    </div>
+                    <span className="text-[#9a8c98] text-[14px]">Participant</span>
                   </div>
-                  <span className="text-[#9a8c98] text-[14px]">Participant</span>
-                </div>
-              ))
+                )
+              })
             ) : (
               <div className="text-center text-[#9a8c98] text-[14px] py-4">No tournament members yet</div>
             )}

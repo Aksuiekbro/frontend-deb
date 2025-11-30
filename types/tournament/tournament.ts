@@ -10,6 +10,15 @@ export interface SimpleTournamentResponse {
     preliminaryFormat: DebateFormat;
     teamElimintationFormat: DebateFormat;
     tags: TagResponse[];
+    startDate?: string;
+    endDate?: string;
+    registrationDeadline?: string;
+    location?: string;
+    teamLimit?: number;
+    currentTeamCount?: number;
+    maxTeamCount?: number;
+    status?: string;
+    debateFormat?: DebateFormat;
 }
 
 export enum TournamentLeague {
