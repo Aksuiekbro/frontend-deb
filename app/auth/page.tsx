@@ -1,11 +1,42 @@
 "use client"
 
-import { useState, FormEvent, useEffect } from 'react'
+import { useState, FormEvent, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { Role } from '@/types/user/user'
 
+// Backend rule (mirrors UserRegistrationDto validation): alphanumeric, 3–20 chars.
+const USERNAME_PATTERN = /^[a-zA-Z0-9]{3,20}$/
+
+// Derive a human-readable message from a failed response. The backend often returns an empty
+// body (e.g. 403 on bad credentials/validation), so res.json() would throw — read defensively
+// and fall back to a status-aware message instead of a generic "unexpected error".
+async function readErrorMessage(res: Response, context: 'register' | 'login'): Promise<string> {
+  try {
+    const text = await res.text()
+    if (text) {
+      try {
+        const data = JSON.parse(text)
+        if (data?.message) return data.message
+      } catch { /* body wasn't JSON */ }
+    }
+  } catch { /* couldn't read body */ }
+  if (context === 'login' && (res.status === 401 || res.status === 403)) return 'Invalid username or password.'
+  if (res.status === 409) return 'That username or email is already taken.'
+  if (res.status === 400 || res.status === 403) return 'Please check your details and try again.'
+  if (res.status >= 500) return 'Server error — please try again later.'
+  return context === 'register' ? 'Registration failed. Please try again.' : 'Login failed. Please try again.'
+}
+
 export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthPageInner />
+    </Suspense>
+  )
+}
+
+function AuthPageInner() {
   const [isSignUp, setIsSignUp] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -44,7 +75,7 @@ export default function AuthPage() {
   const handleSignUpSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const errors: { name?: string; email?: string; password?: string } = {}
-    if (!signUpUsername.trim()) errors.name = 'Name is required'
+    if (!USERNAME_PATTERN.test(signUpUsername)) errors.name = 'Username must be 3–20 characters, letters and numbers only'
     if (!/^\S+@\S+\.\S+$/.test(signUpEmail)) errors.email = 'Invalid email format'
     if (signUpPassword.length < 8) errors.password = 'Password must be at least 8 characters'
     setSignUpErrors(errors)
@@ -66,8 +97,7 @@ export default function AuthPage() {
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        setSignUpErrorMsg(data.message || 'Registration failed')
+        setSignUpErrorMsg(await readErrorMessage(res, 'register'))
       } else {
         setSignUpSuccess('Account created successfully! Redirecting...')
         setTimeout(() => {
@@ -77,7 +107,7 @@ export default function AuthPage() {
         return                      // prevent setState in finally
       }
     } catch (error) {
-      setSignUpErrorMsg('An unexpected error occurred')
+      setSignUpErrorMsg('Network error — please check your connection and try again.')
     } finally { setSignUpLoading(false) }
   }
 
@@ -96,15 +126,14 @@ export default function AuthPage() {
         rememberMe: rememberMe
       });
       if (!res.ok) {
-        const data = await res.json()
-        setSignInError(data.message || 'Login failed')
+        setSignInError(await readErrorMessage(res, 'login'))
       }
       else {
         router.push('/dashboard')
         return
       }
     } catch (error) {
-      setSignInError('An unexpected error occurred')
+      setSignInError('Network error — please check your connection and try again.')
     } finally { setSignInLoading(false) }
   }
 
@@ -130,6 +159,7 @@ export default function AuthPage() {
               type="text"
               placeholder="Username"
               required
+              maxLength={20}
               value={signUpUsername}
               onChange={(e) => setSignUpUsername(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
