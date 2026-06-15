@@ -4,6 +4,10 @@ import { SWRConfig, unstable_serialize } from 'swr'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 
+import type { PageResult } from '@/types/page'
+import type { SimpleTournamentResponse } from '@/types/tournament/tournament'
+import type { UserResponse } from '@/types/user/user'
+
 // SWR base configuration with optimized caching strategies
 const baseConfig = {
   // Cache data for 5 minutes by default
@@ -57,42 +61,48 @@ export default function SWRProvider({ children }: SWRProviderProps) {
     const upcomingKey = unstable_serialize(['upcoming-tournaments', 6])
     const leaderboardKey = unstable_serialize(['leaderboard', 3])
 
+    const placeholderImage = { id: 0, url: '/placeholder.jpg' }
+
+    const upcomingFallback: PageResult<SimpleTournamentResponse> = {
+      content: [
+        {
+          id: 1,
+          name: 'Demo Invitational',
+          description: 'An example tournament for demo mode',
+          imageUrl: placeholderImage,
+          league: 'UNIVERSITY',
+          preliminaryFormat: 'BPF',
+          teamElimintationFormat: 'BPF',
+          tags: []
+        },
+        {
+          id: 2,
+          name: 'Sample Open',
+          description: 'Preview of an upcoming event',
+          imageUrl: placeholderImage,
+          league: 'SCHOOL',
+          preliminaryFormat: 'APF',
+          teamElimintationFormat: 'APF',
+          tags: []
+        }
+      ],
+      totalElements: 2,
+      totalPages: 1
+    }
+
+    const leaderboardFallback: PageResult<UserResponse> = {
+      content: [
+        { id: 101, username: 'alice', firstName: 'Alice', lastName: 'Smith', email: 'alice@example.com', profileId: 1, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined },
+        { id: 102, username: 'bob', firstName: 'Bob', lastName: 'Lee', email: 'bob@example.com', profileId: 2, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined },
+        { id: 103, username: 'carol', lastName: 'Ng', firstName: 'Carol', email: 'carol@example.com', profileId: 3, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined },
+      ],
+      totalElements: 3,
+      totalPages: 1
+    }
+
     return {
-      [upcomingKey]: {
-        content: [
-          {
-            id: 1,
-            name: 'Demo Invitational',
-            description: 'An example tournament for demo mode',
-            imageUrl: { url: '/placeholder.jpg' },
-            league: 'UNIVERSITY',
-            preliminaryFormat: 'BPF',
-            teamElimintationFormat: 'BPF',
-            tags: []
-          },
-          {
-            id: 2,
-            name: 'Sample Open',
-            description: 'Preview of an upcoming event',
-            imageUrl: { url: '/placeholder.jpg' },
-            league: 'SCHOOL',
-            preliminaryFormat: 'APF',
-            teamElimintationFormat: 'APF',
-            tags: []
-          }
-        ],
-        totalElements: 2,
-        totalPages: 1
-      },
-      [leaderboardKey]: {
-        content: [
-          { id: 101, username: 'alice', firstName: 'Alice', lastName: 'Smith', email: 'alice@example.com', profileId: 1, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined, rating: 1820, tournamentsParticipated: 8 } as any,
-          { id: 102, username: 'bob', firstName: 'Bob', lastName: 'Lee', email: 'bob@example.com', profileId: 2, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined, rating: 1760, tournamentsParticipated: 5 } as any,
-          { id: 103, username: 'carol', firstName: 'Carol', lastName: 'Ng', email: 'carol@example.com', profileId: 3, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined, rating: 1710, tournamentsParticipated: 6 } as any
-        ],
-        totalElements: 3,
-        totalPages: 1
-      }
+      [upcomingKey]: upcomingFallback,
+      [leaderboardKey]: leaderboardFallback,
     }
   }, [isDemoMode])
 

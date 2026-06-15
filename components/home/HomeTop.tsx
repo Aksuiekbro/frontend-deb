@@ -12,34 +12,21 @@ type HomeTopProps = { includeTestimonials?: boolean; aboveUpcoming?: ReactNode }
 
 export default function HomeTop({ includeTestimonials = true, aboveUpcoming }: HomeTopProps) {
   const [activeSlide, setActiveSlide] = useState<number>(0)
-  const [isSwiping, setIsSwiping] = useState(false)
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" })
   const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
 
   const { upcomingTournaments, isLoading: tournamentsLoading, error: tournamentsError } = useUpcomingTournaments(6)
 
-  // Helpers to read fields that may not exist on our typed interfaces
-  const getTournamentLocation = (t: unknown) => (t as any)?.location as string | undefined
-  const getTournamentStartDate = (t: unknown) => (t as any)?.startDate as string | undefined
-  const getUserRating = (u: unknown) => (u as any)?.rating as number | undefined
-  const getUserTournamentsParticipated = (u: unknown) => (u as any)?.tournamentsParticipated as number | undefined
-
   useEffect(() => {
     if (!emblaApi) return
     const onSelect = () => setActiveSlide(emblaApi.selectedScrollSnap())
-    const onScroll = () => setIsSwiping(true)
-    const onSettle = () => setIsSwiping(false)
     emblaApi.on('select', onSelect)
     emblaApi.on('reInit', onSelect)
-    emblaApi.on('scroll', onScroll)
-    emblaApi.on('settle', onSettle)
     onSelect()
     return () => {
       emblaApi.off('select', onSelect)
       emblaApi.off('reInit', onSelect)
-      emblaApi.off('scroll', onScroll)
-      emblaApi.off('settle', onSettle)
     }
   }, [emblaApi])
 
@@ -110,8 +97,8 @@ export default function HomeTop({ includeTestimonials = true, aboveUpcoming }: H
                 {upcomingTournaments.content.slice(0, 2).map((tournament) => (
                   <div key={tournament.id} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
                     <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2 font-hikasami">{tournament.name}</h4>
-                    <p className="text-[#9a8c98] mb-1 text-[16px] font-normal font-hikasami">{getTournamentLocation(tournament) || 'Location TBA'}</p>
-                    <p className="text-[#9a8c98] mb-4 text-[16px] font-normal font-hikasami">{getTournamentStartDate(tournament) ? new Date(getTournamentStartDate(tournament) as string).toLocaleDateString() : 'Date TBA'}</p>
+                    <p className="text-[#9a8c98] mb-1 text-[16px] font-normal font-hikasami">{tournament.location || 'Location TBA'}</p>
+                    <p className="text-[#9a8c98] mb-4 text-[16px] font-normal font-hikasami">{tournament.startDate ? new Date(tournament.startDate).toLocaleDateString() : 'Date TBA'}</p>
                     <div className="flex space-x-2 mb-6">
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">{tournament.preliminaryFormat}</span>
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">{tournament.teamElimintationFormat}</span>
@@ -149,5 +136,4 @@ export default function HomeTop({ includeTestimonials = true, aboveUpcoming }: H
     </>
   )
 }
-
 

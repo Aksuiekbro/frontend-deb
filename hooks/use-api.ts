@@ -23,6 +23,7 @@ import { SimpleRoundResponse } from '@/types/tournament/round/round'
 import { MatchResponse } from '@/types/tournament/match'
 import { TeamResponse, SimpleTeamResponse } from '@/types/tournament/team'
 import { JudgeGetParams, JudgeResponse } from '@/types/tournament/judge'
+import { FeedbackGetParams, FeedbackResponse } from '@/types/tournament/feedback'
 import { UrlResponse } from '@/types/util/url'
 import { TagResponse } from '@/types/tag'
 import { OrganizerProfileResponse, ParticipantProfileResponse, CityResponse, InstitutionResponse } from '@/types/user/profile'
@@ -238,6 +239,48 @@ const PREVIEW_NEWS: NewsResponse[] = [
   },
 ]
 
+const PREVIEW_JUDGES: JudgeResponse[] = [
+  {
+    id: 1001,
+    fullName: 'Preview Judge One',
+    phoneNumber: '+1 (555) 000-0001',
+    email: 'judge.one@example.com',
+    socialProfiles: [],
+    checkedIn: true,
+  },
+  {
+    id: 1002,
+    fullName: 'Preview Judge Two',
+    phoneNumber: '+1 (555) 000-0002',
+    email: 'judge.two@example.com',
+    socialProfiles: [],
+    checkedIn: false,
+  },
+]
+
+const PREVIEW_FEEDBACKS: FeedbackResponse[] = [
+  {
+    id: 1101,
+    title: 'Loving the schedule clarity',
+    content: 'Rounds are running on time and the announcements help a ton. Keep it up!',
+    timestamp: '2024-08-01T19:10:00.000Z',
+    edited: false,
+    author: PREVIEW_PARTICIPANT_PROFILE,
+    user: PREVIEW_PARTICIPANT_ACCOUNT,
+    tags: PREVIEW_TAGS,
+  },
+  {
+    id: 1102,
+    title: 'Please add more maps',
+    content: 'Would be great to include room directions for the next rounds.',
+    timestamp: '2024-08-01T20:25:00.000Z',
+    edited: true,
+    author: PREVIEW_PARTICIPANT_PROFILE,
+    user: PREVIEW_PARTICIPANT_ACCOUNT,
+    tags: PREVIEW_TAGS,
+  },
+]
+
 const previewPage = <T,>(items: T[]): PageResult<T> => ({
   content: items,
   totalElements: items.length,
@@ -249,6 +292,8 @@ const PREVIEW_TEAMS_PAGE = previewPage(PREVIEW_TEAMS)
 const PREVIEW_MATCHES_PAGE = previewPage(PREVIEW_MATCHES)
 const PREVIEW_NEWS_PAGE = previewPage(PREVIEW_NEWS)
 const PREVIEW_ANNOUNCEMENTS_PAGE = previewPage(PREVIEW_ANNOUNCEMENTS)
+const PREVIEW_JUDGES_PAGE = previewPage(PREVIEW_JUDGES)
+const PREVIEW_FEEDBACKS_PAGE = previewPage(PREVIEW_FEEDBACKS)
 
 // Fetcher function for SWR
 async function fetcher<T>(fetchFn: () => Promise<Response>): Promise<T> {
@@ -520,6 +565,33 @@ export function useTournamentTeam(tournamentId: number, teamId: number) {
   }
 }
 
+export function useTournamentJudges(tournamentId: number, params?: JudgeGetParams, pageable?: Pageable) {
+  if (IS_PREVIEW) {
+    return {
+      judges: PREVIEW_JUDGES_PAGE,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_JUDGES_PAGE,
+    }
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    ['tournament-judges', tournamentId, params, pageable],
+    () => fetcher<PageResult<JudgeResponse>>(() => api.getJudges(tournamentId, params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    judges: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
 // Tournament announcements hooks
 export function useTournamentAnnouncements(
   tournamentId: number,
@@ -551,6 +623,37 @@ export function useTournamentAnnouncements(
     isLoading,
     error,
     mutate
+  }
+}
+
+export function useTournamentFeedbacks(
+  tournamentId: number,
+  params?: FeedbackGetParams,
+  pageable?: Pageable
+) {
+  if (IS_PREVIEW) {
+    return {
+      feedbacks: PREVIEW_FEEDBACKS_PAGE,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_FEEDBACKS_PAGE,
+    }
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    ['tournament-feedbacks', tournamentId, params, pageable],
+    () => fetcher<PageResult<FeedbackResponse>>(() => api.getFeedbacks(tournamentId, params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    feedbacks: data,
+    isLoading,
+    error,
+    mutate,
   }
 }
 

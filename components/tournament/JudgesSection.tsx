@@ -1,10 +1,18 @@
 "use client"
 
+import type { PageResult } from "@/types/page"
+import type { JudgeResponse } from "@/types/tournament/judge"
+
 interface JudgesSectionProps {
+  judges?: PageResult<JudgeResponse>
+  judgesLoading: boolean
+  judgesError?: Error
   onAddJudge: () => void
 }
 
-export function JudgesSection({ onAddJudge }: JudgesSectionProps) {
+export function JudgesSection({ judges, judgesLoading, judgesError, onAddJudge }: JudgesSectionProps) {
+  const rows = judges?.content ?? []
+
   return (
     <div className="relative">
       <div className="overflow-x-auto">
@@ -12,17 +20,42 @@ export function JudgesSection({ onAddJudge }: JudgesSectionProps) {
           <thead>
             <tr className="bg-gray-100">
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Name</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Club</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Number</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Email</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Phone</th>
               <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Check In</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={4} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
-                No judges assigned yet
-              </td>
-            </tr>
+            {judgesLoading ? (
+              <tr>
+                <td colSpan={4} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+                  Loading judges...
+                </td>
+              </tr>
+            ) : judgesError ? (
+              <tr>
+                <td colSpan={4} className="border border-gray-300 px-6 py-8 text-center text-red-500">
+                  Failed to load judges
+                </td>
+              </tr>
+            ) : rows.length ? (
+              rows.map((judge) => (
+                <tr key={judge.id} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{judge.fullName}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.email || "—"}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.phoneNumber || "—"}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321]">
+                    {judge.checkedIn ? <span className="text-green-600">✓</span> : <span className="text-red-500">✕</span>}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+                  No judges assigned yet
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

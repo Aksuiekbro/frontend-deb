@@ -3,84 +3,81 @@
 import React from "react";
 import { Facebook, Instagram, Linkedin, Pencil, Plus, Send, Trash2, Twitter, Youtube } from "lucide-react";
 
-export type SocialType = "telegram" | "instagram" | "twitter" | "facebook" | "linkedin" | "youtube";
-
-export interface SocialItem {
-  type: SocialType;
-  handle: string;
-}
+import { SocialPlatform, type SocialProfileRequest } from "@/types/util/socials/social-profile";
 
 interface SocialsManagerProps {
-  initialSocials: SocialItem[];
+  initialSocials: SocialProfileRequest[];
 }
 
-const allNetworks: SocialType[] = [
-  "telegram",
-  "instagram",
-  "twitter",
-  "facebook",
-  "linkedin",
-  "youtube",
+const allNetworks: SocialPlatform[] = [
+  SocialPlatform.TELEGRAM,
+  SocialPlatform.INSTAGRAM,
+  SocialPlatform.TWITTER,
+  SocialPlatform.FACEBOOK,
+  SocialPlatform.LINKEDIN,
+  SocialPlatform.YOUTUBE,
 ];
 
-function NetworkIcon({ type, className }: { type: SocialType; className?: string }) {
+function NetworkIcon({ type, className }: { type: SocialPlatform; className?: string }) {
   switch (type) {
-    case "telegram":
+    case SocialPlatform.TELEGRAM:
       return <Send className={className} />;
-    case "instagram":
+    case SocialPlatform.INSTAGRAM:
       return <Instagram className={className} />;
-    case "twitter":
+    case SocialPlatform.TWITTER:
       return <Twitter className={className} />;
-    case "facebook":
+    case SocialPlatform.FACEBOOK:
       return <Facebook className={className} />;
-    case "linkedin":
+    case SocialPlatform.LINKEDIN:
       return <Linkedin className={className} />;
-    case "youtube":
+    case SocialPlatform.YOUTUBE:
       return <Youtube className={className} />;
+    default:
+      return <Send className={className} />;
   }
 }
 
 export default function SocialsManager({ initialSocials }: SocialsManagerProps) {
-  const [socials, setSocials] = React.useState<SocialItem[]>(initialSocials);
+  const [socials, setSocials] = React.useState<SocialProfileRequest[]>(initialSocials);
 
-  const savedTypes = new Set(socials.map((s) => s.type));
+  const savedTypes = new Set(socials.map((s) => s.platform));
 
   const plusRotationMs = 1000;
   const chipDurationMs = 300;
   const chipDelayStepMs = Math.floor((plusRotationMs - chipDurationMs) / Math.max(1, allNetworks.length - 1));
 
-  const handleAdd = (type: SocialType) => {
+  const handleAdd = (type: SocialPlatform) => {
     if (savedTypes.has(type)) return;
-    setSocials((prev) => [...prev, { type, handle: "" }]);
+    setSocials((prev) => [...prev, { platform: type, handle: "" }]);
   };
 
-  const handleRemove = (type: SocialType) => {
-    setSocials((prev) => prev.filter((s) => s.type !== type));
+  const handleRemove = (type: SocialPlatform) => {
+    setSocials((prev) => prev.filter((s) => s.platform !== type));
   };
 
-  const handleChange = (type: SocialType, value: string) => {
-    setSocials((prev) => prev.map((s) => (s.type === type ? { ...s, handle: value } : s)));
+  const handleChange = (type: SocialPlatform, value: string) => {
+    setSocials((prev) => prev.map((s) => (s.platform === type ? { ...s, handle: value } : s)));
   };
 
   return (
     <div className="space-y-4">
       {socials.map((s) => (
-        <div key={s.type} className="flex items-center gap-3">
+        <div key={s.platform} className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-[#0D1321] text-white flex items-center justify-center">
-            <NetworkIcon type={s.type} className="h-5 w-5" />
+            <NetworkIcon type={s.platform} className="h-5 w-5" />
           </div>
           <div className="flex-1">
             <input
               value={s.handle}
-              onChange={(e) => handleChange(s.type, e.target.value)}
-              placeholder={s.type === "telegram" ? "@handle" : "username"}
+              onChange={(e) => handleChange(s.platform, e.target.value)}
+              placeholder={s.platform === SocialPlatform.TELEGRAM ? "@handle" : "username"}
               className="w-full border-b border-black/20 bg-transparent py-2 outline-none text-[#0D1321]"
             />
           </div>
           <button type="button" aria-label="Edit" className="p-2 rounded hover:bg-black/5">
             <Pencil className="h-5 w-5 text-[#0D1321]" />
           </button>
-          <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.type)}>
+          <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.platform)}>
             <Trash2 className="h-5 w-5 text-[#0D1321]" />
           </button>
         </div>
@@ -97,7 +94,7 @@ export default function SocialsManager({ initialSocials }: SocialsManagerProps) 
           {allNetworks.map((n, idx) => {
             const isSaved = savedTypes.has(n);
             const delayMs = idx * chipDelayStepMs;
-            const label = n.charAt(0).toUpperCase() + n.slice(1);
+            const label = n.charAt(0) + n.slice(1).toLowerCase();
             return (
               <button
                 key={n}
@@ -122,5 +119,3 @@ export default function SocialsManager({ initialSocials }: SocialsManagerProps) 
     </div>
   );
 }
-
-

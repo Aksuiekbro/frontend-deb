@@ -22,7 +22,7 @@ export interface NewsRequest {
 }
 
 export interface NewsGetParams {
-    searchTitle: string;
-    tags: string[];
-    authorId: number;
+    searchTitle?: string;
+    tags?: string[];
+    authorId?: number;
 }

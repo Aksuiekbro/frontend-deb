@@ -6,6 +6,8 @@ import Link from "next/link"
 import Header from "../../components/Header"
 import { api } from "@/lib/api"
 import { SimpleTournamentResponse, TournamentGetParams, TournamentLeague } from "@/types/tournament/tournament"
+import type { PageResult } from "@/types/page"
+import type { ParticipantSelectorRequest, TeamRequest } from "@/types/tournament/team"
 
 export default function JoinDebatesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -56,7 +58,7 @@ export default function JoinDebatesPage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      const data = await response.json()
+      const data: PageResult<SimpleTournamentResponse> = await response.json()
 
       if (reset) {
         setTournaments(data.content)
@@ -108,7 +110,7 @@ export default function JoinDebatesPage() {
     setRegistrationError(null)
 
     try {
-      const invitedParticipants = []
+      const invitedParticipants: ParticipantSelectorRequest[] = []
 
       // Add speakers if usernames provided
       if (speakerOneUsername.trim()) {
@@ -118,12 +120,14 @@ export default function JoinDebatesPage() {
         invitedParticipants.push({ username: speakerTwoUsername.trim() })
       }
 
-      const response = await api.registerTeam(selectedTournamentId, {
+      const payload: TeamRequest = {
         name: teamName.trim(),
         club: clubName.trim(),
         creatorId: 1, // TODO: Get current user ID from auth context
-        invitedParticipants: invitedParticipants.length > 0 ? invitedParticipants : undefined
-      })
+        invitedParticipants: invitedParticipants.length > 0 ? invitedParticipants : undefined,
+      }
+
+      const response = await api.registerTeam(selectedTournamentId, payload)
 
       if (!response.ok) {
         const errorData = await response.json()

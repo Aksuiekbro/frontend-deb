@@ -19,11 +19,22 @@ import { EditTeamModal } from "@/components/tournament/EditTeamModal"
 import { useTournamentVisibility } from "@/hooks/tournament/useTournamentVisibility"
 import { useImageUpload } from "@/hooks/tournament/useImageUpload"
 import { useRoundSelection } from "@/hooks/tournament/useRoundSelection"
-import { useTournament, useTournamentParticipants, useTournamentTeams, useTournamentAnnouncements, useNews, useCurrentUser } from "@/hooks/use-api"
+import {
+  useTournament,
+  useTournamentParticipants,
+  useTournamentTeams,
+  useTournamentAnnouncements,
+  useTournamentJudges,
+  useTournamentFeedbacks,
+  useNews,
+  useCurrentUser,
+} from "@/hooks/use-api"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Role } from "@/types/user/user"
 import type { SimpleTeamResponse, TeamUpdateParticipantRequest } from "@/types/tournament/team"
+import type { JudgeRequest } from "@/types/tournament/judge"
+import type { NewsRequest } from "@/types/news"
 
 export default function TournamentDetailPage() {
   const params = useParams()
@@ -36,6 +47,12 @@ export default function TournamentDetailPage() {
   const { participants } = useTournamentParticipants(tournamentId)
   const { teams, isLoading: teamsLoading, error: teamsError, mutate: mutateTeams } = useTournamentTeams(tournamentId)
   const { announcements, isLoading: announcementsLoading, error: announcementsError } = useTournamentAnnouncements(tournamentId)
+  const { judges, isLoading: judgesLoading, error: judgesError, mutate: mutateJudges } = useTournamentJudges(tournamentId)
+  const { feedbacks, isLoading: feedbacksLoading, error: feedbacksError, mutate: mutateFeedbacks } = useTournamentFeedbacks(
+    tournamentId,
+    undefined,
+    { page: 0, size: 20, sort: ['timestamp,desc'] }
+  )
 
   const [activeTab, setActiveTab] = useState('Main Info')
   const [isMainInfoDropdownOpen, setIsMainInfoDropdownOpen] = useState(false)
@@ -63,11 +80,7 @@ export default function TournamentDetailPage() {
     resetUploads,
   } = useImageUpload()
 
-  const tournamentMembers = participants?.content.slice(0, 5).map(participant => ({
-    id: participant.id,
-    name: `${participant.user.firstName} ${participant.user.lastName}`,
-    avatar: participant.user.imageUrl?.url || '/avatar-placeholder.jpg'
-  })) || []
+  const tournamentMembers = participants?.content.slice(0, 5) ?? []
   const [inviteModalTab, setInviteModalTab] = useState<'invite' | 'copy-link'>('invite')  
   // Check-in state for each participant row
   const [checkInStatus, setCheckInStatus] = useState<{[key: number]: boolean}>({})
@@ -85,7 +98,9 @@ export default function TournamentDetailPage() {
   const [modalContext, setModalContext] = useState<'announcements' | 'schedule' | 'map' | 'news' | ''>('')
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
-  const [judgeForm, setJudgeForm] = useState({ name: '', club: '', phone: '' })
+  const [judgeForm, setJudgeForm] = useState<JudgeRequest>({ fullName: '', email: '', phoneNumber: '' })
+  const [judgeSubmitting, setJudgeSubmitting] = useState(false)
+  const [judgeError, setJudgeError] = useState<string | null>(null)
   const [deletingTeamId, setDeletingTeamId] = useState<number | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsDropdownRef = useRef<HTMLDivElement>(null)
@@ -117,12 +132,12 @@ export default function TournamentDetailPage() {
       if (isValidAnnouncement || isValidNews || isValidOther) {
         if (isNews) {
           const [thumbnail, ...images] = postImages
-          const body = {
-            title: postTitle,
-            content: postDescription,
+          const body: NewsRequest = {
+            title: postTitle.trim(),
+            content: postDescription.trim(),
             tags: [`tournament:${tournamentId}`, selectedNewsCategory],
           }
-          await api.createNews(body as any, thumbnail, images)
+          await api.createNews(body, thumbnail, images)
           await mutateNews()
         }
 
@@ -141,26 +156,54 @@ export default function TournamentDetailPage() {
     }
   }
 
-  const handleAddJudge = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddJudge = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const hasAllFields = Object.values(judgeForm).every((value) => value.trim())
+    const { fullName, email, phoneNumber } = judgeForm
+    const hasAllFields = [fullName, email, phoneNumber].every((value) => Boolean(value && value.trim()))
 
     if (!hasAllFields) {
       toast({
         title: 'Missing information',
-        description: 'Please fill in name, club, and phone.',
+        description: 'Please fill in name, email, and phone.',
         variant: 'destructive'
       })
       return
     }
 
-    toast({
-      title: 'Judge submitted',
-      description: 'This action will be wired to the backend soon.'
-    })
+    setJudgeSubmitting(true)
+    setJudgeError(null)
 
-    setJudgeForm({ name: '', club: '', phone: '' })
-    setIsAddJudgeModalOpen(false)
+    try {
+      const response = await api.addJudge(tournamentId, {
+        fullName: fullName?.trim(),
+        email: email?.trim(),
+        phoneNumber: phoneNumber?.trim(),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.message || 'Failed to add judge')
+      }
+
+      toast({
+        title: 'Judge submitted',
+        description: 'The judge has been added to the roster.'
+      })
+
+      await mutateJudges()
+      setJudgeForm({ fullName: '', email: '', phoneNumber: '' })
+      setIsAddJudgeModalOpen(false)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add judge'
+      setJudgeError(message)
+      toast({
+        title: 'Failed to add judge',
+        description: message,
+        variant: 'destructive'
+      })
+    } finally {
+      setJudgeSubmitting(false)
+    }
   }
 
 
@@ -169,7 +212,8 @@ export default function TournamentDetailPage() {
 
   const closeJudgeModal = () => {
     setIsAddJudgeModalOpen(false)
-    setJudgeForm({ name: '', club: '', phone: '' })
+    setJudgeForm({ fullName: '', email: '', phoneNumber: '' })
+    setJudgeError(null)
   }
 
   const handleDeleteTeam = async (teamId: number, teamName: string) => {
@@ -275,7 +319,7 @@ export default function TournamentDetailPage() {
 
   // Tournament-specific news
   const { news, isLoading: newsLoading, error: newsError, mutate: mutateNews } = useNews(
-    { tags: [`tournament:${tournamentId}`] } as any,
+    { tags: [`tournament:${tournamentId}`] },
     { page: 0, size: 20, sort: ['timestamp,desc'] }
   )
 
@@ -377,7 +421,12 @@ export default function TournamentDetailPage() {
         )}
 
         {activeTab === 'Judges' && (
-          <JudgesSection onAddJudge={() => setIsAddJudgeModalOpen(true)} />
+          <JudgesSection
+            judges={judges}
+            judgesLoading={judgesLoading}
+            judgesError={judgesError}
+            onAddJudge={() => setIsAddJudgeModalOpen(true)}
+          />
         )}
 
         {activeTab === 'Pairing and Matches' && (
@@ -419,7 +468,15 @@ export default function TournamentDetailPage() {
         />
       )}
 
-      {activeTab === 'Feedback' && <FeedbackSection />}
+      {activeTab === 'Feedback' && (
+        <FeedbackSection
+          tournamentId={tournamentId}
+          feedbacks={feedbacks}
+          feedbacksLoading={feedbacksLoading}
+          feedbacksError={feedbacksError}
+          onFeedbackAdded={mutateFeedbacks}
+        />
+      )}
 
       <EditTeamModal
         isOpen={!!teamEditModalData}
@@ -465,6 +522,8 @@ export default function TournamentDetailPage() {
         onClose={closeJudgeModal}
         onSubmit={handleAddJudge}
         onChange={(field, value) => setJudgeForm((prev) => ({ ...prev, [field]: value }))}
+        isSubmitting={judgeSubmitting}
+        errorMessage={judgeError}
       />
     </div>
   )

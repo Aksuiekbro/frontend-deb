@@ -1,8 +1,8 @@
 import Header from "../../../components/Header";
-import { LogOut } from "lucide-react";
 import AvatarWithEdit from "../../../components/profile/AvatarWithEdit";
 import SocialsManager from "../../../components/profile/SocialsManager";
 import LogoutButton from "@/components/profile/LogoutButton";
+import { SocialPlatform, type SocialProfileRequest } from "@/types/util/socials/social-profile";
 
 type ProfilePageProps = { params: Promise<{ id: string }> };
 
@@ -10,6 +10,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const { id: userId } = await params;
 
   // Dummy data to mirror the Figma layout
+  const socialProfiles: SocialProfileRequest[] = [
+    { platform: SocialPlatform.TELEGRAM, handle: "@AbdixZH" },
+    { platform: SocialPlatform.INSTAGRAM, handle: "abdullazheksembek" },
+  ]
+
   const user = {
     id: userId,
     shortName: "AbdixZH",
@@ -18,10 +23,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     role: "Organizer",
     joinedAt: "20.09.2025",
     avatarUrl: "/images/avatar-placeholder.png",
-    socials: [
-      { type: "telegram" as const, handle: "@AbdixZH" },
-      { type: "instagram" as const, handle: "abdullazheksembek" },
-    ],
+    socials: socialProfiles,
   };
 
   // Interactive socials UI handled in client component
@@ -61,7 +63,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <div className="px-6 md:px-8 py-6 space-y-4">
             <h3 className="text-[24px] font-medium text-[#0D1321]">Social media</h3>
 
-            <SocialsManager initialSocials={user.socials as any} />
+            <SocialsManager initialSocials={user.socials} />
           </div>
 
           <hr className="border-t border-black/10" />
@@ -76,5 +78,3 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     </div>
   );
 }
-
-
