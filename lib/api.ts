@@ -15,11 +15,22 @@ import { CityResponse, InstitutionResponse, OrganizerProfileResponse, Participan
 import { SimpleUserResponse, UserGetParams, UserLoginRequest, UserRegistrationRequest, UserResponse, UserUpdateRequest } from "@/types/user/user";
 import { OrganizerInvitationResponse, ParticipantInvitationResponse } from "@/types/util/request/invitation";
 import { SocialPlatform, SocialProfileRequest } from "@/types/util/socials/social-profile";
-import { register } from "module";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+
+function missingApiUrlResponse(): Response {
+    return new Response(
+        JSON.stringify({ message: "API endpoint is not configured for this deployment." }),
+        {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+}
 
 async function request<T>(url: string, options?: RequestInit): Promise<Response> {
+    if (!API_URL) return missingApiUrlResponse();
+
     const isFormData = options?.body instanceof FormData;
 
     const res = await fetch(`${API_URL}${url}`, {

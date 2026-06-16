@@ -6,7 +6,7 @@ import Image from "next/image"
 import Link from "next/link"
 import Header from "../../components/Header"
 import { useTournaments } from "../../hooks/use-api"
-import { LoadingState, TournamentCardSkeleton } from "../../components/ui/loading"
+import { LoadingState, CardSkeleton } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
 
 
@@ -95,7 +95,7 @@ export default function MyTournamentsPage() {
           fallback={
             <div className="space-y-6">
               {[1, 2, 3].map(i => (
-                <TournamentCardSkeleton key={i} />
+                <CardSkeleton key={i} />
               ))}
             </div>
           }
