@@ -7,16 +7,22 @@ interface AvatarWithEditProps {
   src: string;
   sizePx?: number;
   onChangeImage?: (file: File, previewUrl: string) => void;
+  onDeleteImage?: () => Promise<void> | void;
 }
 
-export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: AvatarWithEditProps) {
+export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDeleteImage }: AvatarWithEditProps) {
   const [preview, setPreview] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const canEdit = Boolean(onChangeImage || onDeleteImage);
 
   const dimension = `${sizePx}px`;
 
-  const onPick = () => setOpen(true);
+  const onPick = () => {
+    if (!canEdit) return;
+    setOpen(true);
+  };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,6 +30,18 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
     const url = URL.createObjectURL(file);
     setPreview(url);
     onChangeImage?.(file, url);
+  };
+
+  const handleDelete = async () => {
+    if (!onDeleteImage || deleting) return;
+    try {
+      setDeleting(true);
+      await onDeleteImage();
+      setPreview(null);
+      setOpen(false);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -40,8 +58,9 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
       <button
         type="button"
         aria-label="Edit avatar"
+        disabled={!canEdit}
         onClick={onPick}
-        className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-black/5 transition-colors"
+        className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-black/5 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Pencil className="h-4 w-4 text-[#0D1321]" />
       </button>
@@ -86,7 +105,14 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
               </button>
             </div>
             <div className="mt-3 flex justify-center">
-              <button type="button" className="text-[#FF4800] hover:opacity-90">Delete image</button>
+              <button
+                type="button"
+                disabled={!onDeleteImage || deleting}
+                onClick={handleDelete}
+                className="text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete image"}
+              </button>
             </div>
           </div>
         </div>
@@ -94,5 +120,3 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
     </div>
   );
 }
-
-

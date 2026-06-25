@@ -4,29 +4,10 @@ import { useState, FormEvent, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { Role } from '@/types/user/user'
+import { readResponseError } from '@/lib/http-error'
 
 // Backend rule (mirrors UserRegistrationDto validation): alphanumeric, 3–20 chars.
 const USERNAME_PATTERN = /^[a-zA-Z0-9]{3,20}$/
-
-// Derive a human-readable message from a failed response. The backend often returns an empty
-// body (e.g. 403 on bad credentials/validation), so res.json() would throw — read defensively
-// and fall back to a status-aware message instead of a generic "unexpected error".
-async function readErrorMessage(res: Response, context: 'register' | 'login'): Promise<string> {
-  try {
-    const text = await res.text()
-    if (text) {
-      try {
-        const data = JSON.parse(text)
-        if (data?.message) return data.message
-      } catch { /* body wasn't JSON */ }
-    }
-  } catch { /* couldn't read body */ }
-  if (context === 'login' && (res.status === 401 || res.status === 403)) return 'Invalid username or password.'
-  if (res.status === 409) return 'That username or email is already taken.'
-  if (res.status === 400 || res.status === 403) return 'Please check your details and try again.'
-  if (res.status >= 500) return 'Server error — please try again later.'
-  return context === 'register' ? 'Registration failed. Please try again.' : 'Login failed. Please try again.'
-}
 
 export default function AuthPage() {
   return (
@@ -97,7 +78,13 @@ function AuthPageInner() {
         }),
       });
       if (!res.ok) {
-        setSignUpErrorMsg(await readErrorMessage(res, 'register'))
+        setSignUpErrorMsg(await readResponseError(res, {
+          fallback: 'Registration failed. Please try again.',
+          unauthorized: 'Please check your details and try again.',
+          badRequest: 'Please check your details and try again.',
+          conflict: 'That username or email is already taken.',
+          serverError: 'Server error — please try again later.',
+        }))
       } else {
         setSignUpSuccess('Account created successfully! Redirecting...')
         setTimeout(() => {
@@ -126,7 +113,11 @@ function AuthPageInner() {
         rememberMe: rememberMe
       });
       if (!res.ok) {
-        setSignInError(await readErrorMessage(res, 'login'))
+        setSignInError(await readResponseError(res, {
+          fallback: 'Login failed. Please try again.',
+          unauthorized: 'Invalid username or password.',
+          serverError: 'Server error — please try again later.',
+        }))
       }
       else {
         router.push('/dashboard')
@@ -372,4 +363,4 @@ function AuthPageInner() {
       </div>
     </div>
   )
-} 
+}

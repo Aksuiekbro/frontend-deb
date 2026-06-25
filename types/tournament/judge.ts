@@ -13,6 +13,7 @@ export interface JudgeRequest {
     fullName?: string;
     phoneNumber?: string;
     email?: string;
+    checkedIn?: boolean;
 }
 
 export interface JudgeGetParams {

@@ -17,6 +17,8 @@ interface AddPostModalProps {
   selectedNewsCategory: NewsCategory
   imagePreviews: ImagePreview[]
   uploadErrors: string[]
+  isSubmitting?: boolean
+  errorMessage?: string | null
   dzAnimate: boolean
   formatBytes: (bytes: number) => string
   onClose: () => void
@@ -46,6 +48,8 @@ export function AddPostModal({
   selectedNewsCategory,
   imagePreviews,
   uploadErrors,
+  isSubmitting = false,
+  errorMessage,
   dzAnimate,
   formatBytes,
   onClose,
@@ -168,7 +172,7 @@ export function AddPostModal({
             )}
           </div>
 
-          {(modalContext === "announcements" || modalContext === "news") && (
+          {(modalContext === "announcements" || modalContext === "schedule" || modalContext === "news") && (
             <div className="space-y-6">
               <div>
                 <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Title</label>
@@ -209,9 +213,17 @@ export function AddPostModal({
             </div>
           )}
 
+          {errorMessage ? (
+            <p className="text-sm text-red-600" role="alert">{errorMessage}</p>
+          ) : null}
+
           <div className="flex justify-end">
-            <button type="submit" className="w-full px-8 py-4 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[18px] font-medium transition-colors">
-              Submit
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full px-8 py-4 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[18px] font-medium transition-colors disabled:opacity-60"
+            >
+              {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </div>
         </form>

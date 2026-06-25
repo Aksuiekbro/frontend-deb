@@ -1,5 +1,6 @@
 "use client"
 
+import { resolveMediaUrl } from "@/lib/media"
 import type { SimpleTournamentParticipantResponse } from "@/types/tournament/tournament-participant"
 
 type InviteModalTab = "invite" | "copy-link"
@@ -45,7 +46,7 @@ export function InviteModal({ isOpen, members, activeTab, onTabChange, onClose }
             {members.length > 0 ? (
               members.map((participant) => {
                 const name = `${participant.user.firstName ?? ""} ${participant.user.lastName ?? ""}`.trim() || participant.user.username
-                const avatar = participant.user.imageUrl?.url
+                const avatar = resolveMediaUrl(participant.user.imageUrl?.url)
                 return (
                   <div key={participant.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

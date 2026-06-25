@@ -1,30 +1,50 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
 interface EditTeamModalProps {
   isOpen: boolean
   teamName?: string
   clubName?: string
+  speakerUsernames?: string[]
   isSaving?: boolean
   onClose: () => void
-  onSave: (values: { name: string; club: string }) => Promise<void> | void
+  onSave: (values: { name: string; club: string; speakerUsernames: string[] }) => Promise<void> | void
 }
 
-export function EditTeamModal({ isOpen, teamName = "", clubName = "", isSaving = false, onClose, onSave }: EditTeamModalProps) {
+const EMPTY_SPEAKER_USERNAMES: string[] = []
+
+export function EditTeamModal({
+  isOpen,
+  teamName = "",
+  clubName = "",
+  speakerUsernames = EMPTY_SPEAKER_USERNAMES,
+  isSaving = false,
+  onClose,
+  onSave,
+}: EditTeamModalProps) {
   const [name, setName] = useState(teamName)
   const [club, setClub] = useState(clubName)
+  const [speakers, setSpeakers] = useState<string[]>(["", "", ""])
+  const firstSpeakerUsername = speakerUsernames[0] ?? ""
+  const secondSpeakerUsername = speakerUsernames[1] ?? ""
+  const thirdSpeakerUsername = speakerUsernames[2] ?? ""
 
   useEffect(() => {
     setName(teamName)
     setClub(clubName)
-  }, [teamName, clubName])
+    setSpeakers([firstSpeakerUsername, secondSpeakerUsername, thirdSpeakerUsername])
+  }, [teamName, clubName, firstSpeakerUsername, secondSpeakerUsername, thirdSpeakerUsername])
 
   const handleSubmit = async () => {
     if (!name.trim() || isSaving) return
-    await onSave({ name: name.trim(), club: club.trim() })
+    await onSave({
+      name: name.trim(),
+      club: club.trim(),
+      speakerUsernames: speakers.map((speaker) => speaker.trim()),
+    })
   }
 
   return (
@@ -32,6 +52,9 @@ export function EditTeamModal({ isOpen, teamName = "", clubName = "", isSaving =
       <DialogContent className="rounded-3xl border border-[#E2E6F2] bg-white p-8 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold text-[#0B1327]">Edit team</DialogTitle>
+          <DialogDescription className="sr-only">
+            Update the team name, club, and participant usernames.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
@@ -41,6 +64,22 @@ export function EditTeamModal({ isOpen, teamName = "", clubName = "", isSaving =
           <div>
             <label className="text-sm font-medium text-[#4A5168]">Club</label>
             <Input value={club} onChange={(event) => setClub(event.target.value)} className="mt-2" placeholder="Enter club name" />
+          </div>
+          <div className="grid gap-3">
+            <label className="text-sm font-medium text-[#4A5168]">Participants</label>
+            {speakers.map((speaker, index) => (
+              <Input
+                key={index}
+                value={speaker}
+                onChange={(event) => {
+                  const next = [...speakers]
+                  next[index] = event.target.value
+                  setSpeakers(next)
+                }}
+                placeholder={index === 2 ? "Speaker 3 username (optional)" : `Speaker ${index + 1} username`}
+                aria-label={index === 2 ? "Speaker 3 username" : `Speaker ${index + 1} username`}
+              />
+            ))}
           </div>
         </div>
         <DialogFooter className="flex w-full flex-row gap-4">

@@ -1,38 +1,37 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 import { useMatches, useRoundGroups, useRounds } from "@/hooks/use-api"
 import type { Pageable } from "@/types/page"
+import { RoundGroupType } from "@/types/tournament/round/round-group"
+import type { StageId } from "@/components/tournament/PairingsSection"
 
-const ELIMINATION_ROUNDS = new Set(["1/16", "1/8", "1/4", "1/2"])
+const ROUND_GROUP_TYPE_BY_STAGE: Record<StageId, RoundGroupType> = {
+  preliminary: RoundGroupType.PRELIMINARY,
+  team: RoundGroupType.TEAM_ELIMINATION,
+  solo: RoundGroupType.SOLO_ELIMINATION,
+}
 
 interface UseRoundSelectionArgs {
   tournamentId: number
+  selectedStage: StageId
   selectedRoundLabel: string
   pageable?: Pageable
 }
 
-export function useRoundSelection({ tournamentId, selectedRoundLabel, pageable }: UseRoundSelectionArgs) {
-  const [selectedRoundGroupId, setSelectedRoundGroupId] = useState<number | null>(null)
-  const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null)
+export function useRoundSelection({ tournamentId, selectedStage, selectedRoundLabel, pageable }: UseRoundSelectionArgs) {
+  const { roundGroups, mutate: mutateRoundGroups } = useRoundGroups(tournamentId)
 
-  const { roundGroups } = useRoundGroups(tournamentId)
-
-  useEffect(() => {
+  const selectedRoundGroup = useMemo(() => {
     if (!roundGroups || roundGroups.length === 0) return
+    const preferredType = ROUND_GROUP_TYPE_BY_STAGE[selectedStage]
+    return roundGroups.find((group) => group.type === preferredType) ?? roundGroups[0]
+  }, [roundGroups, selectedStage])
 
-    const isElimination = ELIMINATION_ROUNDS.has(selectedRoundLabel)
-    const preferredType = isElimination ? "TEAM_ELIMINATION" : "PRELIMINARY"
-    const preferredGroup = roundGroups.find((group) => group.type === preferredType) ?? roundGroups[0]
+  const selectedRoundGroupId = selectedRoundGroup?.id ?? null
+  const { rounds, mutate: mutateRounds } = useRounds(tournamentId, selectedRoundGroupId ?? undefined)
 
-    if (preferredGroup && preferredGroup.id !== selectedRoundGroupId) {
-      setSelectedRoundGroupId(preferredGroup.id)
-    }
-  }, [roundGroups, selectedRoundLabel, selectedRoundGroupId])
-
-  const { rounds } = useRounds(tournamentId, selectedRoundGroupId ?? undefined)
-
-  useEffect(() => {
+  const selectedRound = useMemo(() => {
     if (!rounds || rounds.length === 0) return
 
     let nextRound = rounds.find((round) => round.name === selectedRoundLabel)
@@ -44,12 +43,12 @@ export function useRoundSelection({ tournamentId, selectedRoundLabel, pageable }
       }
     }
 
-    nextRound = nextRound ?? rounds[0]
+    return nextRound ?? rounds[0]
+  }, [rounds, selectedRoundLabel])
 
-    if (nextRound && nextRound.id !== selectedRoundId) {
-      setSelectedRoundId(nextRound.id)
-    }
-  }, [rounds, selectedRoundLabel, selectedRoundId])
+  const selectedRoundId = selectedRound?.id ?? null
+  const selectedRoundNumber = selectedRound?.roundNumber ?? null
+  const currentRoundNumber = selectedRoundGroup?.currentRoundNumber ?? null
 
   const matchesQuery = useMatches(
     tournamentId,
@@ -61,8 +60,14 @@ export function useRoundSelection({ tournamentId, selectedRoundLabel, pageable }
   return {
     selectedRoundGroupId,
     selectedRoundId,
+    selectedRoundNumber,
+    currentRoundNumber,
+    selectedRoundGroup,
+    selectedRound,
     roundGroups,
     rounds,
+    mutateRoundGroups,
+    mutateRounds,
     ...matchesQuery,
   }
 }

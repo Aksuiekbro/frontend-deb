@@ -12,7 +12,8 @@ export type ImagePreview = {
   error?: string
 }
 
-const DEFAULT_MAX_SIZE = 10 * 1024 * 1024 // 10MB
+const DEFAULT_MAX_SIZE = 5 * 1024 * 1024 // backend max: 5MB
+const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png"])
 
 export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([])
@@ -34,13 +35,15 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     Array.from(files).forEach((file) => {
       const key = `${file.name}-${file.lastModified}-${file.size}`
 
-      if (!file.type.startsWith("image/")) {
-        nextErrors.push(`${file.name}: not an image`)
+      const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
+
+      if (!file.type.startsWith("image/") || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
+        nextErrors.push(`${file.name}: please upload JPG or PNG`)
         return
       }
 
       if (file.size > maxSize) {
-        nextErrors.push(`${file.name}: exceeds 10MB`)
+        nextErrors.push(`${file.name}: exceeds ${formatBytes(maxSize)}`)
         return
       }
 
@@ -72,7 +75,7 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     if (validFiles.length) {
       setPostImages((prev) => [...prev, ...validFiles])
     }
-  }, [maxSize])
+  }, [formatBytes, maxSize])
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault()

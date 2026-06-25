@@ -1,10 +1,10 @@
 import { NewsGetParams, NewsRequest, NewsResponse } from "@/types/news";
-import { Pageable, PageResult } from "@/types/page";
+import { Pageable } from "@/types/page";
 import { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/announcement/announcement";
 import { CommentRequest, CommentResponse } from "@/types/tournament/announcement/comment";
 import { FeedbackGetParams, FeedbackRequest, FeedbackResponse } from "@/types/tournament/feedback";
 import { JudgeGetParams, JudgeRequest, JudgeResponse } from "@/types/tournament/judge";
-import { MatchResponse, MatchResultRequest } from "@/types/tournament/match";
+import { MatchResponse, MatchResultRequest, MatchUpdateRequest } from "@/types/tournament/match";
 import { RoundResponse, RoundUpdateRequest, SimpleRoundResponse } from "@/types/tournament/round/round";
 import { RoundGroupResponse, RoundGroupType } from "@/types/tournament/round/round-group";
 import { ScheduleRequest, ScheduleResponse } from "@/types/tournament/schedule";
@@ -13,13 +13,29 @@ import { DebateFormatRequest, SimpleTournamentResponse, TournamentGetParams, Tou
 import { SimpleTournamentParticipantResponse, TournamentParticipantGetParams, TournamentParticipantResponse } from "@/types/tournament/tournament-participant";
 import { CityResponse, InstitutionResponse, OrganizerProfileResponse, ParticipantProfileResponse } from "@/types/user/profile";
 import { SimpleUserResponse, UserGetParams, UserLoginRequest, UserRegistrationRequest, UserResponse, UserUpdateRequest } from "@/types/user/user";
-import { OrganizerInvitationResponse, ParticipantInvitationResponse } from "@/types/util/request/invitation";
+import {
+    OrganizerInvitationRequest,
+    OrganizerInvitationResponse,
+    ParticipantInvitationRequest,
+    ParticipantInvitationResponse
+} from "@/types/util/request/invitation";
 import { SocialPlatform, SocialProfileRequest } from "@/types/util/socials/social-profile";
-import { register } from "module";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
 
-async function request<T>(url: string, options?: RequestInit): Promise<Response> {
+function missingApiUrlResponse(): Response {
+    return new Response(
+        JSON.stringify({ message: "API endpoint is not configured for this deployment." }),
+        {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+}
+
+async function request(url: string, options?: RequestInit): Promise<Response> {
+    if (!API_URL) return missingApiUrlResponse();
+
     const isFormData = options?.body instanceof FormData;
 
     const res = await fetch(`${API_URL}${url}`, {
@@ -34,12 +50,12 @@ async function request<T>(url: string, options?: RequestInit): Promise<Response>
     return res;
 }
 
-async function get<T>(endpoint: string, params?: Record<string, any>): Promise<Response> {
+async function get<T>(endpoint: string, params?: object): Promise<Response> {
     const query = params ? buildQuery(params) : "";
-    return request<T>(`${endpoint}${query}`);
+    return request(`${endpoint}${query}`);
 }
 
-async function getPageable<T>(endpoint: string, params?: Record<string, any>, pageable?: Pageable): Promise<Response> {
+async function getPageable<T>(endpoint: string, params?: object, pageable?: Pageable): Promise<Response> {
     const queryParams = {
         ...(params ?? {}),
         ...(pageable?.page !== undefined ? {page: pageable.page} : {}),
@@ -47,16 +63,16 @@ async function getPageable<T>(endpoint: string, params?: Record<string, any>, pa
         ...(pageable?.sort ? {sort: pageable.sort} : {})
     };
 
-    return request<PageResult<T>>(`${endpoint}${buildQuery(queryParams)}`);
+    return request(`${endpoint}${buildQuery(queryParams)}`);
 }
 
 async function post<T>(
     endpoint: string,
-    body?: any,
-    params?: Record<string, any>
+    body?: unknown,
+    params?: object
 ): Promise<Response> {
     const query = params ? buildQuery(params) : "";
-    return request<T>(`${endpoint}${query}`, {
+    return request(`${endpoint}${query}`, {
         method: "POST",
         body: body ? JSON.stringify(body) : undefined,
     });
@@ -64,9 +80,9 @@ async function post<T>(
 
 export async function postMultipart<T>(
     endpoint: string,
-    dto?: any,
+    dto?: unknown,
     files?: Record<string, File | File[]>,
-    params?: Record<string, any>
+    params?: object
 ): Promise<Response> {
     const query = params ? buildQuery(params) : "";
     const formData = new FormData();
@@ -88,7 +104,7 @@ export async function postMultipart<T>(
         });
     }
 
-    return request<T>(`${endpoint}${query}`, {
+    return request(`${endpoint}${query}`, {
         method: "POST",
         body: formData
     });
@@ -97,11 +113,11 @@ export async function postMultipart<T>(
 
 async function patch<T>(
     endpoint: string,
-    body?: any,
-    params?: Record<string, any>
+    body?: unknown,
+    params?: object
 ): Promise<Response> {
     const query = params ? buildQuery(params) : "";
-    return request<T>(`${endpoint}${query}`, {
+    return request(`${endpoint}${query}`, {
         method: "PATCH",
         body: body ? JSON.stringify(body) : undefined,
     });
@@ -109,9 +125,9 @@ async function patch<T>(
 
 export async function patchMultipart<T>(
     endpoint: string,
-    dto?: any,
+    dto?: unknown,
     files?: Record<string, File | File[]>,
-    params?: Record<string, any>
+    params?: object
   ): Promise<Response> {
     const query = params ? buildQuery(params) : "";
     const formData = new FormData();
@@ -133,7 +149,7 @@ export async function patchMultipart<T>(
       });
     }
   
-    return request<T>(`${endpoint}${query}`, {
+    return request(`${endpoint}${query}`, {
       method: "PATCH",
       body: formData,
     });
@@ -142,23 +158,39 @@ export async function patchMultipart<T>(
 
 export async function deleteReq<T>(
     endpoint: string,
-    params?: Record<string, any>
+    params?: object
 ): Promise<Response> {
     const query = params ? buildQuery(params) : "";
-    return request<T>(`${endpoint}${query}`, {
+    return request(`${endpoint}${query}`, {
       method: "DELETE",
     });
 }
 
-function buildQuery(params: Record<string, any>): string {
+function buildQuery(params: object): string {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        search.append(key, String(value));
+        if (Array.isArray(value)) {
+          value.forEach((item) => search.append(key, String(item)));
+        } else {
+          search.append(key, String(value));
+        }
       }
     });
     return search.toString() ? `?${search.toString()}` : "";
 }
+
+function buildSocialProfilesBody(newProfiles: SocialProfileRequest[]) {
+    return {
+        socialProfiles: newProfiles.map(({platform, handle, isPublic}) => ({
+            socialPlatform: platform,
+            handle,
+            isPublic,
+        })),
+    };
+}
+
+type SocialPlatformsParam = SocialPlatform | SocialPlatform[];
 
 export const api = {
     //AUTH
@@ -172,17 +204,17 @@ export const api = {
     getMe: () => get<UserResponse>("/users/me"),
 
     updateUser: (id: number, body: UserUpdateRequest) => patch<UserResponse>(`/users/${id}`, body),
-    updateProfilePicture: (id: number, body: FormData) => patchMultipart<UserResponse>(`/users/${id}/profile-picture`, body),
-    updateMyProfilePicture: (body: FormData) => patchMultipart<UserResponse>("/users/me/profile-picture", body),
+    updateProfilePicture: (id: number, image: File) => postMultipart<void>(`/users/${id}/profile-picture`, undefined, {image}),
+    updateMyProfilePicture: (image: File) => postMultipart<void>("/users/me/profile-picture", undefined, {image}),
 
     deleteProfilePicture: (id: number) => deleteReq<void>(`/users/${id}/profile-picture`),
     deleteMyProfilePicture: () => deleteReq<void>("/users/me/profile-picture"),
 
-    updateSocialProfiles: (id: number, newProfiles: SocialProfileRequest[]) => patch<void>(`/users/${id}/social-profiles`, newProfiles),
-    updateMySocialProfiles: (newProfiles: SocialProfileRequest[]) => patch<void>("/users/me/social-profiles", newProfiles),
+    updateSocialProfiles: (id: number, newProfiles: SocialProfileRequest[]) => post<void>(`/users/${id}/social-profiles`, buildSocialProfilesBody(newProfiles)),
+    updateMySocialProfiles: (newProfiles: SocialProfileRequest[]) => post<void>("/users/me/social-profiles", buildSocialProfilesBody(newProfiles)),
 
-    removeSocialProfiles: (id: number, platforms: SocialPlatform) => deleteReq<void>(`/users/${id}/social-profiles`),
-    removeMySocialProfiles: (platforms: SocialPlatform) => deleteReq<void>(`/users/me/social-profiles}`),
+    removeSocialProfiles: (id: number, platforms?: SocialPlatformsParam) => deleteReq<void>(`/users/${id}/social-profiles`, platforms ? {platforms} : undefined),
+    removeMySocialProfiles: (platforms?: SocialPlatformsParam) => deleteReq<void>("/users/me/social-profiles", platforms ? {platforms} : undefined),
 
     //PROFILES
     getOrganizerProfile: (id: number) => get<OrganizerProfileResponse>(`/organizer-profiles/${id}`),
@@ -249,7 +281,15 @@ export const api = {
     //MATCHES
     getMatches: (tournamentId: number, roundGroupId: number, roundId: number, pageable?: Pageable) => getPageable<MatchResponse>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches`, pageable),
 
+    updateMatch: (tournamentId: number, roundGroupId: number, roundId: number, matchId: number, body: MatchUpdateRequest) => patch<MatchResponse>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/${matchId}`, body),
+
     submitMatchResults: (tournamentId: number, roundGroupId: number, roundId: number, body: MatchResultRequest[]) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/results`, body),
+
+    randomizeMatches: (tournamentId: number, roundGroupId: number, roundId: number) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/randomize`),
+
+    publishMatches: (tournamentId: number, roundGroupId: number, roundId: number) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/publish`),
+
+    clearMatches: (tournamentId: number, roundGroupId: number, roundId: number) => deleteReq<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches`),
 
     //TEAMS
     getTeams: (tournamentId: number, pageable?: Pageable) => getPageable<SimpleTeamResponse>(`/tournaments/${tournamentId}/teams`, pageable),
@@ -311,7 +351,13 @@ export const api = {
     //INVITATIONS
     getSentOrganizerInvitations: (pageable?: Pageable) => getPageable<OrganizerInvitationResponse>(`/organizer-invitations/sent`, pageable),
     getReceivedOrganizerInvitations: (pageable?: Pageable) => getPageable<OrganizerInvitationResponse>(`/organizer-invitations/received`, pageable),
+    createOrganizerInvitation: (body: OrganizerInvitationRequest) => post<OrganizerInvitationResponse>("/organizer-invitations", body),
+    acceptOrganizerInvitation: (id: number) => post<void>(`/organizer-invitations/${id}/accept`),
+    rejectOrganizerInvitation: (id: number) => post<void>(`/organizer-invitations/${id}/reject`),
 
     getSentParticipantInvitations: (pageable?: Pageable) => getPageable<ParticipantInvitationResponse>(`/participant-invitations/sent`, pageable),
     getReceivedParticipantInvitations: (pageable?: Pageable) => getPageable<ParticipantInvitationResponse>(`/participant-invitations/received`, pageable),
+    createParticipantInvitation: (body: ParticipantInvitationRequest) => post<ParticipantInvitationResponse>("/participant-invitations", body),
+    acceptParticipantInvitation: (id: number) => post<void>(`/participant-invitations/${id}/accept`),
+    rejectParticipantInvitation: (id: number) => post<void>(`/participant-invitations/${id}/reject`),
 }

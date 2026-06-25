@@ -40,6 +40,7 @@ export interface TournamentResponse extends SimpleTournamentResponse {
     location: string;
     teamLimit: number;
     enabled?: boolean;
+    started?: boolean;
 }
 
 export interface DebateFormatRequest {

@@ -3,6 +3,7 @@ import React from "react";
 
 export interface WelcomeCardProps {
 	username?: string;
+	userId?: number | string;
 	profileHref?: string;
 	tournaments?: number;
 	activeTournaments?: number;
@@ -12,11 +13,14 @@ export interface WelcomeCardProps {
 export default function WelcomeCard(props: WelcomeCardProps) {
 	const {
 		username = "User",
-		profileHref = "/profile/0",
+		userId,
+		profileHref,
 		tournaments = 0,
 		activeTournaments = 0,
 		className,
 	} = props;
+
+	const myProfileHref = profileHref ?? (userId != null ? `/profile/${userId}` : "/profile");
 
 	const initial = (username && username[0]) ? username[0].toUpperCase() : "U";
 
@@ -45,7 +49,7 @@ export default function WelcomeCard(props: WelcomeCardProps) {
 
 				<nav aria-label="User actions" className="flex gap-3">
 					<Link
-						href={profileHref}
+						href={myProfileHref}
 						className="px-4 py-2 rounded-md bg-white text-[#0D1321] text-sm md:text-base font-medium hover:bg-white/90 transition-colors"
 					>
 						My Profile

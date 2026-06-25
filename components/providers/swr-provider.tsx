@@ -24,7 +24,7 @@ const baseConfig = {
   errorRetryInterval: 1000,
 
   // Global error handler
-  onError: (error: any, key: string) => {
+  onError: (error: unknown, key: string) => {
     console.error(`SWR Error for ${key}:`, error)
 
     // You can add error tracking here (e.g., Sentry)
@@ -34,7 +34,7 @@ const baseConfig = {
   },
 
   // Global success handler for debugging
-  onSuccess: (data: any, key: string) => {
+  onSuccess: (data: unknown, key: string) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`SWR Success for ${key}:`, data)
     }

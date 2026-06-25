@@ -10,7 +10,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Color Palette Showcase",
   description: "A showcase of color palettes and schemes",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: "/the-talking-logo.png",
+    shortcut: "/the-talking-logo.png",
+  },
 }
 
 const stagewiseConfig = {

@@ -11,18 +11,30 @@ interface AddJudgeModalProps {
   onChange: (field: keyof JudgeRequest, value: string) => void
   isSubmitting?: boolean
   errorMessage?: string | null
+  title?: string
+  submitLabel?: string
 }
 
-export function AddJudgeModal({ isOpen, form, onClose, onSubmit, onChange, isSubmitting, errorMessage }: AddJudgeModalProps) {
+export function AddJudgeModal({
+  isOpen,
+  form,
+  onClose,
+  onSubmit,
+  onChange,
+  isSubmitting,
+  errorMessage,
+  title = "Add Judge",
+  submitLabel = "Submit",
+}: AddJudgeModalProps) {
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
-        <button type="button" onClick={onClose} className="absolute top-3 right-4 text-3xl text-[#9a8c98] hover:text-[#0D1321] transition" aria-label="Close add judge modal">
+        <button type="button" onClick={onClose} className="absolute top-3 right-4 text-3xl text-[#9a8c98] hover:text-[#0D1321] transition" aria-label="Close judge modal">
           ×
         </button>
-        <h2 className="text-center text-[32px] font-bold text-[#0D1321] mb-8">Add Judge</h2>
+        <h2 className="text-center text-[32px] font-bold text-[#0D1321] mb-8">{title}</h2>
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -72,7 +84,7 @@ export function AddJudgeModal({ isOpen, form, onClose, onSubmit, onChange, isSub
           )}
 
           <button type="submit" disabled={isSubmitting} className="w-full bg-[#3E5C76] hover:bg-[#2f4858] text-white text-[18px] font-semibold py-3 rounded-2xl transition-colors shadow-md disabled:opacity-60">
-            Submit
+            {isSubmitting ? "Saving..." : submitLabel}
           </button>
         </form>
       </div>

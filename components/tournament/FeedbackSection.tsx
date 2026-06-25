@@ -4,6 +4,8 @@ import { useMemo, useState } from "react"
 import { ArrowUp, MessageSquare } from "lucide-react"
 
 import { api } from "@/lib/api"
+import { readResponseError } from "@/lib/http-error"
+import { resolveMediaUrl } from "@/lib/media"
 import type { PageResult } from "@/types/page"
 import type { FeedbackRequest, FeedbackResponse } from "@/types/tournament/feedback"
 
@@ -48,8 +50,11 @@ export function FeedbackSection({
     try {
       const response = await api.addFeedback(tournamentId, payload)
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.message || "Failed to submit feedback")
+        throw new Error(await readResponseError(response, {
+          fallback: "Failed to submit feedback",
+          unauthorized: "Please sign in before submitting feedback.",
+          serverError: "Server error. Please try again later.",
+        }))
       }
 
       setTitle("")
@@ -79,7 +84,7 @@ export function FeedbackSection({
       <div className="space-y-8">
         {items.map((item) => {
           const displayName = `${item.user.firstName ?? ""} ${item.user.lastName ?? ""}`.trim() || item.user.username
-          const avatarUrl = item.user.imageUrl?.url ?? "/placeholder-user.jpg"
+          const avatarUrl = resolveMediaUrl(item.user.imageUrl?.url) ?? "/placeholder-user.jpg"
           const timestamp = new Date(item.timestamp).toLocaleString()
 
           return (

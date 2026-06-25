@@ -7,6 +7,8 @@ import { SocialPlatform, type SocialProfileRequest } from "@/types/util/socials/
 
 interface SocialsManagerProps {
   initialSocials: SocialProfileRequest[];
+  editable?: boolean;
+  onSave?: (socials: SocialProfileRequest[]) => Promise<void> | void;
 }
 
 const allNetworks: SocialPlatform[] = [
@@ -37,26 +39,48 @@ function NetworkIcon({ type, className }: { type: SocialPlatform; className?: st
   }
 }
 
-export default function SocialsManager({ initialSocials }: SocialsManagerProps) {
+export default function SocialsManager({ initialSocials, editable = false, onSave }: SocialsManagerProps) {
   const [socials, setSocials] = React.useState<SocialProfileRequest[]>(initialSocials);
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [dirty, setDirty] = React.useState(false);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
 
   const savedTypes = new Set(socials.map((s) => s.platform));
 
-  const plusRotationMs = 1000;
-  const chipDurationMs = 300;
-  const chipDelayStepMs = Math.floor((plusRotationMs - chipDurationMs) / Math.max(1, allNetworks.length - 1));
-
   const handleAdd = (type: SocialPlatform) => {
+    if (!editable) return;
     if (savedTypes.has(type)) return;
+    setDirty(true);
     setSocials((prev) => [...prev, { platform: type, handle: "" }]);
+    setPickerOpen(false);
   };
 
   const handleRemove = (type: SocialPlatform) => {
+    if (!editable) return;
+    setDirty(true);
     setSocials((prev) => prev.filter((s) => s.platform !== type));
   };
 
   const handleChange = (type: SocialPlatform, value: string) => {
+    if (!editable) return;
+    setDirty(true);
     setSocials((prev) => prev.map((s) => (s.platform === type ? { ...s, handle: value } : s)));
+  };
+
+  const handleSave = async () => {
+    if (!onSave || saving) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      await onSave(socials);
+      setDirty(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save social profiles");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -70,52 +94,75 @@ export default function SocialsManager({ initialSocials }: SocialsManagerProps) 
             <input
               value={s.handle}
               onChange={(e) => handleChange(s.platform, e.target.value)}
+              readOnly={!editable}
               placeholder={s.platform === SocialPlatform.TELEGRAM ? "@handle" : "username"}
-              className="w-full border-b border-black/20 bg-transparent py-2 outline-none text-[#0D1321]"
+              className="w-full border-b border-black/20 bg-transparent py-2 outline-none text-[#0D1321] read-only:cursor-default"
             />
           </div>
-          <button type="button" aria-label="Edit" className="p-2 rounded hover:bg-black/5">
-            <Pencil className="h-5 w-5 text-[#0D1321]" />
-          </button>
-          <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.platform)}>
-            <Trash2 className="h-5 w-5 text-[#0D1321]" />
-          </button>
+          {editable && (
+            <>
+              <button type="button" aria-label="Edit" className="p-2 rounded hover:bg-black/5">
+                <Pencil className="h-5 w-5 text-[#0D1321]" />
+              </button>
+              <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.platform)}>
+                <Trash2 className="h-5 w-5 text-[#0D1321]" />
+              </button>
+            </>
+          )}
         </div>
       ))}
 
-      <div className="inline-flex items-center gap-3">
-        <input id="add-social-toggle" type="checkbox" className="peer sr-only" />
-        <label htmlFor="add-social-toggle" aria-label="Add social" className="cursor-pointer select-none inline-flex transition-transform duration-1000 peer-checked:rotate-45">
-          <span className="h-9 w-9 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10">
-            <Plus className="h-5 w-5" />
-          </span>
-        </label>
-        <div className="flex items-center gap-3 overflow-hidden transition-[max-width] duration-1000 max-w-0 peer-checked:max-w-[1000px] [&>button]:opacity-0 [&>button]:-translate-x-16 [&>button]:transition-all [&>button]:duration-300 peer-checked:[&>button]:opacity-100 peer-checked:[&>button]:translate-x-0 [&>button>.chip-text]:max-w-0 [&>button>.chip-text]:opacity-0 [&>button>.chip-text]:transition-all [&>button>.chip-text]:duration-300 peer-checked:[&>button>.chip-text]:max-w-[160px] peer-checked:[&>button>.chip-text]:opacity-100">
-          {allNetworks.map((n, idx) => {
+      {editable && (
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          aria-label="Add social"
+          aria-expanded={pickerOpen}
+          onClick={() => setPickerOpen((open) => !open)}
+          className="h-9 w-9 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-transform aria-expanded:rotate-45"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+        {pickerOpen && (
+        <div className="flex flex-wrap items-center gap-3">
+          {allNetworks.map((n) => {
             const isSaved = savedTypes.has(n);
-            const delayMs = idx * chipDelayStepMs;
             const label = n.charAt(0) + n.slice(1).toLowerCase();
             return (
               <button
                 key={n}
                 type="button"
                 onClick={() => handleAdd(n)}
+                disabled={isSaved}
                 className={`flex items-center gap-3 rounded-full px-3 py-2 border whitespace-nowrap transition-all duration-300 ${
-                  isSaved ? "bg-[#0D1321] text-white border-transparent" : "bg-white text-[#0D1321] border-black/10 hover:bg-black/5"
+                  isSaved ? "bg-[#0D1321] text-white border-transparent opacity-70" : "bg-white text-[#0D1321] border-black/10 hover:bg-black/5"
                 }`}
-                style={{ transitionDelay: `${delayMs}ms` }}
               >
                 <span className={`h-8 w-8 rounded-full inline-flex items-center justify-center ${isSaved ? "bg-white/20 text-white" : "bg-[#0D1321] text-white"}`}>
                   <NetworkIcon type={n} className="h-4 w-4" />
                 </span>
-                <span className={`chip-text inline-block overflow-hidden align-middle ${isSaved ? "text-white" : "text-[#0D1321]"}`} style={{ transitionDelay: `${delayMs + 100}ms` }}>
-                  <span className="pl-2">{label}</span>
-                </span>
+                <span className={isSaved ? "text-white" : "text-[#0D1321]"}>{label}</span>
               </button>
             );
           })}
         </div>
+        )}
       </div>
+      )}
+      {editable && onSave && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            aria-label="Save social profiles"
+            disabled={!dirty || saving}
+            onClick={handleSave}
+            className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm font-medium text-white hover:bg-[#2D3748] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      )}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

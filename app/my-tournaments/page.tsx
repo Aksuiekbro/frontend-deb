@@ -7,9 +7,11 @@ import Link from "next/link"
 import Header from "../../components/Header"
 import { useTournaments } from "../../hooks/use-api"
 import { toBackendDateTime } from "@/lib/datetime"
+import { resolveMediaUrl } from "@/lib/media"
 import { LoadingState, CardSkeleton } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
 
+const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string" ? tag : tag.name ?? "")
 
 export default function MyTournamentsPage() {
   const [activeTab, setActiveTab] = useState('Past')
@@ -119,7 +121,7 @@ export default function MyTournamentsPage() {
                       <div className="w-[150px] h-[150px] bg-[#FFFFFF] rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
                         {tournament.imageUrl && !imageErrors[tournament.id] ? (
                           <Image
-                            src={tournament.imageUrl.url}
+                            src={resolveMediaUrl(tournament.imageUrl.url) ?? tournament.imageUrl.url}
                             alt={`${tournament.name} tournament logo - debate competition in ${tournament.location}`}
                             width={150}
                             height={150}
@@ -147,7 +149,7 @@ export default function MyTournamentsPage() {
                         <div className="flex flex-wrap gap-2">
                           {tournament.tags.map((tag, index) => (
                             <span key={index} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">
-                              {tag}
+                              {getTagLabel(tag)}
                             </span>
                           ))}
                         </div>
@@ -200,4 +202,4 @@ export default function MyTournamentsPage() {
       </div>
     </div>
   )
-} 
+}

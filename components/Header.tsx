@@ -4,6 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { UserResponse } from "@/types/user/user"; // Adjust path to your types file
 import { api } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media";
 
 // --- The Fetcher that wraps your getMe function ---
 const userFetcher = async (): Promise<UserResponse | null> => {
@@ -75,11 +76,15 @@ export default function Header() {
               <div className="h-4 bg-gray-300 rounded w-24"></div>
             </div>
           ) : isLoggedIn ? (
-            <div className="flex items-center space-x-3">
+            <Link
+              href="/profile"
+              aria-label="Your profile"
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            >
               {user.imageUrl?.url ? (
                 // If image URL exists, render the img tag
                 <img
-                  src={user.imageUrl.url}
+                  src={resolveMediaUrl(user.imageUrl.url)}
                   alt={user.username}
                   className="w-10 h-10 rounded-full object-cover bg-[#9a8c98]"
                 />
@@ -90,7 +95,7 @@ export default function Header() {
                 </div>
               )}
               <span className="text-[#0D1321] text-[16px] font-normal">{user.username}</span>
-            </div>
+            </Link>
           ) : (
             <div className="flex items-center space-x-4">
               <Link href="/auth?mode=login" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium">Log In</Link>

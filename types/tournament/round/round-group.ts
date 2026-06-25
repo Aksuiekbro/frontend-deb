@@ -5,8 +5,8 @@ export interface RoundGroupResponse {
     id: number;
     type: RoundGroupType;
     format: DebateFormat;
-    rounds: SimpleRoundResponse;
-    currentRoundNumber: number;
+    rounds: SimpleRoundResponse[];
+    currentRoundNumber: number | null;
 }
 
 export enum RoundGroupType {
