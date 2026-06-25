@@ -10,14 +10,18 @@ interface AvatarWithEditProps {
   onDeleteImage?: () => Promise<void> | void;
 }
 
+const FALLBACK_AVATAR_SRC = "/images/avatar-placeholder.png";
+
 export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDeleteImage }: AvatarWithEditProps) {
   const [preview, setPreview] = React.useState<string | null>(null);
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const canEdit = Boolean(onChangeImage || onDeleteImage);
 
   const dimension = `${sizePx}px`;
+  const imageSrc = preview ?? (failedSrc === src ? FALLBACK_AVATAR_SRC : src);
 
   const onPick = () => {
     if (!canEdit) return;
@@ -29,6 +33,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
     if (!file) return;
     const url = URL.createObjectURL(file);
     setPreview(url);
+    setFailedSrc(null);
     onChangeImage?.(file, url);
   };
 
@@ -49,9 +54,12 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
       {/* Avatar */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={preview ?? src}
+        src={imageSrc}
         alt="User avatar"
         className="h-full w-full rounded-full object-cover bg-black/5"
+        onError={() => {
+          if (!preview && src !== FALLBACK_AVATAR_SRC) setFailedSrc(src);
+        }}
       />
 
       {/* Edit button overlay (from Figma: small rounded white control) */}
@@ -84,7 +92,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/avatar-placeholder.png"
+              src={FALLBACK_AVATAR_SRC}
               alt="Edit avatar prompt"
               className="w-full rounded-[8px] border border-black/10 object-contain mb-4"
             />

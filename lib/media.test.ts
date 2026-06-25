@@ -29,6 +29,17 @@ describe("resolveMediaUrl", () => {
     )
   })
 
+  it("rewrites legacy absolute backend upload URLs against the configured API base", () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://165.245.213.231.nip.io/api"
+
+    expect(resolveMediaUrl("http://localhost:8080/api/uploads/profile-pictures/42.png")).toBe(
+      "https://165.245.213.231.nip.io/api/uploads/profile-pictures/42.png"
+    )
+    expect(resolveMediaUrl("http://165.245.213.231.nip.io/uploads/profile-pictures/42.png?size=thumb")).toBe(
+      "https://165.245.213.231.nip.io/api/uploads/profile-pictures/42.png?size=thumb"
+    )
+  })
+
   it("keeps local assets and absolute URLs untouched", () => {
     process.env.NEXT_PUBLIC_API_URL = "https://165.245.213.231.nip.io/api"
 

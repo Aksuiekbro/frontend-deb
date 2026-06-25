@@ -40,6 +40,15 @@ describe("AvatarWithEdit", () => {
     expect(image).toHaveAttribute("src", "blob:avatar-preview")
   })
 
+  it("falls back to the placeholder when an existing avatar fails to load", () => {
+    render(<AvatarWithEdit src="http://localhost:8080/api/uploads/profile-pictures/42.png" />)
+    const image = screen.getByAltText("User avatar")
+
+    fireEvent.error(image)
+
+    expect(image).toHaveAttribute("src", "/images/avatar-placeholder.png")
+  })
+
   it("runs the wired avatar delete handler from the edit modal", async () => {
     const onDeleteImage = jest.fn().mockResolvedValue(undefined)
     render(<AvatarWithEdit src="/avatar.png" onChangeImage={jest.fn()} onDeleteImage={onDeleteImage} />)
