@@ -673,14 +673,25 @@ export default function TournamentDetailPage() {
         }))
       }
 
-      const nextRoundNumber = (currentRoundNumber ?? selectedRoundNumber ?? 0) + 1
-      const nextRound = rounds?.find((round) => round.roundNumber === nextRoundNumber)
-
-      await Promise.all([
+      // Resolve the next round from the refreshed data, not the stale render closure:
+      // the backend can create the next round during /proceed, so it may be absent from
+      // the pre-proceed `rounds` list and `currentRoundNumber` is one step behind.
+      const [refreshedRoundGroups, refreshedRounds] = await Promise.all([
         mutateRoundGroups?.(),
         mutateRounds?.(),
         mutateMatches?.(),
       ])
+
+      const refreshedRoundGroup = refreshedRoundGroups?.find(
+        (group) => group.id === selectedRoundGroupId,
+      )
+      const nextRoundNumber =
+        typeof refreshedRoundGroup?.currentRoundNumber === 'number'
+          ? refreshedRoundGroup.currentRoundNumber
+          : (currentRoundNumber ?? selectedRoundNumber ?? 0) + 1
+      const nextRound = (refreshedRounds ?? rounds)?.find(
+        (round) => round.roundNumber === nextRoundNumber,
+      )
 
       if (nextRound) {
         setSelectedRound(nextRound.name)

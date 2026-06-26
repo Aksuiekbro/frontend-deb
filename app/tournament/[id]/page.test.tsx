@@ -924,8 +924,9 @@ describe("TournamentDetailPage mutations", () => {
     }))
   })
 
-  it("proceeds the selected round group through the backend", async () => {
+  it("proceeds the selected round group and leaves the selection unchanged when no next round resolves", async () => {
     apiMock.proceedToNextRound.mockResolvedValue(okResponse())
+    // Default mocks: mutate* resolve to undefined, so the refetch yields no next round.
 
     render(<TournamentDetailPage />)
     fireEvent.click(screen.getByText("Pairing and Matches"))
@@ -935,8 +936,94 @@ describe("TournamentDetailPage mutations", () => {
       expect(apiMock.proceedToNextRound).toHaveBeenCalledWith(53, 101)
     })
     expect(mockMutateMatches).toHaveBeenCalledTimes(1)
+    expect(mockMutateRoundGroups).toHaveBeenCalledTimes(1)
+    expect(mockMutateRounds).toHaveBeenCalledTimes(1)
     expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
       title: "Round advanced",
+      description: "The tournament has proceeded to the next round.",
+    }))
+    // Unresolved next round → selection stays put, no crash.
+    expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 1")
+  })
+
+  it("advances the visible selection to a round created during proceed", async () => {
+    apiMock.proceedToNextRound.mockResolvedValue(okResponse())
+    // The refetch after /proceed returns the newly-advanced state: the selected group
+    // (id 101) now reports currentRoundNumber 2 and the rounds list now includes Round 2.
+    // An unrelated group is returned first to prove the handler matches by id, not order.
+    mockMutateRoundGroups.mockResolvedValue([
+      { id: 999, type: RoundGroupType.TEAM_ELIMINATION, currentRoundNumber: 1 },
+      { id: 101, type: RoundGroupType.PRELIMINARY, currentRoundNumber: 2 },
+    ])
+    mockMutateRounds.mockResolvedValue([
+      { id: 201, name: "Round 1", roundNumber: 1 },
+      { id: 202, name: "Round 2", roundNumber: 2 },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 1")
+
+    fireEvent.click(screen.getByText("Proceed Round"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 2")
+    })
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Round advanced",
+      description: expect.stringContaining("Round 2"),
+    }))
+    expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+      selectedRoundLabel: "Round 2",
+    }))
+  })
+
+  it("keeps the selected round unchanged and shows a destructive toast when proceed fails", async () => {
+    apiMock.proceedToNextRound.mockResolvedValue(errorResponse("Round has incomplete matches", 409))
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 1")
+
+    fireEvent.click(screen.getByText("Proceed Round"))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Failed to advance round",
+        description: "Round has incomplete matches",
+        variant: "destructive",
+      }))
+    })
+    expect(mockMutateMatches).not.toHaveBeenCalled()
+    expect(mockMutateRoundGroups).not.toHaveBeenCalled()
+    expect(mockMutateRounds).not.toHaveBeenCalled()
+    expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 1")
+    expect(mockToast).not.toHaveBeenCalledWith(expect.objectContaining({ title: "Round advanced" }))
+  })
+
+  it("falls back to the existing numeric round state when refreshed currentRoundNumber is not a number", async () => {
+    apiMock.proceedToNextRound.mockResolvedValue(okResponse())
+    mockMutateRoundGroups.mockResolvedValue([
+      { id: 101, type: RoundGroupType.PRELIMINARY, currentRoundNumber: "2" },
+    ])
+    mockMutateRounds.mockResolvedValue([
+      { id: 201, name: "Round 1", roundNumber: 1 },
+      { id: 202, name: "Round 2", roundNumber: 2 },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    fireEvent.click(screen.getByText("Proceed Round"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 2")
+    })
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Round advanced",
+      description: expect.stringContaining("Round 2"),
+    }))
+    expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+      selectedRoundLabel: "Round 2",
     }))
   })
 
