@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import { ResultsSection } from "./ResultsSection"
+import { getResultInputDraftStorageKey } from "@/lib/tournament-result-drafts"
 import type { MatchResultRequest } from "@/types/tournament/match"
 import { Role } from "@/types/user/user"
 
@@ -139,7 +140,77 @@ describe("ResultsSection", () => {
     })
   })
 
-  it("persists participant score drafts before awaiting a submit refetch", async () => {
+  it("keeps unsent result drafts when switching away from the results table and back", async () => {
+    const storageKey = "tournament:53:round-group:101:round:201:match-results"
+    const { unmount } = render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+        resultStorageKey={storageKey}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+
+    unmount()
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+        resultStorageKey={storageKey}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
+      expect(screen.getByLabelText("Speaker points for Aisha in match 301")).toHaveValue(76)
+      expect(screen.getByLabelText("Speaker points for Boris in match 301")).toHaveValue(72)
+      expect(screen.getByLabelText("Speaker points for Dana in match 301")).toHaveValue(73)
+      expect(screen.getByText("Open")).toBeInTheDocument()
+    })
+  })
+
+  it("keeps input drafts while submit is pending and promotes them after success", async () => {
     let resolveSubmit: (value: boolean) => void = () => undefined
     const onSubmitResults = jest.fn(() => new Promise<boolean>((resolve) => {
       resolveSubmit = resolve
@@ -178,6 +249,25 @@ describe("ResultsSection", () => {
     fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
+    const inputDraftStorageKey = getResultInputDraftStorageKey(storageKey)
+
+    await waitFor(() => {
+      expect(JSON.parse(window.localStorage.getItem(inputDraftStorageKey ?? "") ?? "{}")).toEqual(expect.objectContaining({
+        "301:team1": { result: "won" },
+        "301:team1:participant:11": { score: "75" },
+        "301:team1:participant:12": { score: "76" },
+        "301:team2": { result: "lost" },
+        "301:team2:participant:21": { score: "72" },
+        "301:team2:participant:22": { score: "73" },
+      }))
+      expect(JSON.parse(window.localStorage.getItem(storageKey) ?? "{}")).toEqual({})
+    })
+
+    await act(async () => {
+      resolveSubmit(true)
+      await Promise.resolve()
+    })
+
     await waitFor(() => {
       expect(JSON.parse(window.localStorage.getItem(storageKey) ?? "{}")).toEqual(expect.objectContaining({
         "301:team1": { result: "won" },
@@ -187,11 +277,7 @@ describe("ResultsSection", () => {
         "301:team2:participant:21": { score: "72" },
         "301:team2:participant:22": { score: "73" },
       }))
-    })
-
-    await act(async () => {
-      resolveSubmit(true)
-      await Promise.resolve()
+      expect(window.localStorage.getItem(inputDraftStorageKey ?? "")).toBeNull()
     })
   })
 

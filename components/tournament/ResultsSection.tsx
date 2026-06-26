@@ -7,9 +7,13 @@ import type { MatchResponse, MatchResultRequest } from "@/types/tournament/match
 import type { SimpleRoundResponse } from "@/types/tournament/round/round"
 import type { SimpleTeamResponse } from "@/types/tournament/team"
 import {
+  clearResultInputDrafts,
   readPersistedResultDrafts,
+  readResultInputDrafts,
   toResultDraftValue,
   writePersistedResultDrafts,
+  writeResultInputDrafts,
+  type PersistedResultDraft,
   type PersistedResultDrafts,
   type ResultDraftValue,
 } from "@/lib/tournament-result-drafts"
@@ -261,8 +265,29 @@ export function ResultsSection({
     return match.completed || Boolean(locallyCompletedMatchIds[match.id])
   }, [locallyCompletedMatchIds])
 
+  const saveInputDraft = useCallback((key: string, patch: PersistedResultDraft) => {
+    const drafts = readResultInputDrafts(resultStorageKey)
+    const nextDraft = { ...drafts[key], ...patch }
+    const score = typeof nextDraft.score === "string" ? nextDraft.score : undefined
+    const result = toResultDraftValue(nextDraft.result)
+    const hasScore = score !== undefined && score.trim() !== ""
+    const hasResult = result !== ""
+
+    if (!hasScore && !hasResult) {
+      delete drafts[key]
+    } else {
+      drafts[key] = {
+        ...(hasScore ? { score } : {}),
+        ...(hasResult ? { result } : {}),
+      }
+    }
+
+    writeResultInputDrafts(resultStorageKey, drafts)
+  }, [resultStorageKey])
+
   useEffect(() => {
-    const persistedDrafts = readPersistedResultDrafts(resultStorageKey)
+    const submittedDrafts = readPersistedResultDrafts(resultStorageKey)
+    const inputDrafts = readResultInputDrafts(resultStorageKey)
     const nextCompletedMatches: Record<number, boolean> = {}
 
     setScoreDrafts(() => {
@@ -270,10 +295,14 @@ export function ResultsSection({
       matchRows.forEach((match) => {
         getScoreSlots(match).forEach((slot) => {
           const key = scoreKey(match.id, slot.slot)
-          const legacyScore =
-            slot.kind === "speaker" ? persistedDrafts[scoreKey(match.id, slot.fallbackSlot)]?.score : undefined
+          const legacySubmittedScore =
+            slot.kind === "speaker" ? submittedDrafts[scoreKey(match.id, slot.fallbackSlot)]?.score : undefined
+          const legacyInputScore =
+            slot.kind === "speaker" ? inputDrafts[scoreKey(match.id, slot.fallbackSlot)]?.score : undefined
           next[key] =
-            typeof slot.currentScore === "number" ? String(slot.currentScore) : persistedDrafts[key]?.score ?? legacyScore ?? ""
+            typeof slot.currentScore === "number"
+              ? String(slot.currentScore)
+              : submittedDrafts[key]?.score ?? legacySubmittedScore ?? inputDrafts[key]?.score ?? legacyInputScore ?? ""
         })
       })
       return next
@@ -287,13 +316,13 @@ export function ResultsSection({
           next[key] =
             typeof slot.currentWon === "boolean"
               ? (slot.currentWon ? "won" : "lost")
-              : toResultDraftValue(persistedDrafts[key]?.result)
+              : toResultDraftValue(submittedDrafts[key]?.result ?? inputDrafts[key]?.result)
         })
       })
       return next
     })
     matchRows.forEach((match) => {
-      if (hasCompletePersistedResult(match, persistedDrafts)) {
+      if (hasCompletePersistedResult(match, submittedDrafts)) {
         nextCompletedMatches[match.id] = true
       }
     })
@@ -447,21 +476,19 @@ export function ResultsSection({
       ...buildPersistedDrafts(),
     }
     setScoreError(null)
-    writePersistedResultDrafts(resultStorageKey, persistedDrafts)
     let submitResult: boolean | void
     try {
       submitResult = await onSubmitResults(payload)
     } catch (error) {
-      writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
       throw error
     }
 
     if (submitResult === false) {
-      writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
       return
     }
 
     writePersistedResultDrafts(resultStorageKey, persistedDrafts)
+    clearResultInputDrafts(resultStorageKey)
     setScoreDrafts((current) => {
       const next = { ...current }
       Object.entries(persistedDrafts).forEach(([key, draft]) => {
@@ -507,6 +534,7 @@ export function ResultsSection({
           onChange={(event) => {
             const value = event.target.value
             setScoreDrafts((current) => ({ ...current, [key]: value }))
+            saveInputDraft(key, { score: value })
           }}
           className="h-10 w-24 shrink-0 rounded-lg border border-[#D5D9E7] px-3 text-center text-sm text-[#0B1327] outline-none transition focus:border-[#2B3F63] disabled:bg-[#F5F7FC] disabled:text-[#7A83A0]"
         />
@@ -586,6 +614,7 @@ export function ResultsSection({
                         aria-label={`Mark ${slot.name} as ${value === "won" ? "winner" : "not winner"} in match ${match.id}`}
                         onClick={() => {
                           setResultDrafts((current) => ({ ...current, [key]: value }))
+                          saveInputDraft(key, { result: value })
                         }}
                         className={`px-3 text-sm font-medium transition-colors ${
                           isSelected

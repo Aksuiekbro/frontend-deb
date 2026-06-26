@@ -27,3 +27,21 @@ export const writePersistedResultDrafts = (storageKey: string | undefined, draft
   if (!storageKey || typeof window === "undefined") return
   window.localStorage.setItem(storageKey, JSON.stringify(drafts))
 }
+
+export const getResultInputDraftStorageKey = (storageKey: string | undefined) => {
+  return storageKey ? `${storageKey}:input-drafts` : undefined
+}
+
+export const readResultInputDrafts = (storageKey?: string): PersistedResultDrafts => {
+  return readPersistedResultDrafts(getResultInputDraftStorageKey(storageKey))
+}
+
+export const writeResultInputDrafts = (storageKey: string | undefined, drafts: PersistedResultDrafts) => {
+  writePersistedResultDrafts(getResultInputDraftStorageKey(storageKey), drafts)
+}
+
+export const clearResultInputDrafts = (storageKey: string | undefined) => {
+  const inputDraftStorageKey = getResultInputDraftStorageKey(storageKey)
+  if (!inputDraftStorageKey || typeof window === "undefined") return
+  window.localStorage.removeItem(inputDraftStorageKey)
+}
