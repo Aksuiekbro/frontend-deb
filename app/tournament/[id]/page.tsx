@@ -1141,6 +1141,10 @@ export default function TournamentDetailPage() {
     } else {
       setActiveResultsSection(`${option} Speaker Score`)
       setResultsSubTab('Speaker Score')
+      // APF/BPF use the preliminary "Round N" rounds. Reset away from any stale
+      // elimination round (e.g. "1/16" left over from LD) to the active round so the
+      // results table doesn't render empty.
+      setSelectedRound(`Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`)
     }
   }
 

@@ -26,11 +26,22 @@ jest.mock("@/components/tournament/TournamentHeader", () => ({
 }))
 
 jest.mock("@/components/tournament/TournamentTabs", () => ({
-  TournamentTabs: ({ onChangeTab }: { onChangeTab: (tab: string) => void }) => (
+  TournamentTabs: ({
+    onChangeTab,
+    onResultsOptionSelect,
+  }: {
+    onChangeTab: (tab: string) => void
+    onResultsOptionSelect?: (option: "APF" | "BPF" | "LD") => void
+  }) => (
     <nav>
       {["Main Info", "Teams", "Judges", "Pairing and Matches", "Results and Statistics", "News"].map((tab) => (
         <button key={tab} type="button" onClick={() => onChangeTab(tab)}>
           {tab}
+        </button>
+      ))}
+      {(["APF", "BPF", "LD"] as const).map((opt) => (
+        <button key={opt} type="button" onClick={() => onResultsOptionSelect?.(opt)}>
+          {`Format ${opt}`}
         </button>
       ))}
     </nav>
@@ -938,6 +949,27 @@ describe("TournamentDetailPage mutations", () => {
     expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
       title: "Round advanced",
     }))
+  })
+
+  it("re-selects the active round when returning to APF after LD so the results table is not stranded", async () => {
+    render(<TournamentDetailPage />)
+
+    // Switching to LD parks the selection on the elimination round "1/16".
+    fireEvent.click(screen.getByText("Format LD"))
+    await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedRoundLabel: "1/16",
+      }))
+    })
+
+    // Returning to APF must reset to the active round (currentRoundNumber = 1),
+    // not leave the stale "1/16" that renders an empty results table.
+    fireEvent.click(screen.getByText("Format APF"))
+    await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedRoundLabel: "Round 1",
+      }))
+    })
   })
 
   it("changes the selected round group format through the backend", async () => {
