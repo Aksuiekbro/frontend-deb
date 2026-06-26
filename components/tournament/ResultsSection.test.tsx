@@ -1,11 +1,34 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import { ResultsSection } from "./ResultsSection"
 import type { MatchResultRequest } from "@/types/tournament/match"
+import { Role } from "@/types/user/user"
+
+const participantProfile = {
+  city: { id: 1, name: "City" },
+  institution: { id: 1, name: "Institution" },
+  rating: 0,
+}
+
+const makeParticipant = (id: number, firstName: string) => ({
+  id,
+  speakerScore: 0,
+  participantProfile,
+  user: {
+    id: 1000 + id,
+    username: firstName.toLowerCase(),
+    firstName,
+    lastName: "",
+    role: Role.PARTICIPANT,
+  },
+})
+
+const team1Members = [makeParticipant(11, "Arman"), makeParticipant(12, "Aisha")]
+const team2Members = [makeParticipant(21, "Boris"), makeParticipant(22, "Dana")]
 
 const baseProps = {
   selectedResultsOption: "APF",
@@ -55,8 +78,8 @@ describe("ResultsSection", () => {
           content: [
             {
               id: 301,
-              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" } },
-              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" } },
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
               location: "Room A",
               judge: { id: 7, fullName: "Judge 1", checkedIn: true },
               completed: false,
@@ -75,14 +98,18 @@ describe("ResultsSection", () => {
 
     expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toBeEnabled()
     expect(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" })).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Team 1 in match 301")).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Team 2 in match 301")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Aisha in match 301")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Boris in match 301")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Dana in match 301")).toBeEnabled()
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
 
     fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
     fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Team 1 in match 301"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Team 2 in match 301"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     await waitFor(() => {
@@ -90,11 +117,81 @@ describe("ResultsSection", () => {
         {
           matchId: 301,
           teamResults: [
-            { teamId: 1, won: true, participantScores: [{ participantId: 1, score: 75 }] },
-            { teamId: 2, won: false, participantScores: [{ participantId: 2, score: 72 }] },
+            {
+              teamId: 1,
+              won: true,
+              participantScores: [
+                { participantId: 11, score: 75 },
+                { participantId: 12, score: 76 },
+              ],
+            },
+            {
+              teamId: 2,
+              won: false,
+              participantScores: [
+                { participantId: 21, score: 72 },
+                { participantId: 22, score: 73 },
+              ],
+            },
           ],
         },
       ] satisfies MatchResultRequest[])
+    })
+  })
+
+  it("persists participant score drafts before awaiting a submit refetch", async () => {
+    let resolveSubmit: (value: boolean) => void = () => undefined
+    const onSubmitResults = jest.fn(() => new Promise<boolean>((resolve) => {
+      resolveSubmit = resolve
+    }))
+    const storageKey = "tournament:53:round-group:101:round:201:match-results"
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+        resultStorageKey={storageKey}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(JSON.parse(window.localStorage.getItem(storageKey) ?? "{}")).toEqual(expect.objectContaining({
+        "301:team1": { result: "won" },
+        "301:team1:participant:11": { score: "75" },
+        "301:team1:participant:12": { score: "76" },
+        "301:team2": { result: "lost" },
+        "301:team2:participant:21": { score: "72" },
+        "301:team2:participant:22": { score: "73" },
+      }))
+    })
+
+    await act(async () => {
+      resolveSubmit(true)
+      await Promise.resolve()
     })
   })
 
@@ -106,10 +203,16 @@ describe("ResultsSection", () => {
           content: [
             {
               id: 301,
-              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" } },
-              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" } },
-              team1Score: 75,
-              team2Score: 72,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              team1ParticipantScores: [
+                { participantId: 11, score: 75 },
+                { participantId: 12, score: 76 },
+              ],
+              team2ParticipantScores: [
+                { participantId: 21, score: 72 },
+                { participantId: 22, score: 73 },
+              ],
               team1Won: true,
               team2Won: false,
               location: "Room A",
@@ -130,8 +233,8 @@ describe("ResultsSection", () => {
 
     expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByLabelText("Speaker points for Team 1 in match 301")).toBeDisabled()
-    expect(screen.getByLabelText("Speaker points for Team 1 in match 301")).toHaveValue(75)
+    expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeDisabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
   })
 
@@ -161,7 +264,9 @@ describe("ResultsSection", () => {
   it("hydrates submitted results from local fallback when the match list omits scores after refresh", async () => {
     const storageKey = "tournament:53:round-group:101:round:201:match-results"
     window.localStorage.setItem(storageKey, JSON.stringify({
-      "301:team1": { score: "75", result: "won" },
+      "301:team1": { result: "won" },
+      "301:team1:participant:11": { score: "75" },
+      "301:team1:participant:12": { score: "76" },
     }))
 
     render(
@@ -171,7 +276,7 @@ describe("ResultsSection", () => {
           content: [
             {
               id: 301,
-              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" } },
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
               location: "Room A",
               judge: { id: 7, fullName: "Judge 1", checkedIn: true },
               completed: false,
@@ -192,8 +297,8 @@ describe("ResultsSection", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toHaveAttribute("aria-pressed", "true")
       expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toBeDisabled()
-      expect(screen.getByLabelText("Speaker points for Team 1 in match 301")).toHaveValue(75)
-      expect(screen.getByLabelText("Speaker points for Team 1 in match 301")).toBeDisabled()
+      expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
+      expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeDisabled()
       expect(screen.getByText("Completed")).toBeInTheDocument()
     })
   })

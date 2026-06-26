@@ -4,6 +4,7 @@ export interface SimpleTeamResponse {
     id: number;
     name: string;
     club: ClubResponse;
+    members?: SimpleTournamentParticipantResponse[];
 }
 
 export interface ClubResponse {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Pencil, RefreshCw, Save, Trash2 } from "lucide-react"
 
 import type { PageResult } from "@/types/page"
@@ -9,6 +9,11 @@ import type { JudgeResponse } from "@/types/tournament/judge"
 import type { SimpleRoundResponse } from "@/types/tournament/round/round"
 import type { SimpleTeamResponse } from "@/types/tournament/team"
 import { readPersistedResultDrafts, type PersistedResultDrafts } from "@/lib/tournament-result-drafts"
+import {
+  getTeamMembers,
+  participantScoreSlot,
+  resolveParticipantCurrentScore,
+} from "@/lib/match-result-slots"
 import {
   Dialog,
   DialogContent,
@@ -86,25 +91,49 @@ type ResultScoreSlot =
 
 const hasNumericScore = (value: unknown) => typeof value === "number" && Number.isFinite(value)
 
-const hasPersistedScore = (drafts: PersistedResultDrafts, matchId: number, slot: ResultScoreSlot) => {
+const hasPersistedScore = (drafts: PersistedResultDrafts, matchId: number, slot: string) => {
   const score = drafts[`${matchId}:${slot}`]?.score
   if (score === undefined || score === null || score === "") return false
   return Number.isFinite(Number(score))
 }
 
-const isMatchCompleteForWorkflow = (match: MatchResponse, drafts: PersistedResultDrafts) => {
+const isMatchCompleteForWorkflow = (
+  match: MatchResponse,
+  drafts: PersistedResultDrafts,
+  teamsById: Map<number, SimpleTeamResponse>,
+) => {
   if (match.completed) return true
 
-  const slots: { slot: ResultScoreSlot; score?: number | null }[] = []
-  if (match.team1) slots.push({ slot: "team1", score: match.team1Score })
-  if (match.team2) slots.push({ slot: "team2", score: match.team2Score })
-  if (match.team3) slots.push({ slot: "team3", score: match.team3Score })
-  if (match.team4) slots.push({ slot: "team4", score: match.team4Score })
+  const teamSlots = [
+    { slot: "team1", team: match.team1, score: match.team1Score },
+    { slot: "team2", team: match.team2, score: match.team2Score },
+    { slot: "team3", team: match.team3, score: match.team3Score },
+    { slot: "team4", team: match.team4, score: match.team4Score },
+  ] as const
+
+  const slots: { slot: string; fallbackSlot?: ResultScoreSlot; score?: number | null }[] = []
+  teamSlots.forEach(({ slot, team, score }) => {
+    if (!team) return
+    const members = getTeamMembers(team, teamsById)
+    if (!members.length) {
+      slots.push({ slot, score })
+      return
+    }
+
+    members.forEach((member, index) => {
+      slots.push({
+        slot: participantScoreSlot(slot, member.id),
+        fallbackSlot: slot,
+        score: resolveParticipantCurrentScore(match, slot, team.id, member.id, index),
+      })
+    })
+  })
   if (match.debater1) slots.push({ slot: "debater1", score: match.debater1Score })
   if (match.debater2) slots.push({ slot: "debater2", score: match.debater2Score })
 
-  return slots.length > 0 && slots.every(({ slot, score }) => {
-    return hasNumericScore(score) || hasPersistedScore(drafts, match.id, slot)
+  return slots.length > 0 && slots.every(({ slot, fallbackSlot, score }) => {
+    if (hasNumericScore(score) || hasPersistedScore(drafts, match.id, slot)) return true
+    return fallbackSlot ? hasPersistedScore(drafts, match.id, fallbackSlot) : false
   })
 }
 
@@ -154,6 +183,9 @@ export function PairingsSection({
   })
   const [matchEditError, setMatchEditError] = useState<string | null>(null)
   const matchRows = matches?.content ?? []
+  const teamsById = useMemo(() => {
+    return new Map((teams?.content ?? []).map((team) => [team.id, team]))
+  }, [teams?.content])
   const hasRoundProgress =
     typeof selectedRoundNumber === "number" &&
     typeof currentRoundNumber === "number"
@@ -161,7 +193,7 @@ export function PairingsSection({
   const isPastRound = hasRoundProgress && selectedRoundNumber < currentRoundNumber
   const isCurrentRound = !hasRoundProgress || selectedRoundNumber === currentRoundNumber
   const isEditableRound = isCurrentRound && !isFutureRound && !isPastRound
-  const completedMatches = matchRows.filter((match) => isMatchCompleteForWorkflow(match, persistedResultDrafts)).length
+  const completedMatches = matchRows.filter((match) => isMatchCompleteForWorkflow(match, persistedResultDrafts, teamsById)).length
   const hasMatches = matchRows.length > 0
   const allMatchesCompleted = hasMatches && completedMatches === matchRows.length
   const canEditMatches = Boolean(onUpdateMatch) && isEditableRound
@@ -283,7 +315,7 @@ export function PairingsSection({
             type="button"
             aria-label={`Save room for match ${match.id}`}
             disabled={!isDirty || isSaving}
-            onClick={() => onUpdateMatchRoom(match.id, draft)}
+            onClick={() => onUpdateMatchRoom?.(match.id, draft)}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0B1327] text-white transition hover:bg-[#050918] disabled:cursor-not-allowed disabled:bg-[#D5D9E7]"
           >
             <Save className="h-4 w-4" />

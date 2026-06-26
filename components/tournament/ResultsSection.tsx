@@ -13,6 +13,13 @@ import {
   type PersistedResultDrafts,
   type ResultDraftValue,
 } from "@/lib/tournament-result-drafts"
+import {
+  getParticipantName,
+  getTeamMembers,
+  participantScoreSlot,
+  resolveParticipantCurrentScore,
+  type TeamSlotName,
+} from "@/lib/match-result-slots"
 
 interface ResultsSectionProps {
   selectedResultsOption: string
@@ -41,7 +48,37 @@ interface ResultsSectionProps {
 }
 
 const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
-type TeamSlotName = "team1" | "team2" | "team3" | "team4"
+type DebaterSlotName = "debater1" | "debater2"
+type ScoreSlotName = string
+
+type SpeakerScoreSlot = {
+  kind: "speaker"
+  slot: ScoreSlotName
+  fallbackSlot: TeamSlotName
+  entityId: number
+  name: string
+  currentScore?: number | null
+}
+
+type TeamResultSlot = {
+  kind: "team"
+  slot: TeamSlotName
+  entityId: number
+  name: string
+  currentWon?: boolean | null
+  speakers: SpeakerScoreSlot[]
+}
+
+type DebaterResultSlot = {
+  kind: "debater"
+  slot: DebaterSlotName
+  entityId: number
+  name: string
+  currentScore?: number | null
+}
+
+type ResultSlot = TeamResultSlot | DebaterResultSlot
+type ScoreSlot = SpeakerScoreSlot | DebaterResultSlot
 
 const WIN_RESULT_VALUES = new Set(["WIN", "WON", "VICTORY", "TRUE", "YES"])
 const LOSS_RESULT_VALUES = new Set(["LOSS", "LOST", "DEFEAT", "FALSE", "NO"])
@@ -108,7 +145,10 @@ export function ResultsSection({
   isSubmittingResults = false,
   resultStorageKey,
 }: ResultsSectionProps) {
-  const teamRows = teams?.content ?? []
+  const teamRows = useMemo(() => teams?.content ?? [], [teams?.content])
+  const teamsById = useMemo(() => {
+    return new Map(teamRows.map((team) => [team.id, team]))
+  }, [teamRows])
   const matchRows = useMemo(() => matches?.content ?? [], [matches?.content])
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({})
   const [resultDrafts, setResultDrafts] = useState<Record<string, ResultDraftValue>>({})
@@ -129,33 +169,32 @@ export function ResultsSection({
     "cursor-not-allowed opacity-50"
   }`
 
-  type ResultSlot = {
-    kind: "team" | "debater"
-    slot: "team1" | "team2" | "team3" | "team4" | "debater1" | "debater2"
-    entityId: number
-    name: string
-    currentScore?: number | null
-    currentWon?: boolean | null
-  }
-
   const getResultSlots = useCallback((match: MatchResponse): ResultSlot[] => {
     const slots: ResultSlot[] = []
     const teamSlots = [
-      { slot: "team1", team: match.team1, score: match.team1Score },
-      { slot: "team2", team: match.team2, score: match.team2Score },
-      { slot: "team3", team: match.team3, score: match.team3Score },
-      { slot: "team4", team: match.team4, score: match.team4Score },
+      { slot: "team1", team: match.team1 },
+      { slot: "team2", team: match.team2 },
+      { slot: "team3", team: match.team3 },
+      { slot: "team4", team: match.team4 },
     ] as const
 
-    teamSlots.forEach(({ slot, team, score }) => {
+    teamSlots.forEach(({ slot, team }) => {
       if (!team) return
+      const members = getTeamMembers(team, teamsById)
       slots.push({
         kind: "team",
         slot,
         entityId: team.id,
         name: team.name,
-        currentScore: score,
         currentWon: resolveCurrentTeamWon(match, slot, team.id),
+        speakers: members.map((member, index) => ({
+          kind: "speaker",
+          slot: participantScoreSlot(slot, member.id),
+          fallbackSlot: slot,
+          entityId: member.id,
+          name: getParticipantName(member, `Speaker ${index + 1}`),
+          currentScore: resolveParticipantCurrentScore(match, slot, team.id, member.id, index),
+        })),
       })
     })
 
@@ -166,36 +205,57 @@ export function ResultsSection({
 
     debaterSlots.forEach(({ slot, debater, score }) => {
       if (!debater) return
-      const profile = debater.participantProfile
-      const name = profile
-        ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim()
-        : debater.user?.username
       slots.push({
         kind: "debater",
         slot,
         entityId: debater.id,
-        name: name || debater.user?.username || `Debater ${debater.id}`,
+        name: getParticipantName(debater, `Debater ${debater.id}`),
         currentScore: score,
       })
     })
 
     return slots
-  }, [])
+  }, [teamsById])
 
   const scoreKey = useCallback(
-    (matchId: number, slot: ResultSlot["slot"]) => `${matchId}:${slot}`,
+    (matchId: number, slot: ScoreSlotName) => `${matchId}:${slot}`,
     []
   )
+
+  const getScoreSlots = useCallback((match: MatchResponse): ScoreSlot[] => {
+    return getResultSlots(match).flatMap((slot): ScoreSlot[] => slot.kind === "team" ? slot.speakers : [slot])
+  }, [getResultSlots])
+
+  const hasDraftScore = useCallback((matchId: number, slot: ScoreSlot) => {
+    return Boolean(scoreDrafts[scoreKey(matchId, slot.slot)]?.trim())
+  }, [scoreDrafts, scoreKey])
+
+  const hasPersistedScore = useCallback((drafts: PersistedResultDrafts, matchId: number, slot: ScoreSlot) => {
+    const draft = drafts[scoreKey(matchId, slot.slot)]
+    if (draft?.score?.trim()) return true
+
+    if (slot.kind === "speaker") {
+      return Boolean(drafts[scoreKey(matchId, slot.fallbackSlot)]?.score?.trim())
+    }
+
+    return false
+  }, [scoreKey])
 
   const hasCompletePersistedResult = useCallback((match: MatchResponse, drafts: PersistedResultDrafts) => {
     const slots = getResultSlots(match)
     return slots.length > 0 && slots.every((slot) => {
-      const draft = drafts[scoreKey(match.id, slot.slot)]
-      const hasScore = Boolean(draft?.score?.trim())
-      const hasResult = slot.kind !== "team" || Boolean(draft?.result)
-      return hasScore && hasResult
+      if (slot.kind === "team") {
+        const draft = drafts[scoreKey(match.id, slot.slot)]
+        const hasResult = Boolean(draft?.result)
+        const hasScores = slot.speakers.length > 0
+          ? slot.speakers.every((speaker) => hasPersistedScore(drafts, match.id, speaker))
+          : Boolean(draft?.score?.trim())
+        return hasResult && hasScores
+      }
+
+      return hasPersistedScore(drafts, match.id, slot)
     })
-  }, [getResultSlots, scoreKey])
+  }, [getResultSlots, hasPersistedScore, scoreKey])
 
   const isMatchReadOnly = useCallback((match: MatchResponse) => {
     return match.completed || Boolean(locallyCompletedMatchIds[match.id])
@@ -208,10 +268,12 @@ export function ResultsSection({
     setScoreDrafts(() => {
       const next: Record<string, string> = {}
       matchRows.forEach((match) => {
-        getResultSlots(match).forEach((slot) => {
+        getScoreSlots(match).forEach((slot) => {
           const key = scoreKey(match.id, slot.slot)
+          const legacyScore =
+            slot.kind === "speaker" ? persistedDrafts[scoreKey(match.id, slot.fallbackSlot)]?.score : undefined
           next[key] =
-            typeof slot.currentScore === "number" ? String(slot.currentScore) : persistedDrafts[key]?.score ?? ""
+            typeof slot.currentScore === "number" ? String(slot.currentScore) : persistedDrafts[key]?.score ?? legacyScore ?? ""
         })
       })
       return next
@@ -237,7 +299,7 @@ export function ResultsSection({
     })
     setLocallyCompletedMatchIds(nextCompletedMatches)
     setScoreError(null)
-  }, [getResultSlots, hasCompletePersistedResult, matchRows, resultStorageKey, scoreKey])
+  }, [getResultSlots, getScoreSlots, hasCompletePersistedResult, matchRows, resultStorageKey, scoreKey])
 
   const editableMatches = useMemo(
     () => matchRows.filter((match) => !isMatchReadOnly(match) && getResultSlots(match).length > 0),
@@ -247,11 +309,16 @@ export function ResultsSection({
   const hasEditableMatches = editableMatches.length > 0
   const allEditableScoresFilled = editableMatches.every((match) =>
     getResultSlots(match).every((slot) => {
-      const key = scoreKey(match.id, slot.slot)
-      const hasScore = Boolean(scoreDrafts[key]?.trim())
-      const hasResult = slot.kind !== "team" || Boolean(resultDrafts[key])
-      return hasScore && hasResult
+      if (slot.kind === "team") {
+        const hasResult = Boolean(resultDrafts[scoreKey(match.id, slot.slot)])
+        return hasResult && slot.speakers.length > 0 && slot.speakers.every((speaker) => hasDraftScore(match.id, speaker))
+      }
+
+      return hasDraftScore(match.id, slot)
     })
+  )
+  const hasTeamsWithoutSpeakers = editableMatches.some((match) =>
+    getResultSlots(match).some((slot) => slot.kind === "team" && slot.speakers.length === 0)
   )
   const canSubmitMatchResults =
     Boolean(onSubmitResults) &&
@@ -306,10 +373,10 @@ export function ResultsSection({
         .map((slot) => ({
           teamId: slot.entityId,
           won: resultDrafts[scoreKey(match.id, slot.slot)] === "won",
-          participantScores: [{
-            participantId: slot.entityId,
-            score: Number(scoreDrafts[scoreKey(match.id, slot.slot)]),
-          }],
+          participantScores: slot.speakers.map((speaker) => ({
+            participantId: speaker.entityId,
+            score: Number(scoreDrafts[scoreKey(match.id, speaker.slot)]),
+          })),
         }))
 
       const participantScores = getResultSlots(match)
@@ -327,6 +394,30 @@ export function ResultsSection({
     })
   }
 
+  const buildPersistedDrafts = (): PersistedResultDrafts => {
+    return editableMatches.reduce<PersistedResultDrafts>((acc, match) => {
+      getResultSlots(match).forEach((slot) => {
+        if (slot.kind === "team") {
+          acc[scoreKey(match.id, slot.slot)] = {
+            result: resultDrafts[scoreKey(match.id, slot.slot)] ?? "",
+          }
+          slot.speakers.forEach((speaker) => {
+            acc[scoreKey(match.id, speaker.slot)] = {
+              score: scoreDrafts[scoreKey(match.id, speaker.slot)] ?? "",
+            }
+          })
+          return
+        }
+
+        acc[scoreKey(match.id, slot.slot)] = {
+          score: scoreDrafts[scoreKey(match.id, slot.slot)] ?? "",
+        }
+      })
+
+      return acc
+    }, {})
+  }
+
   const handleSubmitMatchResults = async () => {
     if (!onSubmitResults || !canManageTeams) return
 
@@ -341,30 +432,34 @@ export function ResultsSection({
     }
 
     if (!allEditableScoresFilled) {
-      setScoreError("Select every team result and enter every speaker point before submitting.")
+      setScoreError(
+        hasTeamsWithoutSpeakers
+          ? "Add participants to every team before submitting speaker points."
+          : "Select every team result and enter every speaker point before submitting."
+      )
       return
     }
 
     const payload = buildResultPayload()
+    const previousPersistedDrafts = readPersistedResultDrafts(resultStorageKey)
+    const persistedDrafts = {
+      ...previousPersistedDrafts,
+      ...buildPersistedDrafts(),
+    }
     setScoreError(null)
-    const submitResult = await onSubmitResults(payload)
+    writePersistedResultDrafts(resultStorageKey, persistedDrafts)
+    let submitResult: boolean | void
+    try {
+      submitResult = await onSubmitResults(payload)
+    } catch (error) {
+      writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
+      throw error
+    }
 
-    if (submitResult === false) return
-
-    const persistedDrafts = payload.reduce<PersistedResultDrafts>((acc, matchResult) => {
-      const match = editableMatches.find((item) => item.id === matchResult.matchId)
-      if (!match) return acc
-
-      getResultSlots(match).forEach((slot) => {
-        const key = scoreKey(match.id, slot.slot)
-        acc[key] = {
-          score: scoreDrafts[key] ?? "",
-          result: slot.kind === "team" ? resultDrafts[key] ?? "" : "",
-        }
-      })
-
-      return acc
-    }, {})
+    if (submitResult === false) {
+      writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
+      return
+    }
 
     writePersistedResultDrafts(resultStorageKey, persistedDrafts)
     setScoreDrafts((current) => {
@@ -388,6 +483,35 @@ export function ResultsSection({
       })
       return next
     })
+  }
+
+  const renderScoreInput = (
+    match: MatchResponse,
+    slot: ScoreSlot,
+    canEditResult: boolean,
+    labelPrefix?: string,
+  ) => {
+    const key = scoreKey(match.id, slot.slot)
+
+    return (
+      <label key={key} className="flex items-center justify-between gap-3 text-sm text-[#4A5168]">
+        <span className="min-w-0 truncate">{labelPrefix ? `${labelPrefix}: ${slot.name}` : slot.name}</span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          inputMode="numeric"
+          value={scoreDrafts[key] ?? ""}
+          disabled={!canEditResult || isSubmittingResults}
+          aria-label={`Speaker points for ${slot.name} in match ${match.id}`}
+          onChange={(event) => {
+            const value = event.target.value
+            setScoreDrafts((current) => ({ ...current, [key]: value }))
+          }}
+          className="h-10 w-24 shrink-0 rounded-lg border border-[#D5D9E7] px-3 text-center text-sm text-[#0B1327] outline-none transition focus:border-[#2B3F63] disabled:bg-[#F5F7FC] disabled:text-[#7A83A0]"
+        />
+      </label>
+    )
   }
 
   const renderMatchResultRows = () => {
@@ -479,20 +603,19 @@ export function ResultsSection({
               )}
             </td>
             <td className="border border-gray-300 px-6 py-4">
-              <input
-                type="number"
-                min="0"
-                step="1"
-                inputMode="numeric"
-                value={scoreDrafts[key] ?? ""}
-                disabled={!canEditResult || isSubmittingResults}
-                aria-label={`Speaker points for ${slot.name} in match ${match.id}`}
-                onChange={(event) => {
-                  const value = event.target.value
-                  setScoreDrafts((current) => ({ ...current, [key]: value }))
-                }}
-                className="h-10 w-28 rounded-lg border border-[#D5D9E7] px-3 text-center text-sm text-[#0B1327] outline-none transition focus:border-[#2B3F63] disabled:bg-[#F5F7FC] disabled:text-[#7A83A0]"
-              />
+              {slot.kind === "team" ? (
+                slot.speakers.length > 0 ? (
+                  <div className="grid min-w-64 gap-2">
+                    {slot.speakers.map((speaker, speakerIndex) =>
+                      renderScoreInput(match, speaker, canEditResult, `Speaker ${speakerIndex + 1}`)
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-sm text-red-500">No participants assigned</span>
+                )
+              ) : (
+                renderScoreInput(match, slot, canEditResult)
+              )}
             </td>
             {index === 0 ? (
               <>

@@ -5,6 +5,29 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import { PairingsSection } from "./PairingsSection"
+import { Role } from "@/types/user/user"
+
+const participantProfile = {
+  city: { id: 1, name: "City" },
+  institution: { id: 1, name: "Institution" },
+  rating: 0,
+}
+
+const makeParticipant = (id: number, firstName: string) => ({
+  id,
+  speakerScore: 0,
+  participantProfile,
+  user: {
+    id: 1000 + id,
+    username: firstName.toLowerCase(),
+    firstName,
+    lastName: "",
+    role: Role.PARTICIPANT,
+  },
+})
+
+const team1Members = [makeParticipant(11, "Arman"), makeParticipant(12, "Aisha")]
+const team2Members = [makeParticipant(21, "Boris"), makeParticipant(22, "Dana")]
 
 const baseProps = {
   matches: { content: [], totalElements: 0, totalPages: 0 },
@@ -188,6 +211,45 @@ describe("PairingsSection", () => {
               id: 301,
               team1: { id: 1, name: "Team 1" },
               team2: { id: 2, name: "Team 2" },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+        resultStorageKey={resultStorageKey}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+    })
+  })
+
+  it("allows advancing from persisted participant scores when refreshed team scores are stale", async () => {
+    const onProceedToNextRound = jest.fn()
+    const resultStorageKey = "tournament:53:round-group:101:round:201:match-results"
+    window.localStorage.setItem(resultStorageKey, JSON.stringify({
+      "301:team1": { result: "won" },
+      "301:team1:participant:11": { score: "75" },
+      "301:team1:participant:12": { score: "76" },
+      "301:team2": { result: "lost" },
+      "301:team2:participant:21": { score: "72" },
+      "301:team2:participant:22": { score: "73" },
+    }))
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1", members: team1Members },
+              team2: { id: 2, name: "Team 2", members: team2Members },
               completed: false,
             },
           ],
