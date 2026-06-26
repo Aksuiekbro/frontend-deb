@@ -165,7 +165,39 @@ describe("PairingsSection", () => {
     expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeDisabled()
   })
 
-  it("allows advancing when submitted scores are present even if the completed flag is stale", () => {
+  it("allows advancing when submitted scores and team results are present even if the completed flag is stale", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1" },
+              team2: { id: 2, name: "Team 2" },
+              team1Score: 75,
+              team2Score: 72,
+              team1Won: true,
+              team2Won: false,
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByText("All matches in this round are completed. You can proceed to the next round.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+  })
+
+  it("does not advance from team scores alone without win/loss results", () => {
     const onProceedToNextRound = jest.fn()
 
     render(
@@ -191,8 +223,8 @@ describe("PairingsSection", () => {
       />,
     )
 
-    expect(screen.getByText("All matches in this round are completed. You can proceed to the next round.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+    expect(screen.getByText("Enter results for all matches before proceeding. Completed 0 of 1 matches.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeDisabled()
   })
 
   it("allows advancing from persisted submitted results when the refreshed match list omits scores", async () => {

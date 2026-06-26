@@ -109,7 +109,7 @@ jest.mock("@/components/tournament/TeamsSection", () => ({
     onRequalifyTeam?: (teamId: number) => void
   }) => (
     <div>
-      <button type="button" onClick={() => onToggleCheckIn(7)}>
+      <button type="button" onClick={() => onToggleCheckIn?.(7)}>
         {checkInStatus[7] ? "Uncheck Team" : "Check In Team"}
       </button>
       {onDeleteTeam ? <button type="button" onClick={() => onDeleteTeam(7)}>Delete Team</button> : null}
@@ -302,7 +302,7 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
           {
             matchId: 301,
             teamResults: [
-              { teamId: 7, won: true, participantScores: [{ participantId: 7, score: 75 }] },
+              { teamId: 7, won: true, participantScores: [{ participantId: 14, score: 75 }] },
             ],
           },
         ])}
@@ -1043,7 +1043,7 @@ describe("TournamentDetailPage mutations", () => {
         {
           matchId: 301,
           teamResults: [
-            { teamId: 7, won: true, participantScores: [{ participantId: 7, score: 75 }] },
+            { teamId: 7, won: true, participantScores: [{ participantId: 14, score: 75 }] },
           ],
         },
       ])

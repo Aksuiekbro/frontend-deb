@@ -22,6 +22,7 @@ import {
   getTeamMembers,
   participantScoreSlot,
   resolveParticipantCurrentScore,
+  resolveTeamCurrentWon,
   type TeamSlotName,
 } from "@/lib/match-result-slots"
 
@@ -83,46 +84,6 @@ type DebaterResultSlot = {
 
 type ResultSlot = TeamResultSlot | DebaterResultSlot
 type ScoreSlot = SpeakerScoreSlot | DebaterResultSlot
-
-const WIN_RESULT_VALUES = new Set(["WIN", "WON", "VICTORY", "TRUE", "YES"])
-const LOSS_RESULT_VALUES = new Set(["LOSS", "LOST", "DEFEAT", "FALSE", "NO"])
-
-const normalizeResultString = (value: unknown) => {
-  if (typeof value !== "string") return null
-  const normalized = value.trim().toUpperCase()
-  if (WIN_RESULT_VALUES.has(normalized)) return true
-  if (LOSS_RESULT_VALUES.has(normalized)) return false
-  return null
-}
-
-const resolveCurrentTeamWon = (match: MatchResponse, slot: TeamSlotName, teamId: number) => {
-  const record = match as MatchResponse & Record<string, unknown>
-  const booleanKeys = [`${slot}Won`, `${slot}Win`, `${slot}Victory`, `${slot}Winner`, `${slot}IsWinner`]
-
-  for (const key of booleanKeys) {
-    if (typeof record[key] === "boolean") return record[key] as boolean
-  }
-
-  const resultKeys = [`${slot}Result`, `${slot}Outcome`, `${slot}Status`]
-  for (const key of resultKeys) {
-    const normalized = normalizeResultString(record[key])
-    if (typeof normalized === "boolean") return normalized
-  }
-
-  if (typeof record.winnerTeamId === "number") return record.winnerTeamId === teamId
-
-  const winningTeamIds = Array.isArray(record.winningTeamIds)
-    ? record.winningTeamIds
-    : Array.isArray(record.winnerTeamIds)
-      ? record.winnerTeamIds
-      : null
-
-  if (winningTeamIds) {
-    return winningTeamIds.includes(teamId)
-  }
-
-  return null
-}
 
 export function ResultsSection({
   selectedResultsOption,
@@ -190,7 +151,7 @@ export function ResultsSection({
         slot,
         entityId: team.id,
         name: team.name,
-        currentWon: resolveCurrentTeamWon(match, slot, team.id),
+        currentWon: resolveTeamCurrentWon(match, slot, team.id),
         speakers: members.map((member, index) => ({
           kind: "speaker",
           slot: participantScoreSlot(slot, member.id),

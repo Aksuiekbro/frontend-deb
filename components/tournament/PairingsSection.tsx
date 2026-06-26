@@ -17,6 +17,7 @@ import {
   getTeamMembers,
   participantScoreSlot,
   resolveParticipantCurrentScore,
+  resolveTeamCurrentWon,
 } from "@/lib/match-result-slots"
 import {
   Dialog,
@@ -101,6 +102,11 @@ const hasPersistedScore = (drafts: PersistedResultDrafts, matchId: number, slot:
   return Number.isFinite(Number(score))
 }
 
+const hasPersistedResult = (drafts: PersistedResultDrafts, matchId: number, slot: string) => {
+  const result = drafts[`${matchId}:${slot}`]?.result
+  return result === "won" || result === "lost"
+}
+
 const isMatchCompleteForWorkflow = (
   match: MatchResponse,
   drafts: PersistedResultDrafts,
@@ -115,30 +121,39 @@ const isMatchCompleteForWorkflow = (
     { slot: "team4", team: match.team4, score: match.team4Score },
   ] as const
 
-  const slots: { slot: string; fallbackSlot?: ResultScoreSlot; score?: number | null }[] = []
+  const scoreSlots: { slot: string; fallbackSlot?: ResultScoreSlot; score?: number | null }[] = []
+  const teamResultSlots: boolean[] = []
   teamSlots.forEach(({ slot, team, score }) => {
     if (!team) return
+    teamResultSlots.push(
+      typeof resolveTeamCurrentWon(match, slot, team.id) === "boolean" || hasPersistedResult(drafts, match.id, slot)
+    )
+
     const members = getTeamMembers(team, teamsById)
     if (!members.length) {
-      slots.push({ slot, score })
+      scoreSlots.push({ slot, score })
       return
     }
 
     members.forEach((member, index) => {
-      slots.push({
+      scoreSlots.push({
         slot: participantScoreSlot(slot, member.id),
         fallbackSlot: slot,
         score: resolveParticipantCurrentScore(match, slot, team.id, member.id, index),
       })
     })
   })
-  if (match.debater1) slots.push({ slot: "debater1", score: match.debater1Score })
-  if (match.debater2) slots.push({ slot: "debater2", score: match.debater2Score })
+  if (match.debater1) scoreSlots.push({ slot: "debater1", score: match.debater1Score })
+  if (match.debater2) scoreSlots.push({ slot: "debater2", score: match.debater2Score })
 
-  return slots.length > 0 && slots.every(({ slot, fallbackSlot, score }) => {
-    if (hasNumericScore(score) || hasPersistedScore(drafts, match.id, slot)) return true
-    return fallbackSlot ? hasPersistedScore(drafts, match.id, fallbackSlot) : false
-  })
+  return (
+    scoreSlots.length > 0 &&
+    teamResultSlots.every(Boolean) &&
+    scoreSlots.every(({ slot, fallbackSlot, score }) => {
+      if (hasNumericScore(score) || hasPersistedScore(drafts, match.id, slot)) return true
+      return fallbackSlot ? hasPersistedScore(drafts, match.id, fallbackSlot) : false
+    })
+  )
 }
 
 export function PairingsSection({
