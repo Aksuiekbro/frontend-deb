@@ -1,10 +1,11 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import { PairingsSection } from "./PairingsSection"
+import { RESULT_DRAFTS_CHANGED_EVENT } from "@/lib/tournament-result-drafts"
 import { Role } from "@/types/user/user"
 
 const participantProfile = {
@@ -262,6 +263,51 @@ describe("PairingsSection", () => {
         resultStorageKey={resultStorageKey}
       />,
     )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+    })
+  })
+
+  it("refreshes submitted result drafts saved in the same browser tab", async () => {
+    const onProceedToNextRound = jest.fn()
+    const resultStorageKey = "tournament:53:round-group:101:round:201:match-results"
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1", members: team1Members },
+              team2: { id: 2, name: "Team 2", members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+        resultStorageKey={resultStorageKey}
+      />,
+    )
+
+    expect(screen.getByText("Enter results for all matches before proceeding. Completed 0 of 1 matches.")).toBeInTheDocument()
+
+    act(() => {
+      window.localStorage.setItem(resultStorageKey, JSON.stringify({
+        "301:team1": { result: "won" },
+        "301:team1:participant:11": { score: "75" },
+        "301:team1:participant:12": { score: "76" },
+        "301:team2": { result: "lost" },
+        "301:team2:participant:21": { score: "72" },
+        "301:team2:participant:22": { score: "73" },
+      }))
+      window.dispatchEvent(new CustomEvent(RESULT_DRAFTS_CHANGED_EVENT, { detail: { storageKey: resultStorageKey } }))
+    })
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()

@@ -7,6 +7,13 @@ export type PersistedResultDraft = {
 
 export type PersistedResultDrafts = Record<string, PersistedResultDraft>
 
+export const RESULT_DRAFTS_CHANGED_EVENT = "tournament-result-drafts-changed"
+
+const notifyResultDraftsChanged = (storageKey: string | undefined) => {
+  if (!storageKey || typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent(RESULT_DRAFTS_CHANGED_EVENT, { detail: { storageKey } }))
+}
+
 export const toResultDraftValue = (value: unknown): ResultDraftValue => {
   return value === "won" || value === "lost" ? value : ""
 }
@@ -26,6 +33,7 @@ export const readPersistedResultDrafts = (storageKey?: string): PersistedResultD
 export const writePersistedResultDrafts = (storageKey: string | undefined, drafts: PersistedResultDrafts) => {
   if (!storageKey || typeof window === "undefined") return
   window.localStorage.setItem(storageKey, JSON.stringify(drafts))
+  notifyResultDraftsChanged(storageKey)
 }
 
 export const getResultInputDraftStorageKey = (storageKey: string | undefined) => {
@@ -44,4 +52,5 @@ export const clearResultInputDrafts = (storageKey: string | undefined) => {
   const inputDraftStorageKey = getResultInputDraftStorageKey(storageKey)
   if (!inputDraftStorageKey || typeof window === "undefined") return
   window.localStorage.removeItem(inputDraftStorageKey)
+  notifyResultDraftsChanged(inputDraftStorageKey)
 }

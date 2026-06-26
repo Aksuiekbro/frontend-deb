@@ -475,15 +475,43 @@ export function ResultsSection({
       ...previousPersistedDrafts,
       ...buildPersistedDrafts(),
     }
+    const restoreLocallyCompletedMatches = () => {
+      setLocallyCompletedMatchIds((current) => {
+        const next = { ...current }
+        payload.forEach((matchResult) => {
+          const match = editableMatches.find((item) => item.id === matchResult.matchId)
+          if (match && hasCompletePersistedResult(match, previousPersistedDrafts)) {
+            next[matchResult.matchId] = true
+            return
+          }
+
+          delete next[matchResult.matchId]
+        })
+        return next
+      })
+    }
+
     setScoreError(null)
+    writePersistedResultDrafts(resultStorageKey, persistedDrafts)
+    setLocallyCompletedMatchIds((current) => {
+      const next = { ...current }
+      payload.forEach((matchResult) => {
+        next[matchResult.matchId] = true
+      })
+      return next
+    })
     let submitResult: boolean | void
     try {
       submitResult = await onSubmitResults(payload)
     } catch (error) {
+      writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
+      restoreLocallyCompletedMatches()
       throw error
     }
 
     if (submitResult === false) {
+      writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
+      restoreLocallyCompletedMatches()
       return
     }
 
@@ -500,13 +528,6 @@ export function ResultsSection({
       const next = { ...current }
       Object.entries(persistedDrafts).forEach(([key, draft]) => {
         if (draft.result) next[key] = draft.result
-      })
-      return next
-    })
-    setLocallyCompletedMatchIds((current) => {
-      const next = { ...current }
-      payload.forEach((matchResult) => {
-        next[matchResult.matchId] = true
       })
       return next
     })

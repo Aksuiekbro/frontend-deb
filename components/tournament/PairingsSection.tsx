@@ -8,7 +8,11 @@ import type { MatchResponse, MatchUpdateRequest } from "@/types/tournament/match
 import type { JudgeResponse } from "@/types/tournament/judge"
 import type { SimpleRoundResponse } from "@/types/tournament/round/round"
 import type { SimpleTeamResponse } from "@/types/tournament/team"
-import { readPersistedResultDrafts, type PersistedResultDrafts } from "@/lib/tournament-result-drafts"
+import {
+  readPersistedResultDrafts,
+  RESULT_DRAFTS_CHANGED_EVENT,
+  type PersistedResultDrafts,
+} from "@/lib/tournament-result-drafts"
 import {
   getTeamMembers,
   participantScoreSlot,
@@ -283,7 +287,28 @@ export function PairingsSection({
   }, [matches])
 
   useEffect(() => {
-    setPersistedResultDrafts(readPersistedResultDrafts(resultStorageKey))
+    const refreshPersistedResultDrafts = () => {
+      setPersistedResultDrafts(readPersistedResultDrafts(resultStorageKey))
+    }
+    const handleResultDraftsChanged = (event: Event) => {
+      const changedStorageKey =
+        event instanceof CustomEvent && typeof event.detail?.storageKey === "string"
+          ? event.detail.storageKey
+          : event instanceof StorageEvent
+            ? event.key
+            : null
+
+      if (changedStorageKey && changedStorageKey !== resultStorageKey) return
+      refreshPersistedResultDrafts()
+    }
+
+    refreshPersistedResultDrafts()
+    window.addEventListener(RESULT_DRAFTS_CHANGED_EVENT, handleResultDraftsChanged)
+    window.addEventListener("storage", handleResultDraftsChanged)
+    return () => {
+      window.removeEventListener(RESULT_DRAFTS_CHANGED_EVENT, handleResultDraftsChanged)
+      window.removeEventListener("storage", handleResultDraftsChanged)
+    }
   }, [matches, resultStorageKey])
 
   const renderRoomCell = (match: MatchResponse) => {
