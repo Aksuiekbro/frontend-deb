@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
-import Header from "@/components/Header"
 import { useUpcomingTournaments } from "@/hooks/use-api"
 import { LoadingState, CardSkeleton } from "@/components/ui/loading"
 import { ErrorState } from "@/components/ui/error"
@@ -70,7 +69,6 @@ export default function Component() {
   }, [emblaApi])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       {/* Hero Section */}
       <section className="text-center py-8">

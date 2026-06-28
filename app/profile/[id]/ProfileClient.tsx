@@ -1,6 +1,5 @@
 "use client";
 
-import Header from "../../../components/Header";
 import AvatarWithEdit from "../../../components/profile/AvatarWithEdit";
 import SocialsManager from "../../../components/profile/SocialsManager";
 import LogoutButton from "@/components/profile/LogoutButton";
@@ -143,7 +142,6 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       <main className="px-8 py-8">{content}</main>
     </div>

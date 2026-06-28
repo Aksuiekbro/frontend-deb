@@ -1,7 +1,6 @@
 "use client"
 
 import { Crown } from "lucide-react"
-import Header from "../../components/Header"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 
@@ -18,7 +17,6 @@ export default function RatingPage() {
   }, [])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       {/* Leader Board (disabled) */}
       <section className="px-8 py-12">

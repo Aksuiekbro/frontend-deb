@@ -3,7 +3,6 @@
 import { Search, MapPin, Calendar, Users, Filter, X } from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import Header from "../../components/Header"
 import { api } from "@/lib/api"
 import { useCurrentUser } from "@/hooks/use-api"
 import { SimpleTournamentResponse, TournamentGetParams, TournamentLeague } from "@/types/tournament/tournament"
@@ -183,7 +182,6 @@ export default function JoinDebatesPage() {
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       {/* Page Title */}
       <section className="text-center py-8">

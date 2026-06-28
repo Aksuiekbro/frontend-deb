@@ -1,6 +1,5 @@
 "use client"
 
-import Header from "../../components/Header"
 import { useNews } from "../../hooks/use-api"
 import { LoadingState, CardSkeleton } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
@@ -13,7 +12,6 @@ export default function NewsPage() {
   const { news, isLoading, error } = useNews(undefined, { page: 0, size: 12, sort: ['timestamp,desc'] })
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       {/* Main Content */}
       <div className="relative px-8 py-12">

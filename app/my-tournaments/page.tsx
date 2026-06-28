@@ -4,7 +4,6 @@ import { MapPin, Calendar } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import Header from "../../components/Header"
 import { useTournaments } from "../../hooks/use-api"
 import { toBackendDateTime } from "@/lib/datetime"
 import { resolveMediaUrl } from "@/lib/media"
@@ -66,7 +65,6 @@ export default function MyTournamentsPage() {
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       {/* Page Title */}
       <section className="px-12 py-8">

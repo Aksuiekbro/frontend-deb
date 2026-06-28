@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, type FormEvent } from "react"
 import { useParams } from "next/navigation"
-import Header from "@/components/Header"
 import { AddJudgeModal } from "@/components/tournament/AddJudgeModal"
 import { AddPostModal } from "@/components/tournament/AddPostModal"
 import { FeedbackSection } from "@/components/tournament/FeedbackSection"
@@ -1183,7 +1182,6 @@ export default function TournamentDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       <TournamentHeader
         tournamentName={tournament?.name}

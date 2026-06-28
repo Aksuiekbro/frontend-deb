@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Header from "../../components/Header"
 import { useCurrentUser, useUpcomingTournaments, useTournaments } from "../../hooks/use-api"
 import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
@@ -23,7 +22,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      <Header />
 
       {/* Hero Section with User Welcome */}
       <section className="text-center py-8">

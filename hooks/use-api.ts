@@ -405,9 +405,19 @@ export function useCurrentUser() {
   const previewUser = PREVIEW_USERS_BY_ROLE[PREVIEW_ROLE]
   const { data, error, isLoading, mutate } = useSWR(
     IS_PREVIEW ? null : ['current-user'],
-    () => fetcher<UserResponse>(() => api.getMe()),
+    async () => {
+      const response = await api.getMe()
+      if (response.status === 401 || response.status === 403) {
+        return null
+      }
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+      return response.json() as Promise<UserResponse>
+    },
     {
       revalidateOnFocus: false,
+      shouldRetryOnError: false,
     }
   )
 
@@ -421,7 +431,7 @@ export function useCurrentUser() {
   }
 
   return {
-    user: data,
+    user: data ?? undefined,
     isLoading,
     error,
     mutate
