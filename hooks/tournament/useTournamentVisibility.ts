@@ -18,10 +18,10 @@ export function useTournamentVisibility({ tournament, toast }: UseTournamentVisi
   const [toggleTournamentLoading, setToggleTournamentLoading] = useState(false)
 
   useEffect(() => {
-    if (typeof tournament?.enabled === "boolean") {
-      setIsTournamentEnabled(tournament.enabled)
+    if (typeof tournament?.disabled === "boolean") {
+      setIsTournamentEnabled(!tournament.disabled)
     }
-  }, [tournament?.enabled])
+  }, [tournament?.disabled])
 
   const handleTournamentToggle = async (nextValue: boolean) => {
     if (!tournament) return

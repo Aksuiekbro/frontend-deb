@@ -72,7 +72,7 @@ export default function Component() {
       {/* Header */}
       <header className="flex items-center justify-between px-12 py-4">
         <div className="flex items-center space-x-16">
-          <div className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</div>
+          <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami" aria-label="DeBetter home">DB</Link>
           <nav className="flex space-x-16">
             <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
               Join Debates
@@ -216,7 +216,7 @@ export default function Component() {
                         {tournament.preliminaryFormat}
                       </span>
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">
-                        {tournament.teamElimintationFormat}
+                        {tournament.teamEliminationFormat}
                       </span>
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">
                         {tournament.league}

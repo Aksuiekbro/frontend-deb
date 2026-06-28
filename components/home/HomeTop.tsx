@@ -101,7 +101,7 @@ export default function HomeTop({ includeTestimonials = true, aboveUpcoming }: H
                     <p className="text-[#9a8c98] mb-4 text-[16px] font-normal font-hikasami">{tournament.startDate ? new Date(tournament.startDate).toLocaleDateString() : 'Date TBA'}</p>
                     <div className="flex space-x-2 mb-6">
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">{tournament.preliminaryFormat}</span>
-                      <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">{tournament.teamElimintationFormat}</span>
+                      <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">{tournament.teamEliminationFormat}</span>
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">{tournament.league}</span>
                     </div>
                     <div className="space-y-3">

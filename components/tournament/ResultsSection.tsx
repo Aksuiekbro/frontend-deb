@@ -296,9 +296,9 @@ export function ResultsSection({
     [getResultSlots, isMatchReadOnly, matchRows]
   )
 
-  const hasEditableMatches = editableMatches.length > 0
-  const allEditableScoresFilled = editableMatches.every((match) =>
-    getResultSlots(match).every((slot) => {
+  const isMatchDraftComplete = useCallback((match: MatchResponse) => {
+    const slots = getResultSlots(match)
+    return slots.length > 0 && slots.every((slot) => {
       if (slot.kind === "team") {
         const hasResult = Boolean(resultDrafts[scoreKey(match.id, slot.slot)])
         return hasResult && slot.speakers.length > 0 && slot.speakers.every((speaker) => hasDraftScore(match.id, speaker))
@@ -306,7 +306,18 @@ export function ResultsSection({
 
       return hasDraftScore(match.id, slot)
     })
+  }, [getResultSlots, hasDraftScore, resultDrafts, scoreKey])
+
+  // Organizers fill results match-by-match as rounds finish, so allow submitting the
+  // matches that are fully scored rather than forcing every open match to be ready first.
+  const completedDraftMatches = useMemo(
+    () => editableMatches.filter((match) => isMatchDraftComplete(match)),
+    [editableMatches, isMatchDraftComplete]
   )
+
+  const hasEditableMatches = editableMatches.length > 0
+  const readyToSubmitCount = completedDraftMatches.length
+  const pendingMatchCount = editableMatches.length - readyToSubmitCount
   const hasTeamsWithoutSpeakers = editableMatches.some((match) =>
     getResultSlots(match).some((slot) => slot.kind === "team" && slot.speakers.length === 0)
   )
@@ -314,8 +325,7 @@ export function ResultsSection({
     Boolean(onSubmitResults) &&
     canManageTeams &&
     canEditSelectedRound &&
-    hasEditableMatches &&
-    allEditableScoresFilled &&
+    readyToSubmitCount > 0 &&
     !isSubmittingResults
   const shouldRenderMatchResults = matchesLoading || matchesError || Boolean(matches)
   const matchSubmitButtonClass = `px-8 py-3 bg-[#3E5C76] text-white rounded-lg text-[16px] font-medium transition-colors ${
@@ -357,7 +367,7 @@ export function ResultsSection({
   }
 
   const buildResultPayload = (): MatchResultRequest[] => {
-    return editableMatches.map((match) => {
+    return completedDraftMatches.map((match) => {
       const teamResults = getResultSlots(match)
         .filter((slot) => slot.kind === "team")
         .map((slot) => ({
@@ -385,7 +395,7 @@ export function ResultsSection({
   }
 
   const buildPersistedDrafts = (): PersistedResultDrafts => {
-    return editableMatches.reduce<PersistedResultDrafts>((acc, match) => {
+    return completedDraftMatches.reduce<PersistedResultDrafts>((acc, match) => {
       getResultSlots(match).forEach((slot) => {
         if (slot.kind === "team") {
           acc[scoreKey(match.id, slot.slot)] = {
@@ -421,20 +431,21 @@ export function ResultsSection({
       return
     }
 
-    if (!allEditableScoresFilled) {
+    if (readyToSubmitCount === 0) {
       setScoreError(
         hasTeamsWithoutSpeakers
           ? "Add participants to every team before submitting speaker points."
-          : "Select every team result and enter every speaker point before submitting."
+          : "Select a team result and enter every speaker point for at least one match before submitting."
       )
       return
     }
 
     const payload = buildResultPayload()
+    const submittedDraftPatch = buildPersistedDrafts()
     const previousPersistedDrafts = readPersistedResultDrafts(resultStorageKey)
     const persistedDrafts = {
       ...previousPersistedDrafts,
-      ...buildPersistedDrafts(),
+      ...submittedDraftPatch,
     }
     const restoreLocallyCompletedMatches = () => {
       setLocallyCompletedMatchIds((current) => {
@@ -477,7 +488,15 @@ export function ResultsSection({
     }
 
     writePersistedResultDrafts(resultStorageKey, persistedDrafts)
-    clearResultInputDrafts(resultStorageKey)
+    const remainingInputDrafts = { ...readResultInputDrafts(resultStorageKey) }
+    Object.keys(submittedDraftPatch).forEach((key) => {
+      delete remainingInputDrafts[key]
+    })
+    if (Object.keys(remainingInputDrafts).length === 0) {
+      clearResultInputDrafts(resultStorageKey)
+    } else {
+      writeResultInputDrafts(resultStorageKey, remainingInputDrafts)
+    }
     setScoreDrafts((current) => {
       const next = { ...current }
       Object.entries(persistedDrafts).forEach(([key, draft]) => {
@@ -691,6 +710,17 @@ export function ResultsSection({
         </table>
       </div>
       {scoreError ? <p className="mt-4 text-sm text-red-500" role="alert">{scoreError}</p> : null}
+      {hasEditableMatches ? (
+        <p className="mt-4 text-sm text-[#4A5168]">
+          {readyToSubmitCount > 0
+            ? `${readyToSubmitCount} of ${editableMatches.length} ${editableMatches.length === 1 ? "match" : "matches"} ready to submit${
+                pendingMatchCount > 0
+                  ? `. ${pendingMatchCount} still need${pendingMatchCount === 1 ? "s" : ""} a result and speaker points.`
+                  : "."
+              }`
+            : "Select a result and enter every speaker point for a match to enable submitting."}
+        </p>
+      ) : null}
       <div className="flex justify-end mt-8 mb-8">
         <button
           type="button"

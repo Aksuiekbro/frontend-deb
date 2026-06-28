@@ -27,7 +27,7 @@ const tournament = (overrides: Record<string, unknown>) => ({
   imageUrl: { id: 1, url: "/poster.png" },
   league: "SCHOOL",
   preliminaryFormat: "APF",
-  teamElimintationFormat: "APF",
+  teamEliminationFormat: "APF",
   tags: [{ name: "school" }],
   startDate: "2026-06-19T10:00:00",
   endDate: "2026-06-19T18:00:00",

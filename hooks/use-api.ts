@@ -48,7 +48,7 @@ const PREVIEW_SIMPLE_TOURNAMENT: SimpleTournamentResponse = {
   imageUrl: PREVIEW_IMAGE,
   league: TournamentLeague.UNIVERSITY,
   preliminaryFormat: DebateFormat.BPF,
-  teamElimintationFormat: DebateFormat.APF,
+  teamEliminationFormat: DebateFormat.APF,
   tags: PREVIEW_TAGS,
 }
 
@@ -59,7 +59,7 @@ const PREVIEW_TOURNAMENT: TournamentResponse = {
   registrationDeadline: '2024-07-25T23:59:59.000Z',
   location: 'Preview Convention Center, Preview City',
   teamLimit: 32,
-  enabled: true,
+  disabled: false,
 }
 
 const PREVIEW_ORGANIZER_ACCOUNT: UserResponse = {

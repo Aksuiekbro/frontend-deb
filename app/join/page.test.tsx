@@ -42,7 +42,7 @@ const tournament = {
   imageUrl: undefined,
   league: TournamentLeague.SCHOOL,
   preliminaryFormat: DebateFormat.APF,
-  teamElimintationFormat: DebateFormat.APF,
+  teamEliminationFormat: DebateFormat.APF,
   tags: [],
 }
 

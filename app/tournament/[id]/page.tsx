@@ -153,6 +153,15 @@ export default function TournamentDetailPage() {
     toast,
   })
 
+  const ELIMINATION_ROUND_NAMES = new Set(['1/16', '1/8', '1/4', '1/2'])
+  const effectiveStage: PairingStageId = activeTab === 'Results and Statistics'
+    ? selectedResultsOption === 'LD'
+      ? 'solo'
+      : ELIMINATION_ROUND_NAMES.has(activeResultsSection)
+        ? 'team'
+        : 'preliminary'
+    : selectedPairingStage
+
   const {
     selectedRoundGroupId,
     selectedRoundId,
@@ -167,7 +176,7 @@ export default function TournamentDetailPage() {
     mutateRounds,
   } = useRoundSelection({
     tournamentId,
-    selectedStage: selectedPairingStage,
+    selectedStage: effectiveStage,
     selectedRoundLabel: selectedRound,
     pageable: { page: 0, size: 50 },
   })

@@ -8,7 +8,7 @@ export interface SimpleTournamentResponse {
     imageUrl: UrlResponse;
     league: TournamentLeague;
     preliminaryFormat: DebateFormat;
-    teamElimintationFormat: DebateFormat;
+    teamEliminationFormat: DebateFormat;
     tags: TagResponse[];
     startDate?: string;
     endDate?: string;
@@ -39,7 +39,7 @@ export interface TournamentResponse extends SimpleTournamentResponse {
     registrationDeadline: string;
     location: string;
     teamLimit: number;
-    enabled?: boolean;
+    disabled?: boolean;
     started?: boolean;
 }
 

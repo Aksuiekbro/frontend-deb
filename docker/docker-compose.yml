@@ -1,17 +1,21 @@
 services:
   app:
-    image: debetter-spring_app:latest
-    platform: linux/amd64   # включи, только если образ amd64
+    image: debetter-spring-app:latest   # must match the tag inside debetter.tar (docker load)
+    pull_policy: never                   # image is loaded locally from the tar, never pulled from a registry
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/debetter
-      SPRING_DATASOURCE_USERNAME: debetter_user
-      SPRING_DATASOURCE_PASSWORD: debetter_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_USERNAME: default
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: 893fe9af-60e2-4ab4-952d-4a767f6670c0
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Spring Boot 3.x reads spring.data.redis.* (the image's yml defaults to port 6380,
+      # which is the HOST port; inside the compose network redis listens on 6379).
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_USERNAME: default
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # Keep schema + data across restarts (image default is create-drop, which wipes every boot).
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       db:
         condition: service_healthy
@@ -23,16 +27,16 @@ services:
     image: postgres:16.3-alpine3.20
     container_name: debetter-postgres
     environment:
-      POSTGRES_DB: debetter
-      POSTGRES_USER: debetter_user
-      POSTGRES_PASSWORD: debetter_password
-    # Убери публикацию 5432, если доступ с хоста не нужен
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Drop this published port if host access to the DB isn't needed.
     ports:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U debetter_user -d debetter"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -41,14 +45,14 @@ services:
   redis:
     image: redis:8.0.3-alpine
     container_name: debetter-redis
-    command: ["redis-server", "--requirepass", "893fe9af-60e2-4ab4-952d-4a767f6670c0"]
-    # На хосте открыт 6380; внутри контейнера 6379
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    # Host exposes 6380; inside the container/network redis listens on 6379.
     ports:
       - "6380:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "893fe9af-60e2-4ab4-952d-4a767f6670c0", "PING"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING"]
       interval: 5s
       timeout: 3s
       retries: 20

@@ -314,7 +314,7 @@ export const api = {
 
     deleteAnnouncement: (tournamentId: number, id: number) => deleteReq<void>(`/tournaments/${tournamentId}/announcements/${id}`),
 
-    getAnnouncementComments: (tournamentId: number, id: number, pageable?: Pageable) => getPageable<CommentResponse>(`/tournaments/${tournamentId}/announcements/${id}/comments`, pageable),
+    getAnnouncementComments: (tournamentId: number, id: number) => get<CommentResponse[]>(`/tournaments/${tournamentId}/announcements/${id}/comments`),
 
     addAnnouncementComment: (tournamentId: number, id: number, body: CommentRequest) => post<void>(`/tournaments/${tournamentId}/announcements/${id}/comments`, body),
 

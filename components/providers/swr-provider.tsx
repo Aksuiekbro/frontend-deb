@@ -72,7 +72,7 @@ export default function SWRProvider({ children }: SWRProviderProps) {
           imageUrl: placeholderImage,
           league: 'UNIVERSITY',
           preliminaryFormat: 'BPF',
-          teamElimintationFormat: 'BPF',
+          teamEliminationFormat: 'BPF',
           tags: []
         },
         {
@@ -82,7 +82,7 @@ export default function SWRProvider({ children }: SWRProviderProps) {
           imageUrl: placeholderImage,
           league: 'SCHOOL',
           preliminaryFormat: 'APF',
-          teamElimintationFormat: 'APF',
+          teamEliminationFormat: 'APF',
           tags: []
         }
       ],

@@ -140,6 +140,82 @@ describe("ResultsSection", () => {
     })
   })
 
+  it("submits the fully-scored matches without waiting for every match in the round", async () => {
+    const onSubmitResults = jest.fn(async () => true)
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 301,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+            {
+              id: 302,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 2,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    // With nothing filled the button stays disabled.
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
+
+    // Fully score ONLY match 301 (match 302 stays untouched).
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+
+    // A completed match now enables submitting, and the helper text reflects the pending one.
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeEnabled()
+    expect(screen.getByText(/1 of 2 matches ready to submit\. 1 still need/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([
+        {
+          matchId: 301,
+          teamResults: [
+            {
+              teamId: 1,
+              won: true,
+              participantScores: [
+                { participantId: 11, score: 75 },
+                { participantId: 12, score: 76 },
+              ],
+            },
+            {
+              teamId: 2,
+              won: false,
+              participantScores: [
+                { participantId: 21, score: 72 },
+                { participantId: 22, score: 73 },
+              ],
+            },
+          ],
+        },
+      ] satisfies MatchResultRequest[])
+    })
+  })
+
   it("keeps unsent result drafts when switching away from the results table and back", async () => {
     const storageKey = "tournament:53:round-group:101:round:201:match-results"
     const { unmount } = render(

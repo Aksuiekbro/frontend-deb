@@ -20,7 +20,7 @@ const toast = jest.fn()
 const tournament = {
   id: 53,
   name: "Climate Cup",
-  enabled: true,
+  disabled: false,
 } as TournamentResponse
 
 function response(body: unknown, status = 200) {
