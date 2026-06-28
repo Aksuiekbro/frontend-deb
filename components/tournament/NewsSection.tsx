@@ -7,7 +7,7 @@ interface NewsSectionProps {
   news?: PageResult<NewsResponse>
   newsLoading: boolean
   newsError?: Error
-  onAddNews: () => void
+  onAddNews?: () => void
 }
 
 export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSectionProps) {
@@ -16,12 +16,14 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-[#0D1321] text-[32px] font-bold">Tournament News</h2>
-          <button
-            onClick={onAddNews}
-            className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
-          >
-            Add News
-          </button>
+          {onAddNews ? (
+            <button
+              onClick={onAddNews}
+              className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
+            >
+              Add News
+            </button>
+          ) : null}
         </div>
 
         <div className="space-y-6">

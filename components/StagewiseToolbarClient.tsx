@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import type { ToolbarConfig } from '@stagewise/toolbar-next'
 
 const StagewiseToolbar = dynamic(
   () => import('@stagewise/toolbar-next').then(mod => ({ default: mod.StagewiseToolbar })),
@@ -8,9 +9,7 @@ const StagewiseToolbar = dynamic(
 )
 
 interface StagewiseToolbarClientProps {
-  config: {
-    plugins: any[]
-  }
+  config: ToolbarConfig
 }
 
 export default function StagewiseToolbarClient({ config }: StagewiseToolbarClientProps) {

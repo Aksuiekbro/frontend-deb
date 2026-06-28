@@ -8,8 +8,17 @@ export interface SimpleTournamentResponse {
     imageUrl: UrlResponse;
     league: TournamentLeague;
     preliminaryFormat: DebateFormat;
-    teamElimintationFormat: DebateFormat;
+    teamEliminationFormat: DebateFormat;
     tags: TagResponse[];
+    startDate?: string;
+    endDate?: string;
+    registrationDeadline?: string;
+    location?: string;
+    teamLimit?: number;
+    currentTeamCount?: number;
+    maxTeamCount?: number;
+    status?: string;
+    debateFormat?: DebateFormat;
 }
 
 export enum TournamentLeague {
@@ -30,7 +39,8 @@ export interface TournamentResponse extends SimpleTournamentResponse {
     registrationDeadline: string;
     location: string;
     teamLimit: number;
-    enabled?: boolean;
+    disabled?: boolean;
+    started?: boolean;
 }
 
 export interface DebateFormatRequest {

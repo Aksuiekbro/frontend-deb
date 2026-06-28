@@ -23,6 +23,10 @@
 - Prefer functional, stateless components and React Server Components where appropriate.
 - Keep Tailwind classes readable; group by layout → spacing → color.
 
+## API & Data Layer
+- Route all backend calls through the shared client in `lib/api.ts`; avoid raw `fetch`/`axios` in components and hooks.
+- Reuse classes and types from the `types/` folder for data structures; do not redeclare ad‑hoc interfaces near usage sites.
+
 ## Testing Guidelines
 - There is no test runner configured yet; when adding tests, prefer Jest + React Testing Library.
 - Name test files `*.test.ts(x)` and colocate near the code or in `__tests__/`.
@@ -33,4 +37,3 @@
 - Group related changes into a single commit; avoid mixing refactors with behavioral changes.
 - PRs should include: a clear summary, screenshots/GIFs for UI changes, and links to related issues or tickets.
 - Ensure `npm run lint` passes and the app runs locally before requesting review.
-

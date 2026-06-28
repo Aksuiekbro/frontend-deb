@@ -23,9 +23,13 @@ import { SimpleRoundResponse } from '@/types/tournament/round/round'
 import { MatchResponse } from '@/types/tournament/match'
 import { TeamResponse, SimpleTeamResponse } from '@/types/tournament/team'
 import { JudgeGetParams, JudgeResponse } from '@/types/tournament/judge'
+import { ScheduleResponse } from '@/types/tournament/schedule'
+import { FeedbackGetParams, FeedbackResponse } from '@/types/tournament/feedback'
 import { UrlResponse } from '@/types/util/url'
 import { TagResponse } from '@/types/tag'
 import { OrganizerProfileResponse, ParticipantProfileResponse, CityResponse, InstitutionResponse } from '@/types/user/profile'
+import { toBackendDateTime } from '@/lib/datetime'
+import { readResponseError } from '@/lib/http-error'
 
 const IS_PREVIEW = process.env.NEXT_PUBLIC_PREVIEW_MODE === 'true'
 const previewRoleEnv = (process.env.NEXT_PUBLIC_PREVIEW_ROLE ?? '').toUpperCase()
@@ -44,7 +48,7 @@ const PREVIEW_SIMPLE_TOURNAMENT: SimpleTournamentResponse = {
   imageUrl: PREVIEW_IMAGE,
   league: TournamentLeague.UNIVERSITY,
   preliminaryFormat: DebateFormat.BPF,
-  teamElimintationFormat: DebateFormat.APF,
+  teamEliminationFormat: DebateFormat.APF,
   tags: PREVIEW_TAGS,
 }
 
@@ -55,7 +59,7 @@ const PREVIEW_TOURNAMENT: TournamentResponse = {
   registrationDeadline: '2024-07-25T23:59:59.000Z',
   location: 'Preview Convention Center, Preview City',
   teamLimit: 32,
-  enabled: true,
+  disabled: false,
 }
 
 const PREVIEW_ORGANIZER_ACCOUNT: UserResponse = {
@@ -224,6 +228,15 @@ const PREVIEW_ANNOUNCEMENTS: AnnouncementResponse[] = [
   },
 ]
 
+const PREVIEW_SCHEDULES: ScheduleResponse[] = [
+  {
+    id: 10001,
+    name: 'Day 1 Schedule',
+    description: 'Registration, opening ceremony, and preliminary rounds.',
+    imageUrl: PREVIEW_IMAGE,
+  },
+]
+
 const PREVIEW_NEWS: NewsResponse[] = [
   {
     id: 901,
@@ -238,6 +251,48 @@ const PREVIEW_NEWS: NewsResponse[] = [
   },
 ]
 
+const PREVIEW_JUDGES: JudgeResponse[] = [
+  {
+    id: 1001,
+    fullName: 'Preview Judge One',
+    phoneNumber: '+1 (555) 000-0001',
+    email: 'judge.one@example.com',
+    socialProfiles: [],
+    checkedIn: true,
+  },
+  {
+    id: 1002,
+    fullName: 'Preview Judge Two',
+    phoneNumber: '+1 (555) 000-0002',
+    email: 'judge.two@example.com',
+    socialProfiles: [],
+    checkedIn: false,
+  },
+]
+
+const PREVIEW_FEEDBACKS: FeedbackResponse[] = [
+  {
+    id: 1101,
+    title: 'Loving the schedule clarity',
+    content: 'Rounds are running on time and the announcements help a ton. Keep it up!',
+    timestamp: '2024-08-01T19:10:00.000Z',
+    edited: false,
+    author: PREVIEW_PARTICIPANT_PROFILE,
+    user: PREVIEW_PARTICIPANT_ACCOUNT,
+    tags: PREVIEW_TAGS,
+  },
+  {
+    id: 1102,
+    title: 'Please add more maps',
+    content: 'Would be great to include room directions for the next rounds.',
+    timestamp: '2024-08-01T20:25:00.000Z',
+    edited: true,
+    author: PREVIEW_PARTICIPANT_PROFILE,
+    user: PREVIEW_PARTICIPANT_ACCOUNT,
+    tags: PREVIEW_TAGS,
+  },
+]
+
 const previewPage = <T,>(items: T[]): PageResult<T> => ({
   content: items,
   totalElements: items.length,
@@ -249,12 +304,18 @@ const PREVIEW_TEAMS_PAGE = previewPage(PREVIEW_TEAMS)
 const PREVIEW_MATCHES_PAGE = previewPage(PREVIEW_MATCHES)
 const PREVIEW_NEWS_PAGE = previewPage(PREVIEW_NEWS)
 const PREVIEW_ANNOUNCEMENTS_PAGE = previewPage(PREVIEW_ANNOUNCEMENTS)
+const PREVIEW_JUDGES_PAGE = previewPage(PREVIEW_JUDGES)
+const PREVIEW_FEEDBACKS_PAGE = previewPage(PREVIEW_FEEDBACKS)
 
 // Fetcher function for SWR
 async function fetcher<T>(fetchFn: () => Promise<Response>): Promise<T> {
   const response = await fetchFn()
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`)
+    throw new Error(await readResponseError(response, {
+      fallback: `API Error: ${response.status}`,
+      unauthorized: 'Please sign in to continue.',
+      serverError: 'Server error. Please try again later.',
+    }))
   }
   return response.json()
 }
@@ -279,23 +340,23 @@ export function useTournaments(params?: TournamentGetParams, pageable?: Pageable
 }
 
 export function useTournament(id: number) {
-  if (IS_PREVIEW) {
-    const data = { ...PREVIEW_TOURNAMENT, id }
-    return {
-      tournament: data,
-      isLoading: false,
-      error: undefined,
-      mutate: async () => data,
-    }
-  }
-
+  const previewTournament = { ...PREVIEW_TOURNAMENT, id }
   const { data, error, isLoading, mutate } = useSWR(
-    ['tournament', id],
+    IS_PREVIEW ? null : ['tournament', id],
     () => fetcher<TournamentResponse>(() => api.getTournament(id)),
     {
       revalidateOnFocus: false,
     }
   )
+
+  if (IS_PREVIEW) {
+    return {
+      tournament: previewTournament,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => previewTournament,
+    }
+  }
 
   return {
     tournament: data,
@@ -341,8 +402,16 @@ export function useUser(id: number) {
 }
 
 export function useCurrentUser() {
+  const previewUser = PREVIEW_USERS_BY_ROLE[PREVIEW_ROLE]
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['current-user'],
+    () => fetcher<UserResponse>(() => api.getMe()),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
   if (IS_PREVIEW) {
-    const previewUser = PREVIEW_USERS_BY_ROLE[PREVIEW_ROLE]
     return {
       user: previewUser,
       isLoading: false,
@@ -350,14 +419,6 @@ export function useCurrentUser() {
       mutate: async () => previewUser,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    ['current-user'],
-    () => fetcher<UserResponse>(() => api.getMe()),
-    {
-      revalidateOnFocus: false,
-    }
-  )
 
   return {
     user: data,
@@ -369,6 +430,15 @@ export function useCurrentUser() {
 
 // News hooks
 export function useNews(params?: NewsGetParams, pageable?: Pageable) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['news', params, pageable],
+    () => fetcher<PageResult<NewsResponse>>(() => api.getNewses(params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
   if (IS_PREVIEW) {
     return {
       news: PREVIEW_NEWS_PAGE,
@@ -377,15 +447,6 @@ export function useNews(params?: NewsGetParams, pageable?: Pageable) {
       mutate: async () => PREVIEW_NEWS_PAGE,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    ['news', params, pageable],
-    () => fetcher<PageResult<NewsResponse>>(() => api.getNewses(params, pageable)),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  )
 
   return {
     news: data,
@@ -418,6 +479,16 @@ export function useTournamentParticipants(
   params?: TournamentParticipantGetParams,
   pageable?: Pageable
 ) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-participants', tournamentId, params, pageable],
+    () => fetcher<PageResult<SimpleTournamentParticipantResponse>>(() =>
+      api.getTournamentParticipants(tournamentId, params, pageable)
+    ),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
   if (IS_PREVIEW) {
     return {
       participants: PREVIEW_PARTICIPANTS_PAGE,
@@ -426,16 +497,6 @@ export function useTournamentParticipants(
       mutate: async () => PREVIEW_PARTICIPANTS_PAGE,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    ['tournament-participants', tournamentId, params, pageable],
-    () => fetcher<PageResult<SimpleTournamentParticipantResponse>>(() =>
-      api.getTournamentParticipants(tournamentId, params, pageable)
-    ),
-    {
-      revalidateOnFocus: false,
-    }
-  )
 
   return {
     participants: data,
@@ -466,6 +527,16 @@ export function useTournamentParticipant(tournamentId: number, participantId: nu
 
 // Tournament teams hooks
 export function useTournamentTeams(tournamentId: number, pageable?: Pageable) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-teams', tournamentId, pageable],
+    () => fetcher<PageResult<SimpleTeamResponse>>(() =>
+      api.getTeams(tournamentId, pageable)
+    ),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
   if (IS_PREVIEW) {
     return {
       teams: PREVIEW_TEAMS_PAGE,
@@ -474,16 +545,6 @@ export function useTournamentTeams(tournamentId: number, pageable?: Pageable) {
       mutate: async () => PREVIEW_TEAMS_PAGE,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    ['tournament-teams', tournamentId, pageable],
-    () => fetcher<PageResult<SimpleTeamResponse>>(() =>
-      api.getTeams(tournamentId, pageable)
-    ),
-    {
-      revalidateOnFocus: false,
-    }
-  )
 
   return {
     teams: data,
@@ -494,23 +555,23 @@ export function useTournamentTeams(tournamentId: number, pageable?: Pageable) {
 }
 
 export function useTournamentTeam(tournamentId: number, teamId: number) {
-  if (IS_PREVIEW) {
-    const team = PREVIEW_TEAM_DETAILS.find((t) => t.id === teamId) ?? PREVIEW_TEAM_DETAILS[0]
-    return {
-      team,
-      isLoading: false,
-      error: undefined,
-      mutate: async () => team,
-    }
-  }
-
+  const previewTeam = PREVIEW_TEAM_DETAILS.find((t) => t.id === teamId) ?? PREVIEW_TEAM_DETAILS[0]
   const { data, error, isLoading, mutate } = useSWR(
-    ['tournament-team', tournamentId, teamId],
+    IS_PREVIEW ? null : ['tournament-team', tournamentId, teamId],
     () => fetcher<TeamResponse>(() => api.getTeam(tournamentId, teamId)),
     {
       revalidateOnFocus: false,
     }
   )
+
+  if (IS_PREVIEW) {
+    return {
+      team: previewTeam,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => previewTeam,
+    }
+  }
 
   return {
     team: data,
@@ -520,23 +581,68 @@ export function useTournamentTeam(tournamentId: number, teamId: number) {
   }
 }
 
+export function useTournamentJudges(tournamentId: number, params?: JudgeGetParams, pageable?: Pageable) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-judges', tournamentId, params, pageable],
+    () => fetcher<PageResult<JudgeResponse>>(() => api.getJudges(tournamentId, params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      judges: PREVIEW_JUDGES_PAGE,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_JUDGES_PAGE,
+    }
+  }
+
+  return {
+    judges: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export function useTournamentOrganizers(tournamentId: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-organizers', tournamentId],
+    () => fetcher<SimpleUserResponse[]>(() => api.getOrganizers(tournamentId)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      organizers: [PREVIEW_ORGANIZER_ACCOUNT],
+      isLoading: false,
+      error: undefined,
+      mutate: async () => [PREVIEW_ORGANIZER_ACCOUNT],
+    }
+  }
+
+  return {
+    organizers: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
 // Tournament announcements hooks
 export function useTournamentAnnouncements(
   tournamentId: number,
   authorId?: number,
   pageable?: Pageable
 ) {
-  if (IS_PREVIEW) {
-    return {
-      announcements: PREVIEW_ANNOUNCEMENTS_PAGE,
-      isLoading: false,
-      error: undefined,
-      mutate: async () => PREVIEW_ANNOUNCEMENTS_PAGE,
-    }
-  }
-
   const { data, error, isLoading, mutate } = useSWR(
-    ['tournament-announcements', tournamentId, authorId, pageable],
+    IS_PREVIEW ? null : ['tournament-announcements', tournamentId, authorId, pageable],
     () => fetcher<PageResult<AnnouncementResponse>>(() =>
       api.getAnnouncements(tournamentId, authorId, pageable)
     ),
@@ -546,11 +652,78 @@ export function useTournamentAnnouncements(
     }
   )
 
+  if (IS_PREVIEW) {
+    return {
+      announcements: PREVIEW_ANNOUNCEMENTS_PAGE,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_ANNOUNCEMENTS_PAGE,
+    }
+  }
+
   return {
     announcements: data,
     isLoading,
     error,
     mutate
+  }
+}
+
+export function useTournamentSchedules(tournamentId: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-schedules', tournamentId],
+    () => fetcher<ScheduleResponse[]>(() => api.getSchedules(tournamentId)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      schedules: PREVIEW_SCHEDULES,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_SCHEDULES,
+    }
+  }
+
+  return {
+    schedules: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export function useTournamentFeedbacks(
+  tournamentId: number,
+  params?: FeedbackGetParams,
+  pageable?: Pageable
+) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-feedbacks', tournamentId, params, pageable],
+    () => fetcher<PageResult<FeedbackResponse>>(() => api.getFeedbacks(tournamentId, params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      feedbacks: PREVIEW_FEEDBACKS_PAGE,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_FEEDBACKS_PAGE,
+    }
+  }
+
+  return {
+    feedbacks: data,
+    isLoading,
+    error,
+    mutate,
   }
 }
 
@@ -573,6 +746,13 @@ export function useLeaderboard(_limit: number = 10) {
 // Round groups
 export function useRoundGroups(tournamentId?: number) {
   const enabled = typeof tournamentId === 'number' && !Number.isNaN(tournamentId)
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW || !enabled ? null : ['round-groups', tournamentId],
+    () => fetcher<RoundGroupResponse[]>(() => api.getRoundGroups(tournamentId!)),
+    {
+      revalidateOnFocus: false,
+    }
+  )
 
   if (IS_PREVIEW) {
     return {
@@ -582,14 +762,6 @@ export function useRoundGroups(tournamentId?: number) {
       mutate: async () => PREVIEW_ROUND_GROUPS,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    enabled ? ['round-groups', tournamentId] : null,
-    () => fetcher<RoundGroupResponse[]>(() => api.getRoundGroups(tournamentId!)),
-    {
-      revalidateOnFocus: false,
-    }
-  )
 
   return {
     roundGroups: data,
@@ -604,6 +776,13 @@ export function useRounds(tournamentId?: number, roundGroupId?: number) {
   const enabled =
     typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
     typeof roundGroupId === 'number' && !Number.isNaN(roundGroupId)
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW || !enabled ? null : ['rounds', tournamentId, roundGroupId],
+    () => fetcher<SimpleRoundResponse[]>(() => api.getRounds(tournamentId!, roundGroupId!)),
+    {
+      revalidateOnFocus: false,
+    }
+  )
 
   if (IS_PREVIEW) {
     return {
@@ -613,14 +792,6 @@ export function useRounds(tournamentId?: number, roundGroupId?: number) {
       mutate: async () => PREVIEW_ROUNDS,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    enabled ? ['rounds', tournamentId, roundGroupId] : null,
-    () => fetcher<SimpleRoundResponse[]>(() => api.getRounds(tournamentId!, roundGroupId!)),
-    {
-      revalidateOnFocus: false,
-    }
-  )
 
   return {
     rounds: data,
@@ -641,6 +812,13 @@ export function useMatches(
     typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
     typeof roundGroupId === 'number' && !Number.isNaN(roundGroupId) &&
     typeof roundId === 'number' && !Number.isNaN(roundId)
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW || !enabled ? null : ['matches', tournamentId, roundGroupId, roundId, pageable],
+    () => fetcher<PageResult<MatchResponse>>(() => api.getMatches(tournamentId!, roundGroupId!, roundId!, pageable)),
+    {
+      revalidateOnFocus: false,
+    }
+  )
 
   if (IS_PREVIEW) {
     return {
@@ -650,14 +828,6 @@ export function useMatches(
       mutate: async () => PREVIEW_MATCHES_PAGE,
     }
   }
-
-  const { data, error, isLoading, mutate } = useSWR(
-    enabled ? ['matches', tournamentId, roundGroupId, roundId, pageable] : null,
-    () => fetcher<PageResult<MatchResponse>>(() => api.getMatches(tournamentId!, roundGroupId!, roundId!, pageable)),
-    {
-      revalidateOnFocus: false,
-    }
-  )
 
   return {
     matches: data,
@@ -676,7 +846,7 @@ export function useUpcomingTournaments(limit: number = 6) {
     () => fetcher<PageResult<SimpleTournamentResponse>>(() =>
       api.getTournaments(
         {
-          startDateFrom: currentDate,
+          startDateFrom: toBackendDateTime(currentDate),
           nonFull: true
         },
         { page: 0, size: limit, sort: ['startDate,asc'] }

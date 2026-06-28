@@ -5,9 +5,12 @@ import { useNews } from "../../hooks/use-api"
 import { LoadingState, CardSkeleton } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
 import Link from "next/link"
+import { resolveMediaUrl } from "@/lib/media"
 
 export default function NewsPage() {
-  const { news, isLoading, error } = useNews(undefined, { page: 0, size: 12, sort: ['createdAt,desc'] })
+  // News is ordered by its publish time. The backend entity field is `timestamp`
+  // (there is no `createdAt` on News — sorting by it makes the API reject the request).
+  const { news, isLoading, error } = useNews(undefined, { page: 0, size: 12, sort: ['timestamp,desc'] })
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
       <Header />
@@ -57,7 +60,7 @@ export default function NewsPage() {
                           <div className={`h-[200px] bg-gradient-to-br ${gradient} relative`}>
                             {newsItem.thumbnailUrl && (
                               <img
-                                src={newsItem.thumbnailUrl.url}
+                                src={resolveMediaUrl(newsItem.thumbnailUrl.url)}
                                 alt={newsItem.title}
                                 className="absolute inset-0 w-full h-full object-cover"
                               />
@@ -100,4 +103,4 @@ export default function NewsPage() {
       </div>
     </div>
   )
-} 
+}

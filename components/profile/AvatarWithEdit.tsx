@@ -7,23 +7,46 @@ interface AvatarWithEditProps {
   src: string;
   sizePx?: number;
   onChangeImage?: (file: File, previewUrl: string) => void;
+  onDeleteImage?: () => Promise<void> | void;
 }
 
-export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: AvatarWithEditProps) {
+const FALLBACK_AVATAR_SRC = "/images/avatar-placeholder.png";
+
+export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDeleteImage }: AvatarWithEditProps) {
   const [preview, setPreview] = React.useState<string | null>(null);
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const canEdit = Boolean(onChangeImage || onDeleteImage);
 
   const dimension = `${sizePx}px`;
+  const imageSrc = preview ?? (failedSrc === src ? FALLBACK_AVATAR_SRC : src);
 
-  const onPick = () => setOpen(true);
+  const onPick = () => {
+    if (!canEdit) return;
+    setOpen(true);
+  };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     setPreview(url);
+    setFailedSrc(null);
     onChangeImage?.(file, url);
+  };
+
+  const handleDelete = async () => {
+    if (!onDeleteImage || deleting) return;
+    try {
+      setDeleting(true);
+      await onDeleteImage();
+      setPreview(null);
+      setOpen(false);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -31,17 +54,21 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
       {/* Avatar */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={preview ?? src}
+        src={imageSrc}
         alt="User avatar"
         className="h-full w-full rounded-full object-cover bg-black/5"
+        onError={() => {
+          if (!preview && src !== FALLBACK_AVATAR_SRC) setFailedSrc(src);
+        }}
       />
 
       {/* Edit button overlay (from Figma: small rounded white control) */}
       <button
         type="button"
         aria-label="Edit avatar"
+        disabled={!canEdit}
         onClick={onPick}
-        className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-black/5 transition-colors"
+        className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-black/5 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Pencil className="h-4 w-4 text-[#0D1321]" />
       </button>
@@ -65,7 +92,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/avatar-placeholder.png"
+              src={FALLBACK_AVATAR_SRC}
               alt="Edit avatar prompt"
               className="w-full rounded-[8px] border border-black/10 object-contain mb-4"
             />
@@ -86,7 +113,14 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
               </button>
             </div>
             <div className="mt-3 flex justify-center">
-              <button type="button" className="text-[#FF4800] hover:opacity-90">Delete image</button>
+              <button
+                type="button"
+                disabled={!onDeleteImage || deleting}
+                onClick={handleDelete}
+                className="text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete image"}
+              </button>
             </div>
           </div>
         </div>
@@ -94,5 +128,3 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage }: Avat
     </div>
   );
 }
-
-

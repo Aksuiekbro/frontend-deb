@@ -1,11 +1,13 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
 import Link from "next/link"
 import Header from "../../components/Header"
 import { useCurrentUser, useUpcomingTournaments, useTournaments } from "../../hooks/use-api"
 import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
+import { resolveMediaUrl } from "@/lib/media"
+
+const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string" ? tag : tag.name ?? "")
 
 export default function Dashboard() {
   // API hooks
@@ -91,7 +93,7 @@ export default function Dashboard() {
                   <div className="flex items-center space-x-4 mb-6">
                     {currentUser.imageUrl ? (
                       <img
-                        src={currentUser.imageUrl.url}
+                        src={resolveMediaUrl(currentUser.imageUrl.url)}
                         alt={`${currentUser.firstName} ${currentUser.lastName} profile`}
                         className="w-16 h-16 rounded-full object-cover"
                       />
@@ -211,7 +213,7 @@ export default function Dashboard() {
                       <div className="flex flex-wrap gap-2 mb-6">
                         {tournament.tags.map((tag, index) => (
                           <span key={index} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">
-                            {tag}
+                            {getTagLabel(tag)}
                           </span>
                         ))}
                       </div>
@@ -343,4 +345,4 @@ export default function Dashboard() {
       </section>
     </div>
   )
-} 
+}

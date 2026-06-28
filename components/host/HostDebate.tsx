@@ -1,9 +1,14 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+import { toBackendDateTime } from "@/lib/datetime"
+import { readResponseError } from "@/lib/http-error"
 import {
   Select,
   SelectContent,
@@ -11,16 +16,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { DebateFormat, TournamentLeague, type TournamentRequest } from "@/types/tournament/tournament"
+import {
+  DebateFormat,
+  TournamentLeague,
+  type TournamentRequest,
+  type TournamentResponse,
+} from "@/types/tournament/tournament"
 
-type HostFormState = TournamentRequest & {
-  proposition?: string
-  opposition?: string
-  category?: string
-}
+type HostFormState = TournamentRequest
 
-export default function HostDebate() {
-  const [form, setForm] = useState<HostFormState>({
+const TITLE_MAX_LENGTH = 50
+const DESCRIPTION_MAX_LENGTH = 200
+const LOCATION_MAX_LENGTH = 50
+
+function createInitialForm(): HostFormState {
+  return {
     name: "",
     description: "",
     startDate: "",
@@ -33,10 +43,16 @@ export default function HostDebate() {
     teamEliminationFormat: undefined,
     preliminaryRoundCount: undefined,
     eliminationRoundCount: undefined,
-    proposition: "",
-    opposition: "",
-    category: "",
-  })
+  }
+}
+
+export default function HostDebate() {
+  const router = useRouter()
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const [form, setForm] = useState<HostFormState>(createInitialForm)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const leagueOptions = useMemo(() => [
     { value: TournamentLeague.SCHOOL, label: "School" },
@@ -54,32 +70,116 @@ export default function HostDebate() {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // For now, just log. Backend hookup can be added later via api.createTournament
-    // Requires an image File; we keep UI-focused per request
-    console.log("Host Debate submission", form)
-    alert("Debate draft captured in console. Backend submission can be wired next.")
+
+    const name = form.name?.trim() ?? ""
+    const description = form.description?.trim() ?? ""
+    const location = form.location?.trim() ?? ""
+
+    const requiredFields = [
+      name,
+      description,
+      form.startDate,
+      form.endDate,
+      form.registrationDeadline,
+      location,
+      form.league,
+      form.teamLimit,
+      form.preliminaryFormat,
+      form.teamEliminationFormat,
+      form.preliminaryRoundCount,
+      form.eliminationRoundCount,
+    ]
+
+    if (requiredFields.some((value) => value === undefined || value === "" || value === 0) || !imageFile) {
+      setSubmitError("Please fill in all tournament details and upload an image.")
+      return
+    }
+
+    const lengthErrors = []
+    if (name.length > TITLE_MAX_LENGTH) {
+      lengthErrors.push(`Title must be ${TITLE_MAX_LENGTH} characters or fewer.`)
+    }
+    if (description.length > DESCRIPTION_MAX_LENGTH) {
+      lengthErrors.push(`Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`)
+    }
+    if (location.length > LOCATION_MAX_LENGTH) {
+      lengthErrors.push(`Location must be ${LOCATION_MAX_LENGTH} characters or fewer.`)
+    }
+    if (lengthErrors.length > 0) {
+      setSubmitError(lengthErrors.join(" "))
+      return
+    }
+
+    const startDate = toBackendDateTime(form.startDate)
+    const endDate = toBackendDateTime(form.endDate)
+    const registrationDeadline = toBackendDateTime(form.registrationDeadline)
+
+    if (!startDate || !endDate || !registrationDeadline) {
+      setSubmitError("Please enter valid dates.")
+      return
+    }
+
+    if (new Date(registrationDeadline) > new Date(startDate)) {
+      setSubmitError("Registration deadline must be before the tournament starts.")
+      return
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      setSubmitError("End date must be after the start date.")
+      return
+    }
+
+    const payload: TournamentRequest = {
+      name,
+      description,
+      startDate,
+      endDate,
+      registrationDeadline,
+      location,
+      league: form.league,
+      teamLimit: form.teamLimit,
+      preliminaryFormat: form.preliminaryFormat,
+      teamEliminationFormat: form.teamEliminationFormat,
+      preliminaryRoundCount: form.preliminaryRoundCount,
+      eliminationRoundCount: form.eliminationRoundCount,
+    }
+
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      const response = await api.createTournament(payload, imageFile)
+      if (!response.ok) {
+        throw new Error(await readResponseError(response, {
+          fallback: "Failed to create tournament. Please try again.",
+          unauthorized: "Please sign in as an organizer before creating a tournament.",
+          badRequest: "Please check the tournament details and try again.",
+          payloadTooLarge: "The selected image is too large.",
+          serverError: "Server error. Please try again later.",
+        }))
+      }
+
+      const createdTournament = await response.json().catch(() => null) as TournamentResponse | null
+      if (createdTournament?.id) {
+        router.push(`/tournament/${createdTournament.id}`)
+        return
+      }
+
+      router.push("/my-tournaments")
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Failed to create tournament. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function handleCancel() {
-    setForm({
-      name: "",
-      description: "",
-      startDate: "",
-      endDate: "",
-      registrationDeadline: "",
-      location: "",
-      league: undefined,
-      teamLimit: undefined,
-      preliminaryFormat: undefined,
-      teamEliminationFormat: undefined,
-      preliminaryRoundCount: undefined,
-      eliminationRoundCount: undefined,
-      proposition: "",
-      opposition: "",
-      category: "",
-    })
+    setForm(createInitialForm())
+    setImageFile(null)
+    setSubmitError(null)
+    if (imageInputRef.current) imageInputRef.current.value = ""
   }
 
   return (
@@ -96,33 +196,15 @@ export default function HostDebate() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <label className="text-[#0D1321] text-[16px]">Debate Title:</label>
             <Input
               placeholder="Enter a clear and engaging title for your debate"
               value={form.name ?? ""}
               onChange={e => update("name", e.target.value)}
+              maxLength={TITLE_MAX_LENGTH}
+              required
             />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Category:</label>
-            <Select value={form.category} onValueChange={v => update("category", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select the main theme of your debate" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "Politics",
-                  "Education",
-                  "Technology",
-                  "Ethics",
-                  "Economics",
-                ].map(opt => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2 md:col-span-2">
@@ -132,37 +214,36 @@ export default function HostDebate() {
               value={form.description ?? ""}
               onChange={e => update("description", e.target.value)}
               className="min-h-[96px]"
+              maxLength={DESCRIPTION_MAX_LENGTH}
+              required
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Proposition Side(For):</label>
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-[#0D1321] text-[16px]">Tournament Image:</label>
             <Input
-              placeholder="Write the statement supporting the motion"
-              value={form.proposition ?? ""}
-              onChange={e => update("proposition", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Opposition Side(Against):</label>
-            <Input
-              placeholder="Write the statement opposing the motion"
-              value={form.opposition ?? ""}
-              onChange={e => update("opposition", e.target.value)}
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              required
+              onChange={e => {
+                setImageFile(e.target.files?.[0] ?? null)
+                setSubmitError(null)
+              }}
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-[#0D1321] text-[16px]">Start Date</label>
-            <Input type="date" value={form.startDate ?? ""} onChange={e => update("startDate", e.target.value)} />
+            <Input required type="date" value={form.startDate ?? ""} onChange={e => update("startDate", e.target.value)} />
           </div>
           <div className="space-y-2">
             <label className="text-[#0D1321] text-[16px]">End Date</label>
-            <Input type="date" value={form.endDate ?? ""} onChange={e => update("endDate", e.target.value)} />
+            <Input required type="date" value={form.endDate ?? ""} onChange={e => update("endDate", e.target.value)} />
           </div>
           <div className="space-y-2 md:col-span-2">
             <label className="text-[#0D1321] text-[16px]">Registration Deadline</label>
-            <div className="max-w-[320px]"><Input type="date" value={form.registrationDeadline ?? ""} onChange={e => update("registrationDeadline", e.target.value)} /></div>
+            <div className="max-w-[320px]"><Input required type="date" value={form.registrationDeadline ?? ""} onChange={e => update("registrationDeadline", e.target.value)} /></div>
           </div>
 
           <div className="space-y-2">
@@ -171,6 +252,8 @@ export default function HostDebate() {
               placeholder="Enter the city or venue name"
               value={form.location ?? ""}
               onChange={e => update("location", e.target.value)}
+              maxLength={LOCATION_MAX_LENGTH}
+              required
             />
           </div>
           <div className="space-y-2">
@@ -195,6 +278,7 @@ export default function HostDebate() {
               placeholder="Maximum number of teams allowed"
               value={form.teamLimit ?? ""}
               onChange={e => update("teamLimit", e.target.value === "" ? undefined : Number(e.target.value))}
+              required
             />
           </div>
           <div className="space-y-2">
@@ -232,6 +316,7 @@ export default function HostDebate() {
               placeholder="Enter total preliminary rounds"
               value={form.preliminaryRoundCount ?? ""}
               onChange={e => update("preliminaryRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
+              required
             />
           </div>
           <div className="space-y-2">
@@ -242,17 +327,21 @@ export default function HostDebate() {
               placeholder="Enter total elimination rounds"
               value={form.eliminationRoundCount ?? ""}
               onChange={e => update("eliminationRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
+              required
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-4 pt-4">
-          <Button type="button" variant="outline" className="px-[40px] py-[18px]" onClick={handleCancel}>Cancel</Button>
-          <Button type="submit" className="bg-[#0D1321] hover:bg-[#0D1321]/90 px-[40px] py-[18px]">Submit</Button>
+        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-end">
+          {submitError ? (
+            <p className="text-sm text-red-600 sm:mr-auto" role="alert">{submitError}</p>
+          ) : null}
+          <Button type="button" variant="outline" className="px-[40px] py-[18px]" onClick={handleCancel} disabled={isSubmitting}>Cancel</Button>
+          <Button type="submit" className="bg-[#0D1321] hover:bg-[#0D1321]/90 px-[40px] py-[18px]" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Submit"}
+          </Button>
         </div>
       </form>
     </section>
   )
 }
-
-

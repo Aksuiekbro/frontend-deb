@@ -14,3 +14,19 @@ node_modules
 .next/trace
 .next/types/
 docker/*.tar
+# Backend image archive (loaded via `docker load`, not source) — keep out of git
+*.tar
+
+# Local backend secrets (committed template: docker/.env.example)
+docker/.env
+.env
+.vercel
+
+# Two-agent AI pipeline working files — kept out of the committed paper trail.
+.ai/scratch/
+.ai/runs/
+.ai/transcripts/
+
+# Playwright test artifacts
+playwright-report/
+test-results/

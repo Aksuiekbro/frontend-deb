@@ -4,6 +4,7 @@ export interface SimpleTeamResponse {
     id: number;
     name: string;
     club: ClubResponse;
+    members?: SimpleTournamentParticipantResponse[];
 }
 
 export interface ClubResponse {
@@ -19,20 +20,19 @@ export interface TeamResponse extends SimpleTeamResponse {
     members: SimpleTournamentParticipantResponse[]
 }
 
-export interface ParticipantSelectorRequest {
-    id?: number;
-    username?: string;
-}
+export type ParticipantSelectorRequest = string | { id?: number; username?: string };
 
 export interface TeamRequest {
     name: string;
     club: string;
-    creatorId: number;
+    creatorId?: number;
     invitedParticipants?: ParticipantSelectorRequest[];
 }
 
 export interface TeamUpdateOrganizerRequest {
     name?: string;
+    club?: string | null;
+    members?: ParticipantSelectorRequest[];
 }
 
 export interface TeamUpdateParticipantRequest {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
+import { readResponseError } from "@/lib/http-error"
 import type { TournamentResponse } from "@/types/tournament/tournament"
 import type { useToast } from "@/hooks/use-toast"
 
@@ -17,10 +18,10 @@ export function useTournamentVisibility({ tournament, toast }: UseTournamentVisi
   const [toggleTournamentLoading, setToggleTournamentLoading] = useState(false)
 
   useEffect(() => {
-    if (typeof tournament?.enabled === "boolean") {
-      setIsTournamentEnabled(tournament.enabled)
+    if (typeof tournament?.disabled === "boolean") {
+      setIsTournamentEnabled(!tournament.disabled)
     }
-  }, [tournament?.enabled])
+  }, [tournament?.disabled])
 
   const handleTournamentToggle = async (nextValue: boolean) => {
     if (!tournament) return
@@ -35,11 +36,15 @@ export function useTournamentVisibility({ tournament, toast }: UseTournamentVisi
         : await api.disableTournament(tournament.id)
 
       if (!response.ok) {
-        throw new Error("Failed to update tournament visibility")
+        throw new Error(await readResponseError(response, {
+          fallback: "Failed to update tournament visibility",
+          unauthorized: "You do not have permission to perform this action.",
+          serverError: "Server error. Please try again later.",
+        }))
       }
 
       toast?.({
-        title: nextValue ? "Tournament enabled" : "Tournament disabled",
+        title: nextValue ? "Tournament visible" : "Tournament hidden",
         description: nextValue
           ? `${tournament.name} is now visible to participants.`
           : `${tournament.name} is now hidden from participants.`,
@@ -49,7 +54,7 @@ export function useTournamentVisibility({ tournament, toast }: UseTournamentVisi
       setIsTournamentEnabled(previousValue)
       toast?.({
         title: "Failed to update tournament",
-        description: "Please try again later.",
+        description: error instanceof Error ? error.message : "Please try again later.",
         variant: "destructive",
       })
     } finally {

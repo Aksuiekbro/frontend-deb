@@ -5,15 +5,24 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import Header from "../../components/Header"
 import { api } from "@/lib/api"
+import { useCurrentUser } from "@/hooks/use-api"
 import { SimpleTournamentResponse, TournamentGetParams, TournamentLeague } from "@/types/tournament/tournament"
+import { toBackendDateTime } from "@/lib/datetime"
+import type { PageResult } from "@/types/page"
+import { Role } from "@/types/user/user"
+import { buildTeamRegistrationPayload, getMaxInvitedParticipants } from "@/lib/team-registration"
+import { readResponseError } from "@/lib/http-error"
+import { resolveMediaUrl } from "@/lib/media"
 
 export default function JoinDebatesPage() {
+  const { user: currentUser, isLoading: currentUserLoading } = useCurrentUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null)
   const [tournaments, setTournaments] = useState<SimpleTournamentResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
+  const [tournamentError, setTournamentError] = useState<string | null>(null)
 
   // Registration form state
   const [teamName, setTeamName] = useState('')
@@ -34,6 +43,9 @@ export default function JoinDebatesPage() {
   const [searchName, setSearchName] = useState<string>("")
   const [nonFull, setNonFull] = useState<boolean>(false)
   const [sortBy, setSortBy] = useState<string>("startDate,desc") // Default to Most Recent
+  const selectedTournament = tournaments.find((tournament) => tournament.id === selectedTournamentId)
+  const maxInvitedParticipants = getMaxInvitedParticipants(selectedTournament?.preliminaryFormat)
+  const isGuestRegistration = !currentUser && !currentUserLoading
 
   // Fetch tournaments with all filter parameters
   const fetchTournaments = useCallback(async (reset = false) => {
@@ -44,28 +56,34 @@ export default function JoinDebatesPage() {
         searchName: searchName || undefined,
         searchLocation: searchLocation || undefined,
         tags: undefined, // Add state for tags if you implement them in filters
-        startDateFrom: startDateFrom || undefined,
-        startDateTo: startDateTo || undefined,
-        registrationDeadlineFrom: registrationDeadlineFrom || undefined,
-        registrationDeadlineTo: registrationDeadlineTo || undefined,
+        startDateFrom: toBackendDateTime(startDateFrom),
+        startDateTo: toBackendDateTime(startDateTo),
+        registrationDeadlineFrom: toBackendDateTime(registrationDeadlineFrom),
+        registrationDeadlineTo: toBackendDateTime(registrationDeadlineTo),
         league: selectedLeagues.length > 0 ? selectedLeagues[0] : undefined, // Assuming single league filter for simplicity
         nonFull: nonFull || undefined,
       }
       
       const response = await api.getTournaments(params, { page: currentPage, size: 10, sort: sortBy }) // Pass all params directly
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(await readResponseError(response, {
+          fallback: "Failed to load debates",
+          unauthorized: "Please sign in to view debates.",
+          serverError: "Server error. Please try again later.",
+        }))
       }
-      const data = await response.json()
+      const data: PageResult<SimpleTournamentResponse> = await response.json()
+      setTournamentError(null)
 
       if (reset) {
         setTournaments(data.content)
       } else {
         setTournaments((prevTournaments) => [...prevTournaments, ...data.content])
       }
-      setHasMore(!data.last)
+      setHasMore(currentPage + 1 < data.totalPages)
       setPage(currentPage + 1)
     } catch (error) {
+      setTournamentError(error instanceof Error ? error.message : "Failed to load debates")
       console.error("Failed to fetch tournaments:", error)
     } finally {
       setLoading(false)
@@ -104,30 +122,41 @@ export default function JoinDebatesPage() {
       return
     }
 
+    if (!currentUser?.id) {
+      setRegistrationError('Please sign in before registering a team')
+      return
+    }
+
+    if (currentUser.role !== Role.PARTICIPANT) {
+      setRegistrationError('Only participant accounts can register a team')
+      return
+    }
+
+    if (!currentUser.profileId) {
+      setRegistrationError('Your participant profile is missing. Please sign in again')
+      return
+    }
+
     setIsRegistering(true)
     setRegistrationError(null)
 
     try {
-      const invitedParticipants = []
-
-      // Add speakers if usernames provided
-      if (speakerOneUsername.trim()) {
-        invitedParticipants.push({ username: speakerOneUsername.trim() })
-      }
-      if (speakerTwoUsername.trim()) {
-        invitedParticipants.push({ username: speakerTwoUsername.trim() })
-      }
-
-      const response = await api.registerTeam(selectedTournamentId, {
-        name: teamName.trim(),
-        club: clubName.trim(),
-        creatorId: 1, // TODO: Get current user ID from auth context
-        invitedParticipants: invitedParticipants.length > 0 ? invitedParticipants : undefined
+      const payload = buildTeamRegistrationPayload(currentUser, {
+        teamName,
+        clubName,
+        speakerOneUsername,
+        speakerTwoUsername,
+        maxInvitedParticipants,
       })
 
+      const response = await api.registerTeam(selectedTournamentId, payload)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        setRegistrationError(errorData.message || 'Registration failed')
+        setRegistrationError(await readResponseError(response, {
+          fallback: "Registration failed",
+          unauthorized: "Please sign in before registering a team.",
+          serverError: "Server error. Please try again later.",
+        }))
         return
       }
 
@@ -319,7 +348,12 @@ export default function JoinDebatesPage() {
 
             {/* Debate Cards */}
             <div className="space-y-6">
-              {tournaments.length === 0 && !loading && (
+              {tournamentError && (
+                <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[16px] text-red-600">
+                  {tournamentError}
+                </p>
+              )}
+              {tournaments.length === 0 && !loading && !tournamentError && (
                 <p className="text-[#0D1321] text-center text-[20px]">No debates found matching your criteria.</p>
               )}
               {tournaments.map((tournament) => (
@@ -328,7 +362,7 @@ export default function JoinDebatesPage() {
                   <div className="flex items-start mb-6">
                     <div className="w-[150px] h-[150px] bg-[#FFFFFF] rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
                       <img 
-                        src={tournament.imageUrl?.url || "/the-talking-logo.png"} // Use API image if available
+                        src={resolveMediaUrl(tournament.imageUrl?.url) || "/the-talking-logo.png"} // Use API image if available
                         alt={tournament.name}
                         className="w-full h-full object-cover absolute inset-0"
                       />
@@ -375,6 +409,9 @@ export default function JoinDebatesPage() {
                     <button
                       onClick={() => {
                         setSelectedTournamentId(tournament.id)
+                        setRegistrationError(isGuestRegistration ? "Please sign in before registering a team." : null)
+                        setRegistrationSuccess(false)
+                        setSpeakerTwoUsername("")
                         setIsModalOpen(true)
                       }}
                       className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
@@ -493,7 +530,7 @@ export default function JoinDebatesPage() {
                 </div>
 
                 <div className="flex items-center">
-                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">1st Speaker:</label>
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Teammate:</label>
                   <input
                     type="text"
                     value={speakerOneUsername}
@@ -503,21 +540,37 @@ export default function JoinDebatesPage() {
                   />
                 </div>
 
-                <div className="flex items-center">
-                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Speaker:</label>
-                  <input
-                    type="text"
-                    value={speakerTwoUsername}
-                    onChange={(e) => setSpeakerTwoUsername(e.target.value)}
-                    className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                    placeholder="Username (optional)"
-                  />
-                </div>
+                {maxInvitedParticipants > 1 && (
+                  <div className="flex items-center">
+                    <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Teammate:</label>
+                    <input
+                      type="text"
+                      value={speakerTwoUsername}
+                      onChange={(e) => setSpeakerTwoUsername(e.target.value)}
+                      className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
+                      placeholder="Username (optional)"
+                    />
+                  </div>
+                )}
 
                 <div className="text-[#9a8c98] text-[14px] px-2">
-                  <p className="mb-2">• Speaker usernames are optional - you can invite team members later</p>
+                  <p className="mb-2">• Teammate usernames are optional - you can invite team members later</p>
                   <p>• Only team name and club name are required for registration</p>
                 </div>
+
+                {isGuestRegistration && (
+                  <div role="alert" className="rounded-md border border-[#CFD6EA] bg-white px-4 py-3 text-center">
+                    <p className="text-[#0D1321] text-[14px]">Please sign in before registering a team.</p>
+                    <div className="mt-3 flex justify-center gap-3">
+                      <Link href="/auth?mode=login" className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm text-white hover:bg-[#2D3748]">
+                        Log In
+                      </Link>
+                      <Link href="/auth?mode=register" className="rounded-md border border-[#3E5C76] px-4 py-2 text-sm text-[#0D1321] hover:bg-white">
+                        Register
+                      </Link>
+                    </div>
+                  </div>
+                )}
 
                 {registrationError && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -528,7 +581,7 @@ export default function JoinDebatesPage() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    disabled={isRegistering}
+                    disabled={isRegistering || currentUserLoading || isGuestRegistration}
                     className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isRegistering ? 'Registering...' : 'Register Team'}

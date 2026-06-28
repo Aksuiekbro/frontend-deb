@@ -22,7 +22,11 @@ export interface ParticipantInvitationResponse {
 }
 
 export interface OrganizerInvitationRequest {
-    inviteeId: number;
+    inviteeUsername: string;
     tournamentId: number;
 }
 
+export interface ParticipantInvitationRequest {
+    inviteeUsername: string;
+    teamId: number;
+}
