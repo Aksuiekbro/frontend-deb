@@ -42,9 +42,6 @@ const baseConfig = {
 
   // Loading timeout
   loadingTimeout: 10000,
-
-  // Cache provider for better performance
-  provider: () => new Map(),
 }
 
 interface SWRProviderProps {

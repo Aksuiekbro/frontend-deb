@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useSWRConfig } from 'swr'
 import { api } from '@/lib/api'
 import { Role } from '@/types/user/user'
 import { readResponseError } from '@/lib/http-error'
@@ -21,6 +22,7 @@ function AuthPageInner() {
   const [isSignUp, setIsSignUp] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { mutate } = useSWRConfig()
   // Sign Up state and validation
   const [signUpUsername, setSignUpUsername] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
@@ -87,6 +89,7 @@ function AuthPageInner() {
         }))
       } else {
         setSignUpSuccess('Account created successfully! Redirecting...')
+        await mutate(['current-user'])
         setTimeout(() => {
           if (role === Role.ORGANIZER) router.push('/organizer')
           else router.push('/dashboard')
@@ -120,6 +123,7 @@ function AuthPageInner() {
         }))
       }
       else {
+        await mutate(['current-user'])
         router.push('/dashboard')
         return
       }

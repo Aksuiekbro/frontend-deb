@@ -1,40 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import useSWR from "swr";
-import { UserResponse } from "@/types/user/user"; // Adjust path to your types file
-import { api } from "@/lib/api";
+import { useCurrentUser } from "@/hooks/use-api";
 import { resolveMediaUrl } from "@/lib/media";
-
-// --- The Fetcher that wraps your getMe function ---
-const userFetcher = async (): Promise<UserResponse | null> => {
-  try {
-    const response = await api.getMe(); // This is your function
-
-    console.log(response);
-
-    if (response.status === 401 || response.status === 403) {
-      return null; // Not logged in
-    }
-
-    if (!response.ok) {
-      // SWR will catch this and put it in the `error` state
-      throw new Error('Failed to fetch user');
-    }
-
-    return response.json();
-  } catch (e) {
-    // This could be a network error, etc.
-    return null; // Treat network errors as "not logged in" for the UI
-  }
-};
 
 
 // --- The Header Component ---
 export default function Header() {
-  // The key can be anything unique. "/users/me" is a good convention.
-  // SWR will call `userFetcher` with this key, but we don't need to use it in our wrapper.
-  const { data: user, error, isLoading } = useSWR<UserResponse | null>("/users/me", userFetcher);
+  const { user, isLoading } = useCurrentUser();
 
   const isLoggedIn = !!user;
 

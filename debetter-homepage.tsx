@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
+import Header from "@/components/Header"
 import { useUpcomingTournaments } from "@/hooks/use-api"
 import { LoadingState, CardSkeleton } from "@/components/ui/loading"
 import { ErrorState } from "@/components/ui/error"
@@ -69,49 +70,7 @@ export default function Component() {
   }, [emblaApi])
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
-      {/* Header */}
-      <header className="flex items-center justify-between px-12 py-4">
-        <div className="flex items-center space-x-16">
-          <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami" aria-label="DeBetter home">DB</Link>
-          <nav className="flex space-x-16">
-            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
-              Join Debates
-            </Link>
-            <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
-              Rating
-            </Link>
-            <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
-              News
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center space-x-6">
-          <div className="relative">
-            <select
-              className="border border-[#3E5C76] rounded-none px-4 py-2 text-[#0D1321] bg-white text-[14px] font-medium font-hikasami appearance-none bg-no-repeat bg-right bg-[length:20px] pr-4 hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20 transition-all duration-200 cursor-pointer min-w-[100px] shadow-sm"
-              style={{
-                backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%233E5C76%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")',
-              }}
-            >
-              <option>🇺🇸 English</option>
-              <option>🇷🇺 Русский</option>
-              <option>🇰🇿 Қазақша</option>
-            </select>
-          </div>
-          <button 
-            onClick={() => router.push('/auth?mode=register')}
-            className="bg-[#3E5C76] text-white px-8 py-4 rounded-lg hover:bg-[#22223b] text-[14px] font-normal font-hikasami"
-          >
-            Registration
-          </button>
-          <button 
-            onClick={() => router.push('/auth?mode=login')}
-            className="border border-[#3E5C76] text-[#3E5C76] px-8 py-4 rounded-lg hover:bg-[#3E5C76] hover:text-white text-[14px] font-normal font-hikasami"
-          >
-            Log In
-          </button>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="text-center py-8">

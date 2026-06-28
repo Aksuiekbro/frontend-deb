@@ -1,4 +1,4 @@
-node_modules
+node_modules/
 
 # Ignore gzip files
 *.gz
@@ -20,12 +20,30 @@ docker/*.tar
 # Local backend secrets (committed template: docker/.env.example)
 docker/.env
 .env
+.env.*
+!.env.example
 .vercel
+
+# Personal / machine-local
+.claude/settings.local.json
+.DS_Store
 
 # Two-agent AI pipeline working files — kept out of the committed paper trail.
 .ai/scratch/
 .ai/runs/
 .ai/transcripts/
+.ai/prompts/
+
+# Build and coverage
+dist/
+build/
+coverage/
+
+# Python caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
 
 # Playwright test artifacts
 playwright-report/
