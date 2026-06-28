@@ -474,7 +474,7 @@ export default function TournamentDetailPage() {
 
 
   const isOrganizer = Boolean(
-    currentUser?.role === Role.ORGANIZER &&
+    currentUser &&
     organizers?.some((organizer) => organizer.id === currentUser.id)
   )
   const canManageTeams = isOrganizer
