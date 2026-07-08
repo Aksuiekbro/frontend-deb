@@ -2,3 +2,7 @@ debetter.tar
 *.tar
 docker/
 .git
+.vercel/
+.env.local
+.next/
+node_modules/

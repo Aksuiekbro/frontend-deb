@@ -60,7 +60,6 @@ describe("PairingsSection", () => {
     const onRandomizePairings = jest.fn()
     const onSubmitPairings = jest.fn()
     const onClearMatches = jest.fn()
-    const onChangeStageFormat = jest.fn()
 
     render(
       <PairingsSection
@@ -71,6 +70,10 @@ describe("PairingsSection", () => {
               id: 301,
               team1: { id: 1, name: "Team 1" },
               team2: { id: 2, name: "Team 2" },
+              team1Score: 75,
+              team2Score: 72,
+              team1Won: true,
+              team2Won: false,
               location: "Room A",
               judge: { id: 7, fullName: "Judge 1" },
               completed: true,
@@ -85,7 +88,6 @@ describe("PairingsSection", () => {
         onRandomizePairings={onRandomizePairings}
         onSubmitPairings={onSubmitPairings}
         onClearMatches={onClearMatches}
-        onChangeStageFormat={onChangeStageFormat}
       />,
     )
 
@@ -97,10 +99,7 @@ describe("PairingsSection", () => {
     expect(onRandomizePairings).toHaveBeenCalledTimes(1)
     expect(onSubmitPairings).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole("button", { name: "Change format" }))
-    fireEvent.click(screen.getByRole("button", { name: "LD" }))
-    fireEvent.click(screen.getByRole("button", { name: "Change" }))
-    expect(onChangeStageFormat).toHaveBeenCalledWith("preliminary", "LD")
+    expect(screen.queryByRole("button", { name: "Change format" })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Clear matches" }))
     fireEvent.click(screen.getByRole("button", { name: "Delete" }))
@@ -358,6 +357,10 @@ describe("PairingsSection", () => {
               id: 301,
               team1: { id: 1, name: "Team 1" },
               team2: { id: 2, name: "Team 2" },
+              team1Score: 75,
+              team2Score: 72,
+              team1Won: true,
+              team2Won: false,
               location: "Room A",
               judge: { id: 7, fullName: "Judge 1" },
               completed: true,
@@ -377,6 +380,116 @@ describe("PairingsSection", () => {
     expect(onProceedToNextRound).toHaveBeenCalledTimes(1)
   })
 
+  it("does not advance a completed team match with no winner", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 310,
+              team1: { id: 31, name: "Team 31" },
+              team2: { id: 6, name: "Team 6" },
+              team1Score: 43,
+              team2Score: 48,
+              team1Won: false,
+              team2Won: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={3}
+        currentRoundNumber={3}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByText("Enter results for all matches before proceeding. Completed 0 of 1 matches.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeDisabled()
+  })
+
+  it("blocks advancing BPF matches unless exactly two of four teams win", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        stageFormats={{ preliminary: "BPF" }}
+        matches={{
+          content: [
+            {
+              id: 410,
+              team1: { id: 1, name: "Team 1" },
+              team2: { id: 2, name: "Team 2" },
+              team3: { id: 3, name: "Team 3" },
+              team4: { id: 4, name: "Team 4" },
+              team1Score: 75,
+              team2Score: 74,
+              team3Score: 73,
+              team4Score: 72,
+              team1Won: true,
+              team2Won: false,
+              team3Won: false,
+              team4Won: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByText("Enter results for all matches before proceeding. Completed 0 of 1 matches.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeDisabled()
+  })
+
+  it("allows advancing BPF matches with two winners and two losses", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        stageFormats={{ preliminary: "BPF" }}
+        matches={{
+          content: [
+            {
+              id: 411,
+              team1: { id: 1, name: "Team 1" },
+              team2: { id: 2, name: "Team 2" },
+              team3: { id: 3, name: "Team 3" },
+              team4: { id: 4, name: "Team 4" },
+              team1Score: 75,
+              team2Score: 74,
+              team3Score: 73,
+              team4Score: 72,
+              team1Won: true,
+              team2Won: true,
+              team3Won: false,
+              team4Won: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByText("All matches in this round are completed. You can proceed to the next round.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+  })
+
   it("keeps the selected stage and round synchronized", () => {
     const onSelectStage = jest.fn()
     const onSelectRound = jest.fn()
@@ -390,7 +503,7 @@ describe("PairingsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Team elimination(BPF)" }))
+    fireEvent.click(screen.getByRole("button", { name: "Team elimination (BPF)" }))
     expect(onSelectStage).toHaveBeenCalledWith("team")
     expect(onSelectRound).toHaveBeenCalledWith("1/16")
 

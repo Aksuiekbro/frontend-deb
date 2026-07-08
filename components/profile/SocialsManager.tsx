@@ -20,6 +20,10 @@ const allNetworks: SocialPlatform[] = [
   SocialPlatform.YOUTUBE,
 ];
 
+const PLUS_ROTATION_MS = 1000;
+const CHIP_DURATION_MS = 300;
+const CHIP_DELAY_STEP_MS = Math.floor((PLUS_ROTATION_MS - CHIP_DURATION_MS) / Math.max(1, allNetworks.length - 1));
+
 function NetworkIcon({ type, className }: { type: SocialPlatform; className?: string }) {
   switch (type) {
     case SocialPlatform.TELEGRAM:
@@ -36,6 +40,17 @@ function NetworkIcon({ type, className }: { type: SocialPlatform; className?: st
       return <Youtube className={className} />;
     default:
       return <Send className={className} />;
+  }
+}
+
+function networkLabel(type: SocialPlatform): string {
+  switch (type) {
+    case SocialPlatform.LINKEDIN:
+      return "LinkedIn";
+    case SocialPlatform.YOUTUBE:
+      return "YouTube";
+    default:
+      return type.charAt(0) + type.slice(1).toLowerCase();
   }
 }
 
@@ -113,40 +128,54 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
       ))}
 
       {editable && (
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="inline-flex max-w-full items-center gap-3">
         <button
           type="button"
           aria-label="Add social"
           aria-expanded={pickerOpen}
           onClick={() => setPickerOpen((open) => !open)}
-          className="h-9 w-9 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-transform aria-expanded:rotate-45"
+          className="h-9 w-9 shrink-0 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-transform duration-1000 aria-expanded:rotate-45"
         >
           <Plus className="h-5 w-5" />
         </button>
-        {pickerOpen && (
-        <div className="flex flex-wrap items-center gap-3">
-          {allNetworks.map((n) => {
+        <div
+          aria-hidden={!pickerOpen}
+          className={`flex items-center gap-3 overflow-hidden transition-[max-width] duration-1000 ${
+            pickerOpen ? "max-w-[1000px]" : "max-w-0"
+          }`}
+        >
+          {allNetworks.map((n, index) => {
             const isSaved = savedTypes.has(n);
-            const label = n.charAt(0) + n.slice(1).toLowerCase();
+            const label = networkLabel(n);
+            const delayMs = index * CHIP_DELAY_STEP_MS;
             return (
               <button
                 key={n}
                 type="button"
+                aria-label={label}
                 onClick={() => handleAdd(n)}
-                disabled={isSaved}
+                disabled={!pickerOpen || isSaved}
+                tabIndex={pickerOpen ? 0 : -1}
                 className={`flex items-center gap-3 rounded-full px-3 py-2 border whitespace-nowrap transition-all duration-300 ${
                   isSaved ? "bg-[#0D1321] text-white border-transparent opacity-70" : "bg-white text-[#0D1321] border-black/10 hover:bg-black/5"
-                }`}
+                } ${pickerOpen ? "translate-x-0 opacity-100" : "-translate-x-16 opacity-0"}`}
+                style={{ transitionDelay: `${delayMs}ms` }}
               >
                 <span className={`h-8 w-8 rounded-full inline-flex items-center justify-center ${isSaved ? "bg-white/20 text-white" : "bg-[#0D1321] text-white"}`}>
                   <NetworkIcon type={n} className="h-4 w-4" />
                 </span>
-                <span className={isSaved ? "text-white" : "text-[#0D1321]"}>{label}</span>
+                <span
+                  className={`chip-text inline-block overflow-hidden align-middle transition-all duration-300 ${
+                    pickerOpen ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0"
+                  } ${isSaved ? "text-white" : "text-[#0D1321]"}`}
+                  style={{ transitionDelay: `${delayMs + 100}ms` }}
+                >
+                  <span className="pl-2">{label}</span>
+                </span>
               </button>
             );
           })}
         </div>
-        )}
       </div>
       )}
       {editable && onSave && (

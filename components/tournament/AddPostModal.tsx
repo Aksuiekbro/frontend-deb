@@ -1,6 +1,7 @@
 "use client"
 
 import type { ImagePreview } from "@/hooks/tournament/useImageUpload"
+import { resolveMediaUrl } from "@/lib/media"
 import { useId } from "react"
 
 const CHECK_ICON_URL = "http://localhost:3845/assets/34c9396e092463c20579b8768a873faee7143b0b.svg"
@@ -12,13 +13,16 @@ type ModalContext = "announcements" | "schedule" | "map" | "news" | ""
 interface AddPostModalProps {
   isOpen: boolean
   modalContext: ModalContext
+  mode?: "add" | "edit"
   postTitle: string
   postDescription: string
   selectedNewsCategory: NewsCategory
+  currentImageUrl?: string | null
   imagePreviews: ImagePreview[]
   uploadErrors: string[]
   isSubmitting?: boolean
   errorMessage?: string | null
+  submitLabel?: string
   dzAnimate: boolean
   formatBytes: (bytes: number) => string
   onClose: () => void
@@ -43,13 +47,16 @@ const MODAL_TITLES: Record<ModalContext, string> = {
 export function AddPostModal({
   isOpen,
   modalContext,
+  mode = "add",
   postTitle,
   postDescription,
   selectedNewsCategory,
+  currentImageUrl,
   imagePreviews,
   uploadErrors,
   isSubmitting = false,
   errorMessage,
+  submitLabel,
   dzAnimate,
   formatBytes,
   onClose,
@@ -63,6 +70,11 @@ export function AddPostModal({
   onRemoveImage,
 }: AddPostModalProps) {
   const inputId = useId()
+  const isEditMode = mode === "edit"
+  const modalTitle = isEditMode && modalContext === "announcements"
+    ? "Edit Announcement"
+    : MODAL_TITLES[modalContext]
+  const resolvedCurrentImageUrl = resolveMediaUrl(currentImageUrl)
 
   if (!isOpen) return null
 
@@ -70,7 +82,7 @@ export function AddPostModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[#0D1321] text-[32px] font-bold">{MODAL_TITLES[modalContext]}</h2>
+          <h2 className="text-[#0D1321] text-[32px] font-bold">{modalTitle}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ×
           </button>
@@ -84,7 +96,9 @@ export function AddPostModal({
           className="space-y-6"
         >
           <div>
-            <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">Attach Images</label>
+            <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">
+              {isEditMode ? "Replace Image" : "Attach Images"}
+            </label>
             <div className="md:flex md:items-start md:gap-6">
               <div
                 onDragOver={onDragOver}
@@ -105,12 +119,27 @@ export function AddPostModal({
                 <input
                   id={inputId}
                   type="file"
-                  multiple
+                  multiple={!isEditMode}
                   accept="image/*"
                   onChange={(event) => onImageUpload(event.target.files)}
                   className="hidden"
                 />
               </div>
+
+              {isEditMode && resolvedCurrentImageUrl && imagePreviews.length === 0 ? (
+                <div className="mt-4 md:mt-0 md:w-[260px]">
+                  <div className="overflow-hidden rounded-lg border border-gray-300 bg-white">
+                    <img src={resolvedCurrentImageUrl} alt="Current announcement" className="h-40 w-full object-cover" />
+                    <div className="px-3 py-2 text-sm font-medium text-[#4a4e69]">Current image</div>
+                  </div>
+                </div>
+              ) : null}
+
+              {isEditMode && !resolvedCurrentImageUrl && imagePreviews.length === 0 ? (
+                <div className="mt-4 md:mt-0 md:w-[260px] rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-[#8A91A8]">
+                  No photo saved
+                </div>
+              ) : null}
 
               {imagePreviews.length > 0 && (
                 <div className="mt-4 md:mt-0 md:w-[260px] space-y-4">
@@ -223,7 +252,7 @@ export function AddPostModal({
               disabled={isSubmitting}
               className="w-full px-8 py-4 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[18px] font-medium transition-colors disabled:opacity-60"
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? "Submitting..." : submitLabel ?? "Submit"}
             </button>
           </div>
         </form>

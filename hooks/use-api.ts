@@ -31,7 +31,7 @@ import { OrganizerProfileResponse, ParticipantProfileResponse, CityResponse, Ins
 import { toBackendDateTime } from '@/lib/datetime'
 import { readResponseError } from '@/lib/http-error'
 
-const IS_PREVIEW = process.env.NEXT_PUBLIC_PREVIEW_MODE === 'true'
+const IS_PREVIEW = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_PREVIEW_MODE === 'true'
 const previewRoleEnv = (process.env.NEXT_PUBLIC_PREVIEW_ROLE ?? '').toUpperCase()
 const PREVIEW_ROLE: Role = previewRoleEnv === Role.PARTICIPANT ? Role.PARTICIPANT : Role.ORGANIZER
 
@@ -841,6 +841,58 @@ export function useMatches(
 
   return {
     matches: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export interface RoundMatchesResult {
+  round: SimpleRoundResponse
+  matches: PageResult<MatchResponse>
+}
+
+export function useRoundMatches(
+  tournamentId?: number,
+  roundGroupId?: number,
+  rounds?: SimpleRoundResponse[],
+  pageable?: Pageable
+) {
+  const roundIds = rounds?.map((round) => round.id) ?? []
+  const enabled =
+    typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
+    typeof roundGroupId === 'number' && !Number.isNaN(roundGroupId) &&
+    roundIds.length > 0
+
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW || !enabled ? null : ['round-matches', tournamentId, roundGroupId, roundIds, pageable],
+    async () => {
+      const pages = await Promise.all(
+        rounds!.map(async (round) => ({
+          round,
+          matches: await fetcher<PageResult<MatchResponse>>(() =>
+            api.getMatches(tournamentId!, roundGroupId!, round.id, pageable)
+          ),
+        }))
+      )
+      return pages
+    },
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      roundMatches: PREVIEW_ROUNDS.map((round) => ({ round, matches: PREVIEW_MATCHES_PAGE })),
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_ROUNDS.map((round) => ({ round, matches: PREVIEW_MATCHES_PAGE })),
+    }
+  }
+
+  return {
+    roundMatches: data,
     isLoading,
     error,
     mutate,

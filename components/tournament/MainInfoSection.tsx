@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { LoadingState, Skeleton } from "@/components/ui/loading"
 import { resolveMediaUrl } from "@/lib/media"
@@ -22,6 +22,7 @@ interface MainInfoSectionProps {
   schedulesLoading: boolean
   schedulesError?: Error
   onOpenModal?: (context: "announcements" | "schedule" | "map") => void
+  onEditAnnouncement?: (announcement: AnnouncementResponse) => void
   onAddAnnouncementComment?: (announcementId: number, content: string) => Promise<void> | void
 }
 
@@ -41,6 +42,7 @@ export function MainInfoSection({
   schedulesLoading,
   schedulesError,
   onOpenModal,
+  onEditAnnouncement,
   onAddAnnouncementComment,
 }: MainInfoSectionProps) {
   const isSpecialOption = (option: string): option is SpecialOption =>
@@ -54,17 +56,20 @@ export function MainInfoSection({
     [announcements]
   )
   const [activeAnnouncementIndex, setActiveAnnouncementIndex] = useState(0)
-
-  useEffect(() => {
-    setActiveAnnouncementIndex(0)
-  }, [sortedAnnouncements.length])
-
   const currentAnnouncement = sortedAnnouncements[activeAnnouncementIndex]
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({})
   const [commentSubmitting, setCommentSubmitting] = useState(false)
   const [commentError, setCommentError] = useState<string | null>(null)
   const [removedAnnouncementImages, setRemovedAnnouncementImages] = useState<Set<number>>(new Set())
   const [removedScheduleImages, setRemovedScheduleImages] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    setActiveAnnouncementIndex(0)
+  }, [sortedAnnouncements.length])
+
+  useEffect(() => {
+    setRemovedAnnouncementImages(new Set())
+  }, [announcements])
 
   const handleRemoveAnnouncementImage = (announcementId: number) => {
     setRemovedAnnouncementImages((prev) => {
@@ -143,7 +148,7 @@ export function MainInfoSection({
                 </div>
 
                 <div className="mx-auto mt-6 max-w-4xl">
-                  <div className="flex items-center justify-between text-sm text-[#8A91A8]">
+                  <div className="flex items-center justify-between gap-4 text-sm text-[#8A91A8]">
                     <span>
                       {new Date(currentAnnouncement.timestamp).toLocaleDateString(undefined, {
                         day: "numeric",
@@ -151,9 +156,23 @@ export function MainInfoSection({
                         year: "numeric",
                       })}
                     </span>
-                    <span>
-                      {activeAnnouncementIndex + 1}/{sortedAnnouncements.length}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span>
+                        {activeAnnouncementIndex + 1}/{sortedAnnouncements.length}
+                      </span>
+                      {onEditAnnouncement ? (
+                        <button
+                          type="button"
+                          onClick={() => onEditAnnouncement(currentAnnouncement)}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[#D6DEEF] px-3 py-1.5 font-medium text-[#0B1327] transition hover:border-[#3E5C76] hover:text-[#3E5C76]"
+                          aria-label="Edit announcement"
+                          title="Edit announcement"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          <span>Edit</span>
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                   <h3 className="mt-4 text-2xl font-semibold text-[#0B1327]">{currentAnnouncement.title}</h3>
                   <p className="mt-3 text-lg leading-relaxed text-[#3A4156]">{currentAnnouncement.content}</p>

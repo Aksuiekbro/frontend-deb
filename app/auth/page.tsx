@@ -4,11 +4,38 @@ import { useState, FormEvent, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSWRConfig } from 'swr'
 import { api } from '@/lib/api'
-import { Role } from '@/types/user/user'
+import { Role, type UserResponse } from '@/types/user/user'
 import { readResponseError } from '@/lib/http-error'
 
 // Backend rule (mirrors UserRegistrationDto validation): alphanumeric, 3–20 chars.
 const USERNAME_PATTERN = /^[a-zA-Z0-9]{3,20}$/
+const CURRENT_USER_KEY = ['current-user'] as const
+
+function isUserResponse(value: unknown): value is UserResponse {
+  if (!value || typeof value !== 'object') return false
+
+  const user = value as Partial<UserResponse>
+  return typeof user.id === 'number' && typeof user.username === 'string'
+}
+
+async function readUserResponse(response: Response): Promise<UserResponse | null> {
+  try {
+    const data = await response.json()
+    return isUserResponse(data) ? data : null
+  } catch {
+    return null
+  }
+}
+
+async function readAuthenticatedUser(response: Response): Promise<UserResponse | null> {
+  const authUser = await readUserResponse(response)
+  if (authUser) return authUser
+
+  const currentUserResponse = await api.getMe()
+  if (!currentUserResponse.ok) return null
+
+  return readUserResponse(currentUserResponse)
+}
 
 export default function AuthPage() {
   return (
@@ -88,15 +115,20 @@ function AuthPageInner() {
           serverError: 'Server error — please try again later.',
         }))
       } else {
+        const user = await readAuthenticatedUser(res)
         setSignUpSuccess('Account created successfully! Redirecting...')
-        await mutate(['current-user'])
+        if (user) {
+          await mutate(CURRENT_USER_KEY, user, { revalidate: false })
+        } else {
+          await mutate(CURRENT_USER_KEY)
+        }
         setTimeout(() => {
           if (role === Role.ORGANIZER) router.push('/organizer')
           else router.push('/dashboard')
         }, 2000)
         return                      // prevent setState in finally
       }
-    } catch (error) {
+    } catch {
       setSignUpErrorMsg('Network error — please check your connection and try again.')
     } finally { setSignUpLoading(false) }
   }
@@ -123,11 +155,16 @@ function AuthPageInner() {
         }))
       }
       else {
-        await mutate(['current-user'])
+        const user = await readAuthenticatedUser(res)
+        if (user) {
+          await mutate(CURRENT_USER_KEY, user, { revalidate: false })
+        } else {
+          await mutate(CURRENT_USER_KEY)
+        }
         router.push('/dashboard')
         return
       }
-    } catch (error) {
+    } catch {
       setSignInError('Network error — please check your connection and try again.')
     } finally { setSignInLoading(false) }
   }

@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import { ResultsSection } from "./ResultsSection"
@@ -30,6 +30,8 @@ const makeParticipant = (id: number, firstName: string) => ({
 
 const team1Members = [makeParticipant(11, "Arman"), makeParticipant(12, "Aisha")]
 const team2Members = [makeParticipant(21, "Boris"), makeParticipant(22, "Dana")]
+const team3Members = [makeParticipant(31, "Erkin"), makeParticipant(32, "Fariza")]
+const team4Members = [makeParticipant(41, "Gani"), makeParticipant(42, "Hana")]
 
 const baseProps = {
   selectedResultsOption: "APF",
@@ -214,6 +216,468 @@ describe("ResultsSection", () => {
         },
       ] satisfies MatchResultRequest[])
     })
+  })
+
+  it("keeps a two-team ballot to exactly one winner when toggling losses", async () => {
+    const onSubmitResults = jest.fn()
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 310,
+              team1: { id: 31, name: "Team 31", club: { id: 31, name: "Club 31" }, members: team1Members },
+              team2: { id: 6, name: "Team 6", club: { id: 6, name: "Club 6" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={3}
+        currentRoundNumber={3}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 31 as not winner in match 310" }))
+    expect(screen.getByRole("button", { name: "Mark Team 31 as not winner in match 310" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mark Team 6 as winner in match 310" })).toHaveAttribute("aria-pressed", "true")
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 6 as not winner in match 310" }))
+    expect(screen.getByRole("button", { name: "Mark Team 31 as winner in match 310" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mark Team 6 as not winner in match 310" })).toHaveAttribute("aria-pressed", "true")
+
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 310"), { target: { value: "24" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 310"), { target: { value: "19" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 310"), { target: { value: "24" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 310"), { target: { value: "24" } })
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([
+        {
+          matchId: 310,
+          teamResults: [
+            {
+              teamId: 31,
+              won: true,
+              participantScores: [
+                { participantId: 11, score: 24 },
+                { participantId: 12, score: 19 },
+              ],
+            },
+            {
+              teamId: 6,
+              won: false,
+              participantScores: [
+                { participantId: 21, score: 24 },
+                { participantId: 22, score: 24 },
+              ],
+            },
+          ],
+        },
+      ] satisfies MatchResultRequest[])
+    })
+  })
+
+  it("submits BPF ballots with exactly two winners and two losses", async () => {
+    const onSubmitResults = jest.fn()
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        selectedResultsOption="BPF"
+        matches={{
+          content: [
+            {
+              id: 411,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              team3: { id: 3, name: "Team 3", club: { id: 3, name: "Club 3" }, members: team3Members },
+              team4: { id: 4, name: "Team 4", club: { id: 4, name: "Club 4" }, members: team4Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 411" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as winner in match 411" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 3 as not winner in match 411" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 4 as not winner in match 411" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 411"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 411"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 411"), { target: { value: "74" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 411"), { target: { value: "73" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Erkin in match 411"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Fariza in match 411"), { target: { value: "71" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Gani in match 411"), { target: { value: "70" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Hana in match 411"), { target: { value: "69" } })
+
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeEnabled()
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([
+        {
+          matchId: 411,
+          teamResults: [
+            {
+              teamId: 1,
+              won: true,
+              participantScores: [
+                { participantId: 11, score: 75 },
+                { participantId: 12, score: 76 },
+              ],
+            },
+            {
+              teamId: 2,
+              won: true,
+              participantScores: [
+                { participantId: 21, score: 74 },
+                { participantId: 22, score: 73 },
+              ],
+            },
+            {
+              teamId: 3,
+              won: false,
+              participantScores: [
+                { participantId: 31, score: 72 },
+                { participantId: 32, score: 71 },
+              ],
+            },
+            {
+              teamId: 4,
+              won: false,
+              participantScores: [
+                { participantId: 41, score: 70 },
+                { participantId: 42, score: 69 },
+              ],
+            },
+          ],
+        },
+      ] satisfies MatchResultRequest[])
+    })
+  })
+
+  it("allows organizers to repair invalid completed results from a past round", async () => {
+    const onSubmitResults = jest.fn()
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 220,
+              team1: { id: 15, name: "Team 15", club: { id: 15, name: "Club 15" }, members: team1Members },
+              team2: { id: 23, name: "Team 23", club: { id: 23, name: "Club 23" }, members: team2Members },
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={3}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    expect(screen.getByText("Needs correction")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Mark Team 15 as winner in match 220" })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 15 as winner in match 220" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 220"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 220"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 220"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 220"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([
+        {
+          matchId: 220,
+          teamResults: [
+            {
+              teamId: 15,
+              won: true,
+              participantScores: [
+                { participantId: 11, score: 75 },
+                { participantId: 12, score: 76 },
+              ],
+            },
+            {
+              teamId: 23,
+              won: false,
+              participantScores: [
+                { participantId: 21, score: 72 },
+                { participantId: 22, score: 73 },
+              ],
+            },
+          ],
+        },
+      ] satisfies MatchResultRequest[])
+    })
+  })
+
+  it("renders organizer preliminary standings, speaker details, and win count views from all round matches", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+        selectedRoundNumber={2}
+        currentRoundNumber={2}
+        canManageTeams
+        preliminaryRoundMatches={[
+          {
+            round: { id: 201, name: "Round 1", roundNumber: 1, customFormat: "APF" as never },
+            matches: {
+              content: [
+                {
+                  id: 301,
+                  team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+                  team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+                  team1Won: true,
+                  team2Won: false,
+                  team1ParticipantScores: [
+                    { participantId: 11, score: 75 },
+                    { participantId: 12, score: 76 },
+                  ],
+                  team2ParticipantScores: [
+                    { participantId: 21, score: 72 },
+                    { participantId: 22, score: 73 },
+                  ],
+                  completed: true,
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+            } as never,
+          },
+          {
+            round: { id: 202, name: "Round 2", roundNumber: 2, customFormat: "APF" as never },
+            matches: {
+              content: [
+                {
+                  id: 302,
+                  team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+                  team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+                  team1Won: false,
+                  team2Won: true,
+                  team1ParticipantScores: [
+                    { participantId: 11, score: 78 },
+                    { participantId: 12, score: 74 },
+                  ],
+                  team2ParticipantScores: [
+                    { participantId: 21, score: 79 },
+                    { participantId: 22, score: 77 },
+                  ],
+                  completed: true,
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+            } as never,
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Preliminary standings" })).toHaveAttribute("aria-pressed", "true")
+    const standingsSection = screen.getByRole("heading", { name: "Preliminary standings" }).closest("section")
+    expect(standingsSection).not.toBeNull()
+    const standingsRow = within(standingsSection as HTMLElement).getByText("Team 1").closest("tr")
+    expect(standingsRow).not.toBeNull()
+    expect(within(standingsRow as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "1",
+      "Team 1",
+      "1",
+    ])
+
+    fireEvent.click(screen.getByRole("button", { name: "Speaker details" }))
+    const speakerSection = screen.getByRole("heading", { name: "Speaker details" }).closest("section")
+    expect(speakerSection).not.toBeNull()
+    const speakerRow = within(speakerSection as HTMLElement).getByText("Arman").closest("tr")
+    expect(speakerRow).not.toBeNull()
+    expect(within(speakerRow as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "1",
+      "Team 1",
+      "Arman",
+      "75",
+      "78",
+      "153",
+      "303",
+    ])
+
+    fireEvent.click(screen.getByRole("button", { name: "Win count by round" }))
+    const winCountSection = screen.getByRole("heading", { name: "Win count by round" }).closest("section")
+    expect(winCountSection).not.toBeNull()
+    const winCountRow = within(winCountSection as HTMLElement).getByText("Team 1").closest("tr")
+    expect(winCountRow).not.toBeNull()
+    expect(within(winCountRow as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "1",
+      "Team 1",
+      "1",
+      "0",
+      "1",
+    ])
+  })
+
+  it("hides result entry and speaker details from non-organizers", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        preliminaryRoundMatches={[
+          {
+            round: { id: 201, name: "Round 1", roundNumber: 1, customFormat: "APF" as never },
+            matches: {
+              content: [
+                {
+                  id: 301,
+                  team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+                  team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+                  team1Won: true,
+                  team2Won: false,
+                  team1ParticipantScores: [
+                    { participantId: 11, score: 75 },
+                    { participantId: 12, score: 76 },
+                  ],
+                  team2ParticipantScores: [
+                    { participantId: 21, score: 72 },
+                    { participantId: 22, score: 73 },
+                  ],
+                  completed: true,
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+            } as never,
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Preliminary standings" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Win count by round" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Round entry" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Speaker details" })).not.toBeInTheDocument()
+    expect(screen.queryByText("Спикерлік балл")).not.toBeInTheDocument()
+  })
+
+  it("uses backend team scores and participant aggregate scores when per-round speaker scores are unavailable", () => {
+    const seededTeam1Members = [
+      { ...team1Members[0], speakerScore: 153 },
+      { ...team1Members[1], speakerScore: 150 },
+    ]
+    const seededTeam2Members = [
+      { ...team2Members[0], speakerScore: 151 },
+      { ...team2Members[1], speakerScore: 150 },
+    ]
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        teams={{
+          content: [
+            { id: 5301, name: "Birminem", club: { id: 5301, name: "Birminem Club" }, members: seededTeam1Members },
+            { id: 5302, name: "Dorn", club: { id: 5302, name: "Dorn Club" }, members: seededTeam2Members },
+          ],
+          totalElements: 2,
+          totalPages: 1,
+        } as never}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+        selectedRoundNumber={2}
+        currentRoundNumber={2}
+        canManageTeams
+        preliminaryRoundMatches={[
+          {
+            round: { id: 5311, name: "Round 1", roundNumber: 1, customFormat: "APF" as never },
+            matches: {
+              content: [
+                {
+                  id: 53101,
+                  team1: { id: 5301, name: "Birminem", club: { id: 5301, name: "Birminem Club" } },
+                  team2: { id: 5302, name: "Dorn", club: { id: 5302, name: "Dorn Club" } },
+                  team1Score: 151,
+                  team2Score: 145,
+                  team1Won: true,
+                  team2Won: false,
+                  completed: true,
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+            } as never,
+          },
+          {
+            round: { id: 5312, name: "Round 2", roundNumber: 2, customFormat: "APF" as never },
+            matches: {
+              content: [
+                {
+                  id: 53103,
+                  team1: { id: 5301, name: "Birminem", club: { id: 5301, name: "Birminem Club" } },
+                  team2: { id: 5302, name: "Dorn", club: { id: 5302, name: "Dorn Club" } },
+                  team1Score: 152,
+                  team2Score: 156,
+                  team1Won: false,
+                  team2Won: true,
+                  completed: true,
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+            } as never,
+          },
+        ]}
+      />,
+    )
+
+    const standingsSection = screen.getByRole("heading", { name: "Preliminary standings" }).closest("section")
+    expect(standingsSection).not.toBeNull()
+    const standingsRow = within(standingsSection as HTMLElement).getByText("Birminem").closest("tr")
+    expect(standingsRow).not.toBeNull()
+    expect(within(standingsRow as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "1",
+      "Birminem",
+      "1",
+    ])
+
+    fireEvent.click(screen.getByRole("button", { name: "Speaker details" }))
+    const speakerSection = screen.getByRole("heading", { name: "Speaker details" }).closest("section")
+    expect(speakerSection).not.toBeNull()
+    const speakerRow = within(speakerSection as HTMLElement).getByText("Arman").closest("tr")
+    expect(speakerRow).not.toBeNull()
+    expect(within(speakerRow as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "1",
+      "Birminem",
+      "Arman",
+      "—",
+      "—",
+      "153",
+      "303",
+    ])
   })
 
   it("keeps unsent result drafts when switching away from the results table and back", async () => {
@@ -468,6 +932,7 @@ describe("ResultsSection", () => {
         matches={{ content: [], totalElements: 0, totalPages: 0 }}
         matchesLoading={false}
         selectedRound="Round 1"
+        canManageTeams
         rounds={[
           { id: 201, name: "Round 1", roundNumber: 1, customFormat: "APF" as never },
           { id: 202, name: "Round 2", roundNumber: 2, customFormat: "APF" as never },
@@ -488,6 +953,9 @@ describe("ResultsSection", () => {
       "301:team1": { result: "won" },
       "301:team1:participant:11": { score: "75" },
       "301:team1:participant:12": { score: "76" },
+      "301:team2": { result: "lost" },
+      "301:team2:participant:21": { score: "72" },
+      "301:team2:participant:22": { score: "73" },
     }))
 
     render(
@@ -498,6 +966,7 @@ describe("ResultsSection", () => {
             {
               id: 301,
               team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
               location: "Room A",
               judge: { id: 7, fullName: "Judge 1", checkedIn: true },
               completed: false,

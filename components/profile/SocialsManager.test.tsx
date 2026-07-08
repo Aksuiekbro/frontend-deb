@@ -52,4 +52,17 @@ describe("SocialsManager", () => {
       ])
     })
   })
+
+  it("reveals social chips with the restored plus animation state", () => {
+    render(<SocialsManager editable initialSocials={[]} onSave={jest.fn()} />)
+
+    const addButton = screen.getByRole("button", { name: "Add social" })
+
+    expect(addButton).toHaveAttribute("aria-expanded", "false")
+
+    fireEvent.click(addButton)
+
+    expect(addButton).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("button", { name: "Telegram" })).toHaveClass("translate-x-0", "opacity-100")
+  })
 })

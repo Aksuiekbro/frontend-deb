@@ -50,6 +50,9 @@ interface ResultsSectionProps {
   onSubmitResults?: (results: MatchResultRequest[]) => Promise<boolean | void> | boolean | void
   isSubmittingResults?: boolean
   resultStorageKey?: string
+  preliminaryRoundMatches?: PreliminaryRoundMatches[]
+  preliminaryRoundMatchesLoading?: boolean
+  preliminaryRoundMatchesError?: Error
 }
 
 const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
@@ -84,6 +87,32 @@ type DebaterResultSlot = {
 
 type ResultSlot = TeamResultSlot | DebaterResultSlot
 type ScoreSlot = SpeakerScoreSlot | DebaterResultSlot
+type PreliminaryRoundMatches = {
+  round: SimpleRoundResponse
+  matches: PageResult<MatchResponse>
+}
+type ResultsView = "entry" | "standings" | "speaker-details" | "win-count"
+
+const RESULTS_VIEW_OPTIONS: ReadonlyArray<{ id: ResultsView; label: string }> = [
+  { id: "entry", label: "Round entry" },
+  { id: "standings", label: "Preliminary standings" },
+  { id: "speaker-details", label: "Speaker details" },
+  { id: "win-count", label: "Win count by round" },
+]
+
+const isValidScoreValue = (value: unknown) => {
+  if (typeof value === "number") return Number.isFinite(value) && value >= 0
+  if (typeof value !== "string" || value.trim() === "") return false
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= 0
+}
+
+const getMatchTeamScore = (match: MatchResponse, slot: TeamSlotName) => {
+  const score = (match as MatchResponse & Record<string, unknown>)[`${slot}Score`]
+  return typeof score === "number" && Number.isFinite(score) ? score : null
+}
+
+const isCompleteResultValue = (result: ResultDraftValue) => result === "won" || result === "lost"
 
 export function ResultsSection({
   selectedResultsOption,
@@ -109,6 +138,9 @@ export function ResultsSection({
   onSubmitResults,
   isSubmittingResults = false,
   resultStorageKey,
+  preliminaryRoundMatches,
+  preliminaryRoundMatchesLoading = false,
+  preliminaryRoundMatchesError,
 }: ResultsSectionProps) {
   const teamRows = useMemo(() => teams?.content ?? [], [teams?.content])
   const teamsById = useMemo(() => {
@@ -119,6 +151,7 @@ export function ResultsSection({
   const [resultDrafts, setResultDrafts] = useState<Record<string, ResultDraftValue>>({})
   const [locallyCompletedMatchIds, setLocallyCompletedMatchIds] = useState<Record<number, boolean>>({})
   const [scoreError, setScoreError] = useState<string | null>(null)
+  const [selectedResultsView, setSelectedResultsView] = useState<ResultsView | "auto">("auto")
   const roundOptions = useMemo(() => {
     if (rounds?.length) return rounds.map((round) => round.name)
     return selectedRound ? [selectedRound] : []
@@ -192,39 +225,59 @@ export function ResultsSection({
   }, [getResultSlots])
 
   const hasDraftScore = useCallback((matchId: number, slot: ScoreSlot) => {
-    return Boolean(scoreDrafts[scoreKey(matchId, slot.slot)]?.trim())
+    return isValidScoreValue(scoreDrafts[scoreKey(matchId, slot.slot)])
   }, [scoreDrafts, scoreKey])
 
   const hasPersistedScore = useCallback((drafts: PersistedResultDrafts, matchId: number, slot: ScoreSlot) => {
     const draft = drafts[scoreKey(matchId, slot.slot)]
-    if (draft?.score?.trim()) return true
+    if (isValidScoreValue(draft?.score)) return true
 
     if (slot.kind === "speaker") {
-      return Boolean(drafts[scoreKey(matchId, slot.fallbackSlot)]?.score?.trim())
+      return isValidScoreValue(drafts[scoreKey(matchId, slot.fallbackSlot)]?.score)
     }
 
     return false
   }, [scoreKey])
 
+  const getPersistedResult = useCallback((drafts: PersistedResultDrafts, matchId: number, slot: TeamSlotName) => {
+    return toResultDraftValue(drafts[scoreKey(matchId, slot)]?.result)
+  }, [scoreKey])
+
+  const getTeamResultRule = useCallback((teamCount: number) => {
+    const isBpfMatch = selectedResultsOption === "BPF" || teamCount >= 4
+    return {
+      requiredTeamCount: isBpfMatch ? 4 : 2,
+      requiredWinnerCount: isBpfMatch ? 2 : 1,
+    }
+  }, [selectedResultsOption])
+
+  const hasValidTeamResultSet = useCallback((teamCount: number, results: ResultDraftValue[]) => {
+    const { requiredTeamCount, requiredWinnerCount } = getTeamResultRule(teamCount)
+    return (
+      teamCount === requiredTeamCount &&
+      results.every(isCompleteResultValue) &&
+      results.filter((result) => result === "won").length === requiredWinnerCount
+    )
+  }, [getTeamResultRule])
+
   const hasCompletePersistedResult = useCallback((match: MatchResponse, drafts: PersistedResultDrafts) => {
     const slots = getResultSlots(match)
-    return slots.length > 0 && slots.every((slot) => {
-      if (slot.kind === "team") {
-        const draft = drafts[scoreKey(match.id, slot.slot)]
-        const hasResult = Boolean(draft?.result)
-        const hasScores = slot.speakers.length > 0
-          ? slot.speakers.every((speaker) => hasPersistedScore(drafts, match.id, speaker))
-          : Boolean(draft?.score?.trim())
-        return hasResult && hasScores
-      }
+    const teamSlots = slots.filter((slot): slot is TeamResultSlot => slot.kind === "team")
+    const debaterSlots = slots.filter((slot): slot is DebaterResultSlot => slot.kind === "debater")
 
-      return hasPersistedScore(drafts, match.id, slot)
-    })
-  }, [getResultSlots, hasPersistedScore, scoreKey])
+    if (teamSlots.length > 0) {
+      const results = teamSlots.map((slot) => getPersistedResult(drafts, match.id, slot.slot))
+      return (
+        hasValidTeamResultSet(teamSlots.length, results) &&
+        teamSlots.every((slot) =>
+          slot.speakers.length > 0 &&
+          slot.speakers.every((speaker) => hasPersistedScore(drafts, match.id, speaker))
+        )
+      )
+    }
 
-  const isMatchReadOnly = useCallback((match: MatchResponse) => {
-    return match.completed || Boolean(locallyCompletedMatchIds[match.id])
-  }, [locallyCompletedMatchIds])
+    return debaterSlots.length > 0 && debaterSlots.every((slot) => hasPersistedScore(drafts, match.id, slot))
+  }, [getPersistedResult, getResultSlots, hasPersistedScore, hasValidTeamResultSet])
 
   const saveInputDraft = useCallback((key: string, patch: PersistedResultDraft) => {
     const drafts = readResultInputDrafts(resultStorageKey)
@@ -291,22 +344,66 @@ export function ResultsSection({
     setScoreError(null)
   }, [getResultSlots, getScoreSlots, hasCompletePersistedResult, matchRows, resultStorageKey, scoreKey])
 
+  const isMatchDraftComplete = useCallback((match: MatchResponse) => {
+    const slots = getResultSlots(match)
+    const teamSlots = slots.filter((slot): slot is TeamResultSlot => slot.kind === "team")
+    const debaterSlots = slots.filter((slot): slot is DebaterResultSlot => slot.kind === "debater")
+
+    if (teamSlots.length > 0) {
+      const results = teamSlots.map((slot) => resultDrafts[scoreKey(match.id, slot.slot)])
+      return (
+        hasValidTeamResultSet(teamSlots.length, results) &&
+        teamSlots.every((slot) =>
+          slot.speakers.length > 0 &&
+          slot.speakers.every((speaker) => hasDraftScore(match.id, speaker))
+        )
+      )
+    }
+
+    return debaterSlots.length > 0 && debaterSlots.every((slot) => hasDraftScore(match.id, slot))
+  }, [getResultSlots, hasDraftScore, hasValidTeamResultSet, resultDrafts, scoreKey])
+
+  const isMatchBackendComplete = useCallback((match: MatchResponse) => {
+    const slots = getResultSlots(match)
+    const teamSlots = slots.filter((slot): slot is TeamResultSlot => slot.kind === "team")
+    const debaterSlots = slots.filter((slot): slot is DebaterResultSlot => slot.kind === "debater")
+
+    if (teamSlots.length > 0) {
+      const results: ResultDraftValue[] = teamSlots.map((slot) => {
+        if (slot.currentWon === true) return "won"
+        if (slot.currentWon === false) return "lost"
+        return ""
+      })
+      return (
+        hasValidTeamResultSet(teamSlots.length, results) &&
+        teamSlots.every((slot) =>
+          (
+            slot.speakers.length > 0 &&
+            slot.speakers.every((speaker) => isValidScoreValue(speaker.currentScore))
+          ) ||
+          isValidScoreValue(getMatchTeamScore(match, slot.slot))
+        )
+      )
+    }
+
+    return debaterSlots.length > 0 && debaterSlots.every((slot) => isValidScoreValue(slot.currentScore))
+  }, [getResultSlots, hasValidTeamResultSet])
+
+  const isMatchReadOnly = useCallback((match: MatchResponse) => {
+    if (match.completed && isMatchBackendComplete(match)) return true
+    return Boolean(locallyCompletedMatchIds[match.id]) && isMatchDraftComplete(match)
+  }, [isMatchBackendComplete, isMatchDraftComplete, locallyCompletedMatchIds])
+
   const editableMatches = useMemo(
     () => matchRows.filter((match) => !isMatchReadOnly(match) && getResultSlots(match).length > 0),
     [getResultSlots, isMatchReadOnly, matchRows]
   )
-
-  const isMatchDraftComplete = useCallback((match: MatchResponse) => {
-    const slots = getResultSlots(match)
-    return slots.length > 0 && slots.every((slot) => {
-      if (slot.kind === "team") {
-        const hasResult = Boolean(resultDrafts[scoreKey(match.id, slot.slot)])
-        return hasResult && slot.speakers.length > 0 && slot.speakers.every((speaker) => hasDraftScore(match.id, speaker))
-      }
-
-      return hasDraftScore(match.id, slot)
-    })
-  }, [getResultSlots, hasDraftScore, resultDrafts, scoreKey])
+  const canRepairSelectedRound =
+    hasRoundProgress &&
+    typeof selectedRoundNumber === "number" &&
+    typeof currentRoundNumber === "number" &&
+    selectedRoundNumber < currentRoundNumber &&
+    editableMatches.length > 0
 
   // Organizers fill results match-by-match as rounds finish, so allow submitting the
   // matches that are fully scored rather than forcing every open match to be ready first.
@@ -324,13 +421,183 @@ export function ResultsSection({
   const canSubmitMatchResults =
     Boolean(onSubmitResults) &&
     canManageTeams &&
-    canEditSelectedRound &&
+    (canEditSelectedRound || canRepairSelectedRound) &&
     readyToSubmitCount > 0 &&
     !isSubmittingResults
   const shouldRenderMatchResults = matchesLoading || matchesError || Boolean(matches)
   const matchSubmitButtonClass = `px-8 py-3 bg-[#3E5C76] text-white rounded-lg text-[16px] font-medium transition-colors ${
     canSubmitMatchResults ? "hover:bg-[#2D3748]" : "cursor-not-allowed opacity-50"
   }`
+  const summaryRoundMatches = useMemo(() => {
+    return [...(preliminaryRoundMatches ?? [])].sort((a, b) => a.round.roundNumber - b.round.roundNumber)
+  }, [preliminaryRoundMatches])
+  const preliminarySummary = useMemo(() => {
+    const teamStandings = new Map<number, {
+      teamId: number
+      teamName: string
+      clubName: string
+      wins: number
+      losses: number
+      pending: number
+      speakerTotal: number
+      speakerPointCount: number
+      roundResults: Record<number, string[]>
+      roundSpeakerTotals: Record<number, number[]>
+    }>()
+    const speakerStandings = new Map<number, {
+      participantId: number
+      speakerName: string
+      teamId: number
+      teamName: string
+      aggregateScore: number | null
+      total: number
+      count: number
+      roundScores: Record<number, number[]>
+    }>()
+
+    const ensureTeam = (team: SimpleTeamResponse) => {
+      const existing = teamStandings.get(team.id)
+      if (existing) return existing
+      const row = {
+        teamId: team.id,
+        teamName: team.name,
+        clubName: team.club?.name ?? "—",
+        wins: 0,
+        losses: 0,
+        pending: 0,
+        speakerTotal: 0,
+        speakerPointCount: 0,
+        roundResults: {},
+        roundSpeakerTotals: {},
+      }
+      teamStandings.set(team.id, row)
+      return row
+    }
+
+    const ensureSpeaker = (
+      participantId: number,
+      speakerName: string,
+      teamId: number,
+      teamName: string,
+      aggregateScore: number | null,
+    ) => {
+      const existing = speakerStandings.get(participantId)
+      if (existing && existing.aggregateScore === null && aggregateScore !== null) {
+        existing.aggregateScore = aggregateScore
+      }
+      if (existing) return existing
+      const row = {
+        participantId,
+        speakerName,
+        teamId,
+        teamName,
+        aggregateScore,
+        total: 0,
+        count: 0,
+        roundScores: {},
+      }
+      speakerStandings.set(participantId, row)
+      return row
+    }
+
+    summaryRoundMatches.forEach(({ round, matches: roundMatchPage }) => {
+      roundMatchPage.content.forEach((match) => {
+        const teamSlots = [
+          { slot: "team1", team: match.team1 },
+          { slot: "team2", team: match.team2 },
+          { slot: "team3", team: match.team3 },
+          { slot: "team4", team: match.team4 },
+        ] as const
+
+        teamSlots.forEach(({ slot, team }) => {
+          if (!team) return
+          const teamRow = ensureTeam(team)
+          const won = resolveTeamCurrentWon(match, slot, team.id)
+          if (!teamRow.roundResults[round.roundNumber]) teamRow.roundResults[round.roundNumber] = []
+
+          if (won === true) {
+            teamRow.wins += 1
+            teamRow.roundResults[round.roundNumber].push("W")
+          } else if (won === false) {
+            teamRow.losses += 1
+            teamRow.roundResults[round.roundNumber].push("L")
+          } else {
+            teamRow.pending += 1
+            teamRow.roundResults[round.roundNumber].push("—")
+          }
+
+          let speakerScoresFoundForMatch = 0
+          getTeamMembers(team, teamsById).forEach((member, index) => {
+            const speakerRow = ensureSpeaker(
+              member.id,
+              getParticipantName(member, `Speaker ${index + 1}`),
+              team.id,
+              team.name,
+              typeof member.speakerScore === "number" && Number.isFinite(member.speakerScore)
+                ? member.speakerScore
+                : null,
+            )
+            const score = resolveParticipantCurrentScore(match, slot, team.id, member.id, index)
+            if (typeof score !== "number" || !Number.isFinite(score)) return
+
+            if (!speakerRow.roundScores[round.roundNumber]) speakerRow.roundScores[round.roundNumber] = []
+            speakerRow.roundScores[round.roundNumber].push(score)
+            speakerRow.total += score
+            speakerRow.count += 1
+            teamRow.speakerTotal += score
+            teamRow.speakerPointCount += 1
+            speakerScoresFoundForMatch += 1
+          })
+
+          const teamScore = getMatchTeamScore(match, slot)
+          if (speakerScoresFoundForMatch === 0 && teamScore !== null) {
+            if (!teamRow.roundSpeakerTotals[round.roundNumber]) teamRow.roundSpeakerTotals[round.roundNumber] = []
+            teamRow.roundSpeakerTotals[round.roundNumber].push(teamScore)
+            teamRow.speakerTotal += teamScore
+            teamRow.speakerPointCount += 1
+          }
+        })
+      })
+    })
+
+    return {
+      teams: Array.from(teamStandings.values()).sort((a, b) =>
+        b.wins - a.wins ||
+        a.teamName.localeCompare(b.teamName)
+      ),
+      speakers: Array.from(speakerStandings.values()).sort((a, b) => {
+        const aTotal = a.count ? a.total : a.aggregateScore ?? 0
+        const bTotal = b.count ? b.total : b.aggregateScore ?? 0
+        const aAverage = a.count ? a.total / a.count : a.aggregateScore ?? 0
+        const bAverage = b.count ? b.total / b.count : b.aggregateScore ?? 0
+
+        return bTotal - aTotal || bAverage - aAverage || a.speakerName.localeCompare(b.speakerName)
+      }),
+    }
+  }, [summaryRoundMatches, teamsById])
+  const summaryRounds = useMemo(() => summaryRoundMatches.map(({ round }) => round), [summaryRoundMatches])
+  const preliminaryIsComplete = useMemo(() => {
+    if (!summaryRoundMatches.length) return false
+    return summaryRoundMatches.every(({ matches: roundMatchPage }) =>
+      roundMatchPage.content.length > 0 &&
+      roundMatchPage.content.every((match) => isMatchBackendComplete(match))
+    )
+  }, [isMatchBackendComplete, summaryRoundMatches])
+  const availableResultsViewOptions = useMemo(() => {
+    return RESULTS_VIEW_OPTIONS.filter((option) =>
+      canManageTeams || option.id === "standings" || option.id === "win-count"
+    )
+  }, [canManageTeams])
+  const activeResultsView = (() => {
+    if (selectedResultsView === "auto") {
+      if (!canManageTeams) return "standings"
+      return preliminaryIsComplete ? "standings" : "entry"
+    }
+
+    return availableResultsViewOptions.some((option) => option.id === selectedResultsView)
+      ? selectedResultsView
+      : "standings"
+  })()
 
   const renderTeamRows = (columnCount: number, renderRow: (team: SimpleTeamResponse) => ReactNode) => {
     if (teamsLoading) {
@@ -421,8 +688,8 @@ export function ResultsSection({
   const handleSubmitMatchResults = async () => {
     if (!onSubmitResults || !canManageTeams) return
 
-    if (!canEditSelectedRound) {
-      setScoreError("Only the current round can be submitted.")
+    if (!canEditSelectedRound && !canRepairSelectedRound) {
+      setScoreError("Only the current round or incomplete past results can be submitted.")
       return
     }
 
@@ -435,7 +702,7 @@ export function ResultsSection({
       setScoreError(
         hasTeamsWithoutSpeakers
           ? "Add participants to every team before submitting speaker points."
-          : "Select a team result and enter every speaker point for at least one match before submitting."
+          : "APF matches need one winner; BPF matches need two winners. Every speaker also needs points."
       )
       return
     }
@@ -513,6 +780,61 @@ export function ResultsSection({
     })
   }
 
+  const getTeamResultUpdates = useCallback((match: MatchResponse, selectedSlot: TeamSlotName, value: ResultDraftValue) => {
+    const teamSlots = getResultSlots(match).filter((slot): slot is TeamResultSlot => slot.kind === "team")
+    const updates = new Map<TeamSlotName, ResultDraftValue>([[selectedSlot, value]])
+
+    if (teamSlots.length === 2) {
+      const otherSlot = teamSlots.find((slot) => slot.slot !== selectedSlot)
+      if (otherSlot) updates.set(otherSlot.slot, value === "won" ? "lost" : "won")
+      return Array.from(updates.entries()).map(([slot, result]) => ({ slot, result }))
+    }
+
+    const isBpfMatch = selectedResultsOption === "BPF" || teamSlots.length >= 4
+    if (isBpfMatch) {
+      const currentResults = new Map<TeamSlotName, ResultDraftValue>(
+        teamSlots.map((slot) => [slot.slot, resultDrafts[scoreKey(match.id, slot.slot)] ?? ""])
+      )
+      currentResults.set(selectedSlot, value)
+
+      const winnerSlots = teamSlots.filter((slot) => currentResults.get(slot.slot) === "won")
+      if (winnerSlots.length > 2) {
+        const slotToDemote = winnerSlots.find((slot) => slot.slot !== selectedSlot)
+        if (slotToDemote) updates.set(slotToDemote.slot, "lost")
+      }
+
+      const loserSlots = teamSlots.filter((slot) => currentResults.get(slot.slot) === "lost")
+      if (loserSlots.length > 2) {
+        const slotToPromote = loserSlots.find((slot) => slot.slot !== selectedSlot)
+        if (slotToPromote) updates.set(slotToPromote.slot, "won")
+      }
+
+      return Array.from(updates.entries()).map(([slot, result]) => ({ slot, result }))
+    }
+
+    if (value === "won") {
+      teamSlots.forEach((slot) => {
+        if (slot.slot !== selectedSlot) updates.set(slot.slot, "lost")
+      })
+    }
+
+    return Array.from(updates.entries()).map(([slot, result]) => ({ slot, result }))
+  }, [getResultSlots, resultDrafts, scoreKey, selectedResultsOption])
+
+  const updateTeamResultDraft = useCallback((match: MatchResponse, selectedSlot: TeamSlotName, value: ResultDraftValue) => {
+    const updates = getTeamResultUpdates(match, selectedSlot, value)
+    setResultDrafts((current) => {
+      const next = { ...current }
+      updates.forEach(({ slot, result }) => {
+        next[scoreKey(match.id, slot)] = result
+      })
+      return next
+    })
+    updates.forEach(({ slot, result }) => {
+      saveInputDraft(scoreKey(match.id, slot), { result })
+    })
+  }, [getTeamResultUpdates, saveInputDraft, scoreKey])
+
   const renderScoreInput = (
     match: MatchResponse,
     slot: ScoreSlot,
@@ -588,7 +910,8 @@ export function ResultsSection({
       return slots.map((slot, index) => {
         const key = scoreKey(match.id, slot.slot)
         const matchIsReadOnly = isMatchReadOnly(match)
-        const canEditResult = canManageTeams && canEditSelectedRound && !matchIsReadOnly
+        const canEditResult = canManageTeams && (canEditSelectedRound || canRepairSelectedRound) && !matchIsReadOnly
+        const statusLabel = matchIsReadOnly ? "Completed" : match.completed ? "Needs correction" : "Open"
         return (
           <tr key={key} className="hover:bg-gray-50">
             {index === 0 ? (
@@ -614,8 +937,7 @@ export function ResultsSection({
                         aria-pressed={isSelected}
                         aria-label={`Mark ${slot.name} as ${value === "won" ? "winner" : "not winner"} in match ${match.id}`}
                         onClick={() => {
-                          setResultDrafts((current) => ({ ...current, [key]: value }))
-                          saveInputDraft(key, { result: value })
+                          updateTeamResultDraft(match, slot.slot, value)
                         }}
                         className={`px-3 text-sm font-medium transition-colors ${
                           isSelected
@@ -656,7 +978,7 @@ export function ResultsSection({
                   {match.judge?.fullName || "—"}
                 </td>
                 <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#4a4e69]">
-                  {matchIsReadOnly ? "Completed" : "Open"}
+                  {statusLabel}
                 </td>
               </>
             ) : null}
@@ -666,7 +988,210 @@ export function ResultsSection({
     })
   }
 
-  const renderMatchResultsTable = () => (
+  const formatScore = (score: number) => Number.isInteger(score) ? String(score) : score.toFixed(1)
+  const getRoundHeader = (round: SimpleRoundResponse) => `${round.roundNumber} раунд`
+  const getRoundResultValue = (result: string) => {
+    if (result === "W") return "1"
+    if (result === "L") return "0"
+    return "—"
+  }
+
+  const renderPreliminarySummaryState = () => {
+    if (preliminaryRoundMatchesLoading) {
+      return (
+        <div className="rounded-lg border border-[#D5D9E7] bg-white px-6 py-5 text-sm text-[#4A5168]">
+          Loading preliminary standings...
+        </div>
+      )
+    }
+
+    if (preliminaryRoundMatchesError) {
+      return (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-6 py-5 text-sm text-red-600">
+          Failed to load preliminary standings.
+        </div>
+      )
+    }
+
+    if (!summaryRoundMatches.length) {
+      return (
+        <div className="rounded-lg border border-[#D5D9E7] bg-white px-6 py-5 text-sm text-[#4A5168]">
+          No preliminary rounds loaded yet.
+        </div>
+      )
+    }
+
+    return null
+  }
+
+  const renderPreliminaryStandingsTable = () => {
+    const state = renderPreliminarySummaryState()
+    if (state) return state
+    const hasTeamRows = preliminarySummary.teams.length > 0
+
+    return (
+      <section>
+        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Preliminary standings</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Жеңіс саны</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hasTeamRows ? preliminarySummary.teams.map((team, index) => (
+                <tr key={team.teamId} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-4 text-center text-[#4a4e69] text-[16px] font-medium">{index + 1}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">{team.teamName}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] text-[16px] font-semibold">{team.wins}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+                    No preliminary team results yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  const renderSpeakerDetailsTable = () => {
+    const state = renderPreliminarySummaryState()
+    if (state) return state
+    const hasTeamRows = preliminarySummary.teams.length > 0
+
+    return (
+      <section>
+        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Speaker details</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[920px] border-collapse border border-gray-300 rounded-2xl overflow-hidden">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Спикер</th>
+                {summaryRounds.map((round) => (
+                  <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">
+                    {getRoundHeader(round)}
+                  </th>
+                ))}
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Іріктеу нәтижесі</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Жалпы іріктеу нәтижесі</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hasTeamRows ? preliminarySummary.teams.flatMap((team, teamIndex) => {
+                const speakers = preliminarySummary.speakers.filter((speaker) => speaker.teamId === team.teamId)
+                const rows = speakers.length ? speakers : [null]
+
+                return rows.map((speaker, speakerIndex) => (
+                  <tr key={speaker ? `${team.teamId}-${speaker.participantId}` : `${team.teamId}-empty`} className="hover:bg-gray-50">
+                    {speakerIndex === 0 ? (
+                      <td rowSpan={rows.length} className="border border-gray-300 px-4 py-4 text-center align-top text-[#4a4e69] text-[16px] font-medium">
+                        {teamIndex + 1}
+                      </td>
+                    ) : null}
+                    {speakerIndex === 0 ? (
+                      <td rowSpan={rows.length} className="border border-gray-300 px-6 py-4 align-top text-[#0D1321] text-[16px] font-medium">
+                        {team.teamName}
+                      </td>
+                    ) : null}
+                    <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">
+                      {speaker?.speakerName ?? "—"}
+                    </td>
+                    {summaryRounds.map((round) => {
+                      const scores = speaker?.roundScores[round.roundNumber]
+                      return (
+                        <td key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+                          {scores?.length ? scores.map(formatScore).join(", ") : "—"}
+                        </td>
+                      )
+                    })}
+                    <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] text-[16px] font-semibold">
+                      {speaker && (speaker.count || speaker.aggregateScore !== null)
+                        ? formatScore(speaker.count ? speaker.total : speaker.aggregateScore ?? 0)
+                        : "—"}
+                    </td>
+                    {speakerIndex === 0 ? (
+                      <td rowSpan={rows.length} className="border border-gray-300 px-6 py-4 text-center align-top text-[#0D1321] text-[16px] font-semibold">
+                        {team.speakerPointCount ? formatScore(team.speakerTotal) : "—"}
+                      </td>
+                    ) : null}
+                  </tr>
+                ))
+              }) : (
+                <tr>
+                  <td colSpan={summaryRounds.length + 5} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+                    No preliminary speaker points yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  const renderWinCountTable = () => {
+    const state = renderPreliminarySummaryState()
+    if (state) return state
+    const hasTeamRows = preliminarySummary.teams.length > 0
+
+    return (
+      <section>
+        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Win count by round</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] border-collapse border border-gray-300 rounded-2xl overflow-hidden">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
+                {summaryRounds.map((round) => (
+                  <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">
+                    {getRoundHeader(round)}
+                  </th>
+                ))}
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Іріктеу нәтижесі</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hasTeamRows ? preliminarySummary.teams.map((team, index) => (
+                <tr key={team.teamId} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-4 text-center text-[#4a4e69] text-[16px] font-medium">{index + 1}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">{team.teamName}</td>
+                  {summaryRounds.map((round) => {
+                    const results = team.roundResults[round.roundNumber]
+                    return (
+                      <td key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+                        {results?.length ? results.map(getRoundResultValue).join(", ") : "—"}
+                      </td>
+                    )
+                  })}
+                  <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] text-[16px] font-semibold">{team.wins}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={summaryRounds.length + 3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+                    No preliminary team results yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  const renderRoundEntryTable = () => (
     <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -718,7 +1243,7 @@ export function ResultsSection({
                   ? `. ${pendingMatchCount} still need${pendingMatchCount === 1 ? "s" : ""} a result and speaker points.`
                   : "."
               }`
-            : "Select a result and enter every speaker point for a match to enable submitting."}
+            : "APF matches need one winner; BPF matches need two winners. Every speaker also needs points."}
         </p>
       ) : null}
       <div className="flex justify-end mt-8 mb-8">
@@ -731,6 +1256,32 @@ export function ResultsSection({
           {isSubmittingResults ? "Submitting..." : "Submit results"}
         </button>
       </div>
+    </>
+  )
+
+  const renderResultsWorkspace = () => (
+    <>
+      <div className="mb-6 flex flex-wrap gap-2" aria-label="Select results view">
+        {availableResultsViewOptions.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={activeResultsView === option.id}
+            onClick={() => setSelectedResultsView(option.id)}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              activeResultsView === option.id
+                ? "bg-[#0D1321] text-white"
+                : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {activeResultsView === "entry" ? renderRoundEntryTable() : null}
+      {activeResultsView === "standings" ? renderPreliminaryStandingsTable() : null}
+      {activeResultsView === "speaker-details" ? renderSpeakerDetailsTable() : null}
+      {activeResultsView === "win-count" ? renderWinCountTable() : null}
     </>
   )
 
@@ -865,7 +1416,7 @@ export function ResultsSection({
             </div>
           </>
         ) : isMatchResultsMode ? (
-          renderMatchResultsTable()
+          renderResultsWorkspace()
         ) : (
           <>
         {selectedResultsOption === "APF" && activeResultsSection === "APF Speaker Score" && (

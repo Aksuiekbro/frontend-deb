@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, type FormEvent } from "react"
+import { useState, useEffect, useMemo, useRef, type FormEvent } from "react"
 import { useParams } from "next/navigation"
 import { AddJudgeModal } from "@/components/tournament/AddJudgeModal"
 import { AddPostModal } from "@/components/tournament/AddPostModal"
@@ -30,30 +30,30 @@ import {
   useTournamentFeedbacks,
   useNews,
   useCurrentUser,
+  useRoundMatches,
 } from "@/hooks/use-api"
 import { api } from "@/lib/api"
 import { readResponseError } from "@/lib/http-error"
 import { useToast } from "@/hooks/use-toast"
-import { Role } from "@/types/user/user"
 import type { MatchResultRequest, MatchUpdateRequest } from "@/types/tournament/match"
 import type { SimpleTeamResponse, TeamResponse, TeamUpdateOrganizerRequest } from "@/types/tournament/team"
 import type { JudgeRequest, JudgeResponse } from "@/types/tournament/judge"
 import type { NewsRequest } from "@/types/news"
-import type { AnnouncementRequest } from "@/types/tournament/announcement/announcement"
+import type { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/announcement/announcement"
 import type { ScheduleRequest } from "@/types/tournament/schedule"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
 
-const ROUND_GROUP_TYPE_BY_STAGE: Record<PairingStageId, RoundGroupType> = {
-  preliminary: RoundGroupType.PRELIMINARY,
-  team: RoundGroupType.TEAM_ELIMINATION,
-  solo: RoundGroupType.SOLO_ELIMINATION,
+const STAGE_BY_ROUND_GROUP_TYPE: Partial<Record<RoundGroupType, PairingStageId>> = {
+  [RoundGroupType.PRELIMINARY]: "preliminary",
+  [RoundGroupType.TEAM_ELIMINATION]: "team",
+  [RoundGroupType.SOLO_ELIMINATION]: "solo",
 }
 
-const DEBATE_FORMAT_BY_OPTION: Record<PairingFormatOption, DebateFormat> = {
-  APF: DebateFormat.APF,
-  BPF: DebateFormat.BPF,
-  LD: DebateFormat.LD,
+const PAIRING_FORMAT_BY_DEBATE_FORMAT: Partial<Record<DebateFormat, PairingFormatOption>> = {
+  [DebateFormat.APF]: "APF",
+  [DebateFormat.BPF]: "BPF",
+  [DebateFormat.LD]: "LD",
 }
 
 const TOURNAMENT_ROSTER_PAGEABLE = { page: 0, size: 100 }
@@ -85,6 +85,7 @@ export default function TournamentDetailPage() {
   } = useTournamentSchedules(tournamentId)
   const { judges, isLoading: judgesLoading, error: judgesError, mutate: mutateJudges } = useTournamentJudges(
     tournamentId,
+    undefined,
     TOURNAMENT_ROSTER_PAGEABLE
   )
   const { organizers } = useTournamentOrganizers(tournamentId)
@@ -129,6 +130,7 @@ export default function TournamentDetailPage() {
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState(false)
   const [isAddJudgeModalOpen, setIsAddJudgeModalOpen] = useState(false)
   const [modalContext, setModalContext] = useState<'announcements' | 'schedule' | 'map' | 'news' | ''>('')
+  const [editingAnnouncement, setEditingAnnouncement] = useState<AnnouncementResponse | null>(null)
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
   const [postSubmitting, setPostSubmitting] = useState(false)
@@ -173,23 +175,51 @@ export default function TournamentDetailPage() {
     mutate: mutateMatches,
     mutateRoundGroups,
     mutateRounds,
+    roundGroups,
   } = useRoundSelection({
     tournamentId,
     selectedStage: effectiveStage,
     selectedRoundLabel: selectedRound,
     pageable: { page: 0, size: 50 },
   })
+  const {
+    roundMatches: preliminaryRoundMatches,
+    isLoading: preliminaryRoundMatchesLoading,
+    error: preliminaryRoundMatchesError,
+    mutate: mutatePreliminaryRoundMatches,
+  } = useRoundMatches(tournamentId, selectedRoundGroupId ?? undefined, rounds, { page: 0, size: 100 })
 
   const resultStorageKey =
     typeof selectedRoundGroupId === 'number' && typeof selectedRoundId === 'number'
       ? `tournament:${tournamentId}:round-group:${selectedRoundGroupId}:round:${selectedRoundId}:match-results`
       : undefined
 
+  const pairingStageFormats = useMemo<Partial<Record<PairingStageId, PairingFormatOption>>>(() => {
+    const next: Partial<Record<PairingStageId, PairingFormatOption>> = {}
+    roundGroups?.forEach((group) => {
+      const stage = STAGE_BY_ROUND_GROUP_TYPE[group.type]
+      const format = PAIRING_FORMAT_BY_DEBATE_FORMAT[group.format]
+      if (stage && format) {
+        next[stage] = format
+      }
+    })
+    return next
+  }, [roundGroups])
+
+  const resultsFormatOptions = useMemo<Array<'APF' | 'BPF' | 'LD'>>(() => {
+    const hasSoloElimination = roundGroups?.some((group) =>
+      group.type === RoundGroupType.SOLO_ELIMINATION &&
+      group.format === DebateFormat.LD
+    )
+    return hasSoloElimination ? ['APF', 'BPF', 'LD'] : ['APF', 'BPF']
+  }, [roundGroups])
+
   const handleAddPost = async () => {
     const isAnnouncement = modalContext === 'announcements'
     const isSchedule = modalContext === 'schedule'
     const isMap = modalContext === 'map'
     const isNews = modalContext === 'news'
+    const isEditingAnnouncement = isAnnouncement && editingAnnouncement
     const title = postTitle.trim()
     const description = postDescription.trim()
     const [primaryImage, ...extraImages] = postImages
@@ -205,8 +235,13 @@ export default function TournamentDetailPage() {
       return
     }
 
-    if (!title || !description || !primaryImage) {
-      setPostError('Please add a title, description, and image.')
+    if (!title || !description) {
+      setPostError('Please add a title and description.')
+      return
+    }
+
+    if (!primaryImage && !isEditingAnnouncement) {
+      setPostError('Please add an image.')
       return
     }
 
@@ -216,9 +251,11 @@ export default function TournamentDetailPage() {
 
       if (isAnnouncement) {
         const body: AnnouncementRequest = { title, content: description }
-        const response = await api.createAnnouncement(tournamentId, body, primaryImage)
+        const response = isEditingAnnouncement
+          ? await api.updateAnnouncement(tournamentId, editingAnnouncement.id, body, primaryImage)
+          : await api.createAnnouncement(tournamentId, body, primaryImage)
         if (!response.ok) throw new Error(await readResponseError(response, {
-          fallback: 'Failed to add announcement',
+          fallback: isEditingAnnouncement ? 'Failed to update announcement' : 'Failed to add announcement',
           unauthorized: 'You do not have permission to perform this action.',
           serverError: 'Server error. Please try again later.',
         }))
@@ -250,11 +287,12 @@ export default function TournamentDetailPage() {
       }
 
       toast({
-        title: 'Content submitted',
-        description: `${title} has been added.`,
+        title: isEditingAnnouncement ? 'Announcement updated' : 'Content submitted',
+        description: isEditingAnnouncement ? `${title} has been updated.` : `${title} has been added.`,
       })
       setPostTitle('')
       setPostDescription('')
+      setEditingAnnouncement(null)
       resetUploads()
       setIsAddPostModalOpen(false)
       setModalContext('')
@@ -760,6 +798,7 @@ export default function TournamentDetailPage() {
         mutateMatches?.(),
         mutateRoundGroups?.(),
         mutateRounds?.(),
+        mutatePreliminaryRoundMatches?.(),
       ])
       toast({
         title: 'Results submitted',
@@ -932,39 +971,6 @@ export default function TournamentDetailPage() {
       console.error('Failed to clear matches', error)
       toast({
         title: 'Failed to clear matches',
-        description: message,
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const handleChangeStageFormat = async (stage: PairingStageId, nextFormat: PairingFormatOption) => {
-    if (!isOrganizer) return
-
-    try {
-      const response = await api.changeRoundGroupFormat(
-        tournamentId,
-        { format: DEBATE_FORMAT_BY_OPTION[nextFormat] },
-        { roundGroupType: ROUND_GROUP_TYPE_BY_STAGE[stage] },
-      )
-      if (!response.ok) {
-        throw new Error(await readResponseError(response, {
-          fallback: 'Failed to update round format',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
-        }))
-      }
-
-      await mutateMatches?.()
-      toast({
-        title: 'Round format updated',
-        description: `The ${stage} round group now uses ${nextFormat}.`,
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
-      console.error('Failed to update round format', error)
-      toast({
-        title: 'Failed to update round format',
         description: message,
         variant: 'destructive',
       })
@@ -1156,6 +1162,15 @@ export default function TournamentDetailPage() {
     }
   }
 
+  useEffect(() => {
+    if (resultsFormatOptions.includes(selectedResultsOption)) return
+
+    setSelectedResultsOption('APF')
+    setActiveResultsSection('APF Speaker Score')
+    setResultsSubTab('Speaker Score')
+    setSelectedRound(`Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`)
+  }, [currentRoundNumber, resultsFormatOptions, selectedResultsOption, selectedRoundNumber])
+
   const openContentModal = (context: 'announcements' | 'schedule' | 'map' | 'news') => {
     if (context === 'map') {
       toast({
@@ -1167,13 +1182,28 @@ export default function TournamentDetailPage() {
     }
 
     setPostError(null)
+    setEditingAnnouncement(null)
+    setPostTitle('')
+    setPostDescription('')
+    resetUploads()
     setModalContext(context)
+    setIsAddPostModalOpen(true)
+  }
+
+  const openEditAnnouncementModal = (announcement: AnnouncementResponse) => {
+    setPostError(null)
+    resetUploads()
+    setModalContext('announcements')
+    setEditingAnnouncement(announcement)
+    setPostTitle(announcement.title ?? '')
+    setPostDescription(announcement.content ?? '')
     setIsAddPostModalOpen(true)
   }
 
   const closeAddPostModal = () => {
     setIsAddPostModalOpen(false)
     setModalContext('')
+    setEditingAnnouncement(null)
     setPostTitle('')
     setPostDescription('')
     setPostError(null)
@@ -1206,6 +1236,7 @@ export default function TournamentDetailPage() {
           onMainInfoOptionSelect={handleMainInfoOptionSelect}
           mainInfoDropdownRef={dropdownRef}
           selectedResultsOption={selectedResultsOption}
+          resultsOptions={resultsFormatOptions}
           isResultsDropdownOpen={isResultsDropdownOpen}
           onToggleResultsDropdown={() => setIsResultsDropdownOpen((prev) => !prev)}
           onResultsOptionSelect={handleResultsOptionSelect}
@@ -1227,6 +1258,7 @@ export default function TournamentDetailPage() {
             schedulesLoading={schedulesLoading}
             schedulesError={schedulesError}
             onOpenModal={isOrganizer ? openContentModal : undefined}
+            onEditAnnouncement={isOrganizer ? openEditAnnouncementModal : undefined}
             onAddAnnouncementComment={currentUser ? handleAddAnnouncementComment : undefined}
           />
         )}
@@ -1282,7 +1314,7 @@ export default function TournamentDetailPage() {
             onRandomizePairings={isOrganizer ? handleRandomizePairings : undefined}
             onSubmitPairings={isOrganizer ? handleSubmitPairings : undefined}
             onClearMatches={isOrganizer ? handleClearMatches : undefined}
-            onChangeStageFormat={isOrganizer ? handleChangeStageFormat : undefined}
+            stageFormats={pairingStageFormats}
             onUpdateMatchRoom={isOrganizer ? handleUpdateMatchRoom : undefined}
             onUpdateMatch={isOrganizer ? handleUpdateMatch : undefined}
             savingMatchId={savingMatchId}
@@ -1315,6 +1347,9 @@ export default function TournamentDetailPage() {
             onSubmitResults={isOrganizer ? handleSubmitResults : undefined}
             isSubmittingResults={submittingResults}
             resultStorageKey={resultStorageKey}
+            preliminaryRoundMatches={preliminaryRoundMatches}
+            preliminaryRoundMatchesLoading={preliminaryRoundMatchesLoading}
+            preliminaryRoundMatchesError={preliminaryRoundMatchesError}
           />
         )}
       </div>
@@ -1351,13 +1386,16 @@ export default function TournamentDetailPage() {
       <AddPostModal
         isOpen={isAddPostModalOpen}
         modalContext={modalContext}
+        mode={editingAnnouncement ? 'edit' : 'add'}
         postTitle={postTitle}
         postDescription={postDescription}
         selectedNewsCategory={selectedNewsCategory}
+        currentImageUrl={editingAnnouncement?.imageUrl?.url}
         imagePreviews={imagePreviews}
         uploadErrors={uploadErrors}
         isSubmitting={postSubmitting}
         errorMessage={postError}
+        submitLabel={editingAnnouncement ? 'Save changes' : 'Submit'}
         dzAnimate={dzAnimate}
         formatBytes={formatBytes}
         onClose={closeAddPostModal}

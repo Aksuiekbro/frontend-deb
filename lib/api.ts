@@ -310,7 +310,7 @@ export const api = {
 
     createAnnouncement: (tournamentId: number, body: AnnouncementRequest, image: File) => postMultipart<void>(`/tournaments/${tournamentId}/announcements`, body, {image}),
 
-    updateAnnouncement: (tournamentId: number, id: number, body: AnnouncementRequest, image: File) => patchMultipart<void>(`/tournaments/${tournamentId}/announcements/${id}`, body, {image}),
+    updateAnnouncement: (tournamentId: number, id: number, body: AnnouncementRequest, image?: File) => patchMultipart<void>(`/tournaments/${tournamentId}/announcements/${id}`, body, image ? {image} : undefined),
 
     deleteAnnouncement: (tournamentId: number, id: number) => deleteReq<void>(`/tournaments/${tournamentId}/announcements/${id}`),
 

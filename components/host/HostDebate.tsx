@@ -28,6 +28,7 @@ type HostFormState = TournamentRequest
 const TITLE_MAX_LENGTH = 50
 const DESCRIPTION_MAX_LENGTH = 200
 const LOCATION_MAX_LENGTH = 50
+const TEAM_FORMATS = new Set<DebateFormat>([DebateFormat.APF, DebateFormat.BPF])
 
 function createInitialForm(): HostFormState {
   return {
@@ -59,11 +60,9 @@ export default function HostDebate() {
     { value: TournamentLeague.UNIVERSITY, label: "University" },
   ], [])
 
-  const formatOptions = useMemo(() => [
+  const teamFormatOptions = useMemo(() => [
     { value: DebateFormat.APF, label: "APF" },
     { value: DebateFormat.BPF, label: "BPF" },
-    { value: DebateFormat.KP, label: "KP" },
-    { value: DebateFormat.LD, label: "LD" },
   ], [])
 
   function update<K extends keyof HostFormState>(key: K, value: HostFormState[K]) {
@@ -94,6 +93,22 @@ export default function HostDebate() {
 
     if (requiredFields.some((value) => value === undefined || value === "" || value === 0) || !imageFile) {
       setSubmitError("Please fill in all tournament details and upload an image.")
+      return
+    }
+
+    if (
+      !TEAM_FORMATS.has(form.preliminaryFormat as DebateFormat) ||
+      !TEAM_FORMATS.has(form.teamEliminationFormat as DebateFormat)
+    ) {
+      setSubmitError("Team stages support APF or BPF only. LD is configured separately after preliminary rounds.")
+      return
+    }
+
+    if (
+      Number(form.preliminaryRoundCount) < 1 ||
+      Number(form.eliminationRoundCount) < 1
+    ) {
+      setSubmitError("A tournament must have at least one preliminary round and one elimination round.")
       return
     }
 
@@ -288,7 +303,7 @@ export default function HostDebate() {
                 <SelectValue placeholder="Choose a format for knock-out rounds" />
               </SelectTrigger>
               <SelectContent>
-                {formatOptions.map(opt => (
+                {teamFormatOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -302,7 +317,7 @@ export default function HostDebate() {
                 <SelectValue placeholder="Choose a format" />
               </SelectTrigger>
               <SelectContent>
-                {formatOptions.map(opt => (
+                {teamFormatOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>

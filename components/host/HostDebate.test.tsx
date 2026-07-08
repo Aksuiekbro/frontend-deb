@@ -103,6 +103,15 @@ describe("HostDebate", () => {
     expect(screen.queryByText(/opposition side/i)).not.toBeInTheDocument()
   })
 
+  it("only offers APF and BPF as team-stage formats", () => {
+    render(<HostDebate />)
+
+    expect(screen.getAllByRole("option", { name: "APF" })).toHaveLength(2)
+    expect(screen.getAllByRole("option", { name: "BPF" })).toHaveLength(2)
+    expect(screen.queryByRole("option", { name: "KP" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: "LD" })).not.toBeInTheDocument()
+  })
+
   it("does not submit values that exceed the backend tournament length limits", async () => {
     const { container } = render(<HostDebate />)
     fillTournamentForm(container)

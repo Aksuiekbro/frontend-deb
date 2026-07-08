@@ -5,18 +5,39 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import AuthPage from './page'
 import { api } from '../../lib/api'
+import { Role, type UserResponse } from '../../types/user/user'
+
+const mockPush = jest.fn()
+const mockMutate = jest.fn()
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
   useSearchParams: () => ({ get: () => 'register' }),
 }))
 
+jest.mock('swr', () => ({
+  useSWRConfig: () => ({ mutate: mockMutate }),
+}))
+
 jest.mock('../../lib/api', () => ({
-  api: { register: jest.fn(), login: jest.fn() },
+  api: { register: jest.fn(), login: jest.fn(), getMe: jest.fn() },
 }))
 
 const mockRegister = api.register as jest.Mock
 const mockLogin = api.login as jest.Mock
+const mockGetMe = api.getMe as jest.Mock
+
+const signedInUser: UserResponse = {
+  id: 7,
+  username: 'nurassyl',
+  firstName: 'Nurassyl',
+  lastName: 'Tursymbayev',
+  email: 'nurassyl@example.com',
+  role: Role.PARTICIPANT,
+  profileId: 12,
+  socialProfiles: [],
+  createdAt: '2026-06-28T00:00:00.000Z',
+}
 
 function fillSignUp(container: HTMLElement, username: string) {
   const set = (id: string, value: string) =>
@@ -149,6 +170,35 @@ describe('AuthPage sign-up', () => {
 })
 
 describe('AuthPage sign-in', () => {
+  it('stores the successful login response in the current-user cache before navigating', async () => {
+    mockLogin.mockResolvedValue({ ok: true, status: 200, json: async () => signedInUser } as Response)
+    const { container } = render(<AuthPage />)
+    fillAndSubmitSignIn(container, 'nurassyl', 'Test12345!')
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(['current-user'], signedInUser, { revalidate: false })
+    })
+    expect(mockPush).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it('loads the current user when login succeeds with an empty response body', async () => {
+    mockLogin.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => { throw new SyntaxError('Unexpected end of JSON input') },
+    } as Response)
+    mockGetMe.mockResolvedValue({ ok: true, status: 200, json: async () => signedInUser } as Response)
+
+    const { container } = render(<AuthPage />)
+    fillAndSubmitSignIn(container, 'nurassyl', 'Test12345!')
+
+    await waitFor(() => {
+      expect(mockGetMe).toHaveBeenCalledTimes(1)
+      expect(mockMutate).toHaveBeenCalledWith(['current-user'], signedInUser, { revalidate: false })
+    })
+    expect(mockPush).toHaveBeenCalledWith('/dashboard')
+  })
+
   it('shows a status-aware message (not the generic catch-all) on an empty-body 401', async () => {
     mockLogin.mockResolvedValue({ ok: false, status: 401, text: async () => '' } as Response)
     const { container } = render(<AuthPage />)

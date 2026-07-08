@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Pencil, RefreshCw, Save, Trash2 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Pencil, Save, Trash2 } from "lucide-react"
 
 import type { PageResult } from "@/types/page"
 import type { MatchResponse, MatchUpdateRequest } from "@/types/tournament/match"
@@ -44,7 +44,7 @@ interface PairingsSectionProps {
   onRandomizePairings?: () => void
   onSubmitPairings?: () => void
   onClearMatches?: (stage: StageId) => void
-  onChangeStageFormat?: (stage: StageId, nextFormat: FormatOption) => void
+  stageFormats?: Partial<Record<StageId, FormatOption>>
   onUpdateMatchRoom?: (matchId: number, location: string) => void
   onUpdateMatch?: (matchId: number, payload: MatchUpdateRequest) => Promise<void> | void
   savingMatchId?: number | null
@@ -59,9 +59,13 @@ const STAGE_TABS = [
 
 const STANDARD_ROUNDS = ["Round 1", "Round 2", "Round 3", "Round 4"] as const
 const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
-const FORMAT_OPTIONS = ["APF", "BPF", "LD"] as const
 export type StageId = (typeof STAGE_TABS)[number]["id"]
-export type FormatOption = (typeof FORMAT_OPTIONS)[number]
+export type FormatOption = "APF" | "BPF" | "LD"
+
+const DEFAULT_STAGE_FORMATS: Record<StageId, FormatOption> = STAGE_TABS.reduce((acc, tab) => {
+  acc[tab.id] = tab.defaultFormat
+  return acc
+}, {} as Record<StageId, FormatOption>)
 
 const DEFAULT_ROUND_BY_STAGE: Record<StageId, string> = {
   preliminary: STANDARD_ROUNDS[0],
@@ -99,21 +103,23 @@ const hasNumericScore = (value: unknown) => typeof value === "number" && Number.
 const hasPersistedScore = (drafts: PersistedResultDrafts, matchId: number, slot: string) => {
   const score = drafts[`${matchId}:${slot}`]?.score
   if (score === undefined || score === null || score === "") return false
-  return Number.isFinite(Number(score))
+  const parsed = Number(score)
+  return Number.isFinite(parsed) && parsed >= 0
 }
 
-const hasPersistedResult = (drafts: PersistedResultDrafts, matchId: number, slot: string) => {
+const getPersistedWon = (drafts: PersistedResultDrafts, matchId: number, slot: string) => {
   const result = drafts[`${matchId}:${slot}`]?.result
-  return result === "won" || result === "lost"
+  if (result === "won") return true
+  if (result === "lost") return false
+  return null
 }
 
 const isMatchCompleteForWorkflow = (
   match: MatchResponse,
   drafts: PersistedResultDrafts,
   teamsById: Map<number, SimpleTeamResponse>,
+  format: FormatOption,
 ) => {
-  if (match.completed) return true
-
   const teamSlots = [
     { slot: "team1", team: match.team1, score: match.team1Score },
     { slot: "team2", team: match.team2, score: match.team2Score },
@@ -122,12 +128,12 @@ const isMatchCompleteForWorkflow = (
   ] as const
 
   const scoreSlots: { slot: string; fallbackSlot?: ResultScoreSlot; score?: number | null }[] = []
-  const teamResultSlots: boolean[] = []
+  const teamResultValues: Array<boolean | null> = []
   teamSlots.forEach(({ slot, team, score }) => {
     if (!team) return
-    teamResultSlots.push(
-      typeof resolveTeamCurrentWon(match, slot, team.id) === "boolean" || hasPersistedResult(drafts, match.id, slot)
-    )
+    const currentWon = resolveTeamCurrentWon(match, slot, team.id)
+    const persistedWon = getPersistedWon(drafts, match.id, slot)
+    teamResultValues.push(typeof currentWon === "boolean" ? currentWon : persistedWon)
 
     const members = getTeamMembers(team, teamsById)
     if (!members.length) {
@@ -146,9 +152,23 @@ const isMatchCompleteForWorkflow = (
   if (match.debater1) scoreSlots.push({ slot: "debater1", score: match.debater1Score })
   if (match.debater2) scoreSlots.push({ slot: "debater2", score: match.debater2Score })
 
+  const hasValidTeamResults = (() => {
+    if (teamResultValues.length === 0) return true
+
+    const isBpfMatch = format === "BPF" || teamResultValues.length >= 4
+    const requiredTeamCount = isBpfMatch ? 4 : 2
+    const requiredWinnerCount = isBpfMatch ? 2 : 1
+
+    return (
+      teamResultValues.length === requiredTeamCount &&
+      teamResultValues.every((won) => typeof won === "boolean") &&
+      teamResultValues.filter(Boolean).length === requiredWinnerCount
+    )
+  })()
+
   return (
     scoreSlots.length > 0 &&
-    teamResultSlots.every(Boolean) &&
+    hasValidTeamResults &&
     scoreSlots.every(({ slot, fallbackSlot, score }) => {
       if (hasNumericScore(score) || hasPersistedScore(drafts, match.id, slot)) return true
       return fallbackSlot ? hasPersistedScore(drafts, match.id, fallbackSlot) : false
@@ -173,21 +193,12 @@ export function PairingsSection({
   onRandomizePairings,
   onSubmitPairings,
   onClearMatches,
-  onChangeStageFormat,
+  stageFormats,
   onUpdateMatchRoom,
   onUpdateMatch,
   savingMatchId,
   resultStorageKey,
 }: PairingsSectionProps) {
-  const [formatMenuStage, setFormatMenuStage] = useState<StageId | null>(null)
-  const [stageFormats, setStageFormats] = useState<Record<StageId, FormatOption>>(() =>
-    STAGE_TABS.reduce((acc, tab) => {
-      acc[tab.id] = tab.defaultFormat
-      return acc
-    }, {} as Record<StageId, FormatOption>)
-  )
-  const controlsRef = useRef<HTMLDivElement | null>(null)
-  const [pendingFormat, setPendingFormat] = useState<{ stage: StageId; nextFormat: FormatOption } | null>(null)
   const [deleteConfirmStage, setDeleteConfirmStage] = useState<StageId | null>(null)
   const [roomDrafts, setRoomDrafts] = useState<Record<number, string>>({})
   const [persistedResultDrafts, setPersistedResultDrafts] = useState<PersistedResultDrafts>({})
@@ -202,6 +213,11 @@ export function PairingsSection({
   })
   const [matchEditError, setMatchEditError] = useState<string | null>(null)
   const matchRows = matches?.content ?? []
+  const configuredStageFormats = useMemo<Record<StageId, FormatOption>>(() => ({
+    ...DEFAULT_STAGE_FORMATS,
+    ...stageFormats,
+  }), [stageFormats])
+  const selectedStageFormat = configuredStageFormats[selectedStage]
   const teamsById = useMemo(() => {
     return new Map((teams?.content ?? []).map((team) => [team.id, team]))
   }, [teams?.content])
@@ -212,7 +228,9 @@ export function PairingsSection({
   const isPastRound = hasRoundProgress && selectedRoundNumber < currentRoundNumber
   const isCurrentRound = !hasRoundProgress || selectedRoundNumber === currentRoundNumber
   const isEditableRound = isCurrentRound && !isFutureRound && !isPastRound
-  const completedMatches = matchRows.filter((match) => isMatchCompleteForWorkflow(match, persistedResultDrafts, teamsById)).length
+  const completedMatches = matchRows.filter((match) =>
+    isMatchCompleteForWorkflow(match, persistedResultDrafts, teamsById, selectedStageFormat)
+  ).length
   const hasMatches = matchRows.length > 0
   const allMatchesCompleted = hasMatches && completedMatches === matchRows.length
   const canEditMatches = Boolean(onUpdateMatch) && isEditableRound
@@ -257,7 +275,6 @@ export function PairingsSection({
   const handleSelectStage = (stage: StageId) => {
     onSelectStage(stage)
     onSelectRound(DEFAULT_ROUND_BY_STAGE[stage])
-    setFormatMenuStage(null)
   }
 
   const handleSelectRound = (round: string) => {
@@ -273,21 +290,6 @@ export function PairingsSection({
       onSelectStage("team")
     }
   }
-
-  useEffect(() => {
-    if (!formatMenuStage) return
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (controlsRef.current && !controlsRef.current.contains(event.target as Node)) {
-        setFormatMenuStage(null)
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [formatMenuStage])
 
   useEffect(() => {
     setRoomDrafts(() => {
@@ -384,7 +386,7 @@ export function PairingsSection({
 
   const shouldShowFourTeamSlots = Boolean(
     editingMatch && (
-      stageFormats[selectedStage] === "BPF" ||
+      selectedStageFormat === "BPF" ||
       editingMatch.team3 ||
       editingMatch.team4
     )
@@ -402,6 +404,16 @@ export function PairingsSection({
 
     if (new Set(selectedTeamIds).size !== selectedTeamIds.length) {
       setMatchEditError("A team can only appear once in the same match.")
+      return
+    }
+
+    const requiredTeamCount = shouldShowFourTeamSlots ? 4 : selectedStage === "solo" ? 0 : 2
+    if (requiredTeamCount > 0 && selectedTeamIds.length !== requiredTeamCount) {
+      setMatchEditError(
+        shouldShowFourTeamSlots
+          ? "BPF matches require exactly four teams."
+          : "APF matches require exactly two teams."
+      )
       return
     }
 
@@ -494,26 +506,10 @@ export function PairingsSection({
                   onClick={() => handleSelectStage(tab.id)}
                   className="px-4 py-2"
                 >
-                  {tab.label}({stageFormats[tab.id]})
+                  {tab.label} ({configuredStageFormats[tab.id]})
                 </button>
                 {isActive && (
-                  <div className="relative flex items-center gap-2 pr-3 text-white/80" ref={controlsRef}>
-                    <span className="h-5 w-px bg-white/30" aria-hidden="true" />
-                    <button
-                      type="button"
-                      className="rounded-full border border-white/30 p-1 transition hover:border-white/60 disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-haspopup="menu"
-                      aria-expanded={formatMenuStage === tab.id}
-                      aria-label="Change format"
-                      disabled={!onChangeStageFormat}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        if (!onChangeStageFormat) return
-                        setFormatMenuStage((prev) => (prev === tab.id ? null : tab.id))
-                      }}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="relative flex items-center gap-2 pr-3 text-white/80">
                     <span className="h-5 w-px bg-white/30" aria-hidden="true" />
                     <button
                       type="button"
@@ -528,31 +524,6 @@ export function PairingsSection({
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-
-                    {formatMenuStage === tab.id && (
-                      <div className="absolute right-0 top-full z-10 mt-2 w-32 rounded-2xl border border-white/20 bg-[#050b1f] text-left text-sm shadow-lg">
-                        {FORMAT_OPTIONS.map((option) => (
-                          <button
-                            key={option}
-                            type="button"
-                            className="flex w-full items-center justify-between px-4 py-3 text-white transition hover:bg-white/10"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              if (!onChangeStageFormat) return
-                              if (stageFormats[tab.id] === option) {
-                                setFormatMenuStage(null)
-                                return
-                              }
-                              setPendingFormat({ stage: tab.id, nextFormat: option })
-                              setFormatMenuStage(null)
-                            }}
-                          >
-                            <span>{option}</span>
-                            {stageFormats[tab.id] === option && <span>✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -560,43 +531,6 @@ export function PairingsSection({
           })}
         </nav>
       </header>
-      <Dialog open={Boolean(pendingFormat)} onOpenChange={(open) => !open && setPendingFormat(null)}>
-        <DialogContent className="rounded-3xl border border-[#E2E6F2] bg-white p-10 shadow-[0_20px_70px_rgba(6,14,39,0.25)] sm:max-w-md">
-          <DialogTitle className="text-center text-lg font-semibold text-[#0B1327]">
-            {pendingFormat
-              ? `Are you sure to change the format of this round group from ${stageFormats[pendingFormat.stage]} to ${pendingFormat.nextFormat}?`
-              : ""}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Confirm the round group format change before it is sent to the backend.
-          </DialogDescription>
-          <DialogFooter className="mt-6 flex w-full flex-row gap-4 px-6">
-            <button
-              type="button"
-              className="flex-1 rounded-2xl border border-[#0B1327] px-6 py-3 text-sm font-semibold text-[#4A5A7A] transition hover:bg-[#EEF2FB]"
-              onClick={() => setPendingFormat(null)}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={!onChangeStageFormat}
-              className="flex-1 rounded-2xl bg-[#2B3F63] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1E2D48] disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => {
-                if (!pendingFormat) return
-                onChangeStageFormat?.(pendingFormat.stage, pendingFormat.nextFormat)
-                setStageFormats((prev) => ({
-                  ...prev,
-                  [pendingFormat.stage]: pendingFormat.nextFormat,
-                }))
-                setPendingFormat(null)
-              }}
-            >
-              Change
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={Boolean(deleteConfirmStage)} onOpenChange={(open) => !open && setDeleteConfirmStage(null)}>
         <DialogContent className="rounded-3xl border border-[#E2E6F2] bg-white p-10 shadow-[0_20px_70px_rgba(6,14,39,0.25)] sm:max-w-md">
           <DialogTitle className="text-center text-lg font-semibold text-[#0B1327]">

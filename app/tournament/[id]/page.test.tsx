@@ -29,9 +29,11 @@ jest.mock("@/components/tournament/TournamentTabs", () => ({
   TournamentTabs: ({
     onChangeTab,
     onResultsOptionSelect,
+    resultsOptions = ["APF", "BPF", "LD"],
   }: {
     onChangeTab: (tab: string) => void
     onResultsOptionSelect?: (option: "APF" | "BPF" | "LD") => void
+    resultsOptions?: ReadonlyArray<"APF" | "BPF" | "LD">
   }) => (
     <nav>
       {["Main Info", "Teams", "Judges", "Pairing and Matches", "Results and Statistics", "News"].map((tab) => (
@@ -39,7 +41,7 @@ jest.mock("@/components/tournament/TournamentTabs", () => ({
           {tab}
         </button>
       ))}
-      {(["APF", "BPF", "LD"] as const).map((opt) => (
+      {resultsOptions.map((opt) => (
         <button key={opt} type="button" onClick={() => onResultsOptionSelect?.(opt)}>
           {`Format ${opt}`}
         </button>
@@ -51,14 +53,50 @@ jest.mock("@/components/tournament/TournamentTabs", () => ({
 jest.mock("@/components/tournament/MainInfoSection", () => ({
   MainInfoSection: ({
     onOpenModal,
+    onEditAnnouncement,
     onAddAnnouncementComment,
   }: {
-    onOpenModal: (context: "announcements" | "schedule" | "map" | "news") => void
+    onOpenModal?: (context: "announcements" | "schedule" | "map" | "news") => void
+    onEditAnnouncement?: (announcement: {
+      id: number
+      title: string
+      content: string
+      imageUrl: null
+      timestamp: string
+      author: { organizedTournaments: unknown[]; coOrganizedTournaments: unknown[] }
+      user: { id: number; username: string; firstName: string; lastName: string; role: Role }
+      comments: unknown[]
+      tags: unknown[]
+    }) => void
     onAddAnnouncementComment?: (announcementId: number, content: string) => void
   }) => (
     <div>
-      <button type="button" onClick={() => onOpenModal("announcements")}>Open Announcement</button>
-      <button type="button" onClick={() => onOpenModal("schedule")}>Open Schedule</button>
+      <button type="button" onClick={() => onOpenModal?.("announcements")}>Open Announcement</button>
+      <button type="button" onClick={() => onOpenModal?.("schedule")}>Open Schedule</button>
+      {onEditAnnouncement ? (
+        <button
+          type="button"
+          onClick={() => onEditAnnouncement({
+            id: 11,
+            title: "Registration open",
+            content: "Teams can register now.",
+            imageUrl: null,
+            timestamp: "2026-06-18T10:00:00",
+            author: { organizedTournaments: [], coOrganizedTournaments: [] },
+            user: {
+              id: 1,
+              username: "organizer",
+              firstName: "Org",
+              lastName: "User",
+              role: Role.ORGANIZER,
+            },
+            comments: [],
+            tags: [],
+          })}
+        >
+          Edit Announcement
+        </button>
+      ) : null}
       {onAddAnnouncementComment ? (
         <button type="button" onClick={() => onAddAnnouncementComment(11, "Can we register two teams?")}>
           Add Announcement Comment
@@ -252,10 +290,10 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
   PairingsSection: ({
     selectedStage,
     selectedRound,
+    stageFormats,
     onSelectStage,
     onSelectRound,
     onProceedToNextRound,
-    onChangeStageFormat,
     onRandomizePairings,
     onSubmitPairings,
     onClearMatches,
@@ -264,10 +302,10 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
   }: {
     selectedStage: "preliminary" | "team" | "solo"
     selectedRound: string
+    stageFormats?: Partial<Record<"preliminary" | "team" | "solo", "APF" | "BPF" | "LD">>
     onSelectStage: (stage: "preliminary" | "team" | "solo") => void
     onSelectRound: (round: string) => void
     onProceedToNextRound?: () => void
-    onChangeStageFormat?: (stage: "preliminary", nextFormat: "LD") => void
     onRandomizePairings?: () => void
     onSubmitPairings?: () => void
     onClearMatches?: (stage: "preliminary") => void
@@ -276,6 +314,7 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
   }) => (
     <div data-testid="pairings">
       <div data-testid="selected-pairing-state">{selectedStage}:{selectedRound}</div>
+      <div data-testid="stage-formats">{stageFormats?.preliminary}:{stageFormats?.team}:{stageFormats?.solo}</div>
       <button type="button" onClick={() => {
         onSelectStage("team")
         onSelectRound("1/16")
@@ -283,7 +322,6 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
         Select Team Elim
       </button>
       <button type="button" onClick={() => onProceedToNextRound?.()}>Proceed Round</button>
-      <button type="button" onClick={() => onChangeStageFormat?.("preliminary", "LD")}>Change Format</button>
       <button type="button" onClick={() => onRandomizePairings?.()}>Randomize Pairings</button>
       <button type="button" onClick={() => onSubmitPairings?.()}>Submit Pairings</button>
       <button type="button" onClick={() => onClearMatches?.("preliminary")}>Clear Matches</button>
@@ -432,11 +470,18 @@ jest.mock("@/hooks/use-api", () => ({
     error: undefined,
     mutate: mockMutateNews,
   }),
+  useRoundMatches: () => ({
+    roundMatches: [],
+    isLoading: false,
+    error: undefined,
+    mutate: jest.fn(),
+  }),
 }))
 
 jest.mock("@/lib/api", () => ({
   api: {
     createAnnouncement: jest.fn(),
+    updateAnnouncement: jest.fn(),
     addSchedule: jest.fn(),
     createNews: jest.fn(),
     addJudge: jest.fn(),
@@ -528,6 +573,11 @@ beforeEach(() => {
     selectedRoundNumber: 1,
     currentRoundNumber: 1,
     rounds: [{ id: 201, name: "Round 1", roundNumber: 1 }],
+    roundGroups: [
+      { id: 101, type: RoundGroupType.PRELIMINARY, format: DebateFormat.APF, rounds: [], currentRoundNumber: 1 },
+      { id: 102, type: RoundGroupType.TEAM_ELIMINATION, format: DebateFormat.BPF, rounds: [], currentRoundNumber: 1 },
+      { id: 103, type: RoundGroupType.SOLO_ELIMINATION, format: DebateFormat.LD, rounds: [], currentRoundNumber: 1 },
+    ],
     matches: { content: [], totalElements: 0, totalPages: 0 },
     isLoading: false,
     error: undefined,
@@ -553,7 +603,7 @@ describe("TournamentDetailPage mutations", () => {
   it("requests enough judges to render the full judge roster", () => {
     render(<TournamentDetailPage />)
 
-    expect(mockUseTournamentJudges).toHaveBeenCalledWith(53, { page: 0, size: 100 })
+    expect(mockUseTournamentJudges).toHaveBeenCalledWith(53, undefined, { page: 0, size: 100 })
   })
 
   it("starts pairing workflow on the preliminary first round", () => {
@@ -590,6 +640,32 @@ describe("TournamentDetailPage mutations", () => {
       expect(apiMock.createAnnouncement).toHaveBeenCalledWith(
         53,
         { title: "Registration open", content: "Teams can register now." },
+        mockPrimaryImage,
+      )
+    })
+    expect(mockMutateAnnouncements).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(screen.queryByTestId("add-post-modal")).not.toBeInTheDocument()
+    })
+  })
+
+  it("updates an announcement through the backend and refreshes announcements", async () => {
+    apiMock.updateAnnouncement.mockResolvedValue(okResponse())
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Edit Announcement"))
+
+    expect(screen.getByLabelText("Post title")).toHaveValue("Registration open")
+    expect(screen.getByLabelText("Post description")).toHaveValue("Teams can register now.")
+
+    fillPostForm("Registration updated", "Photo and copy changed.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    await waitFor(() => {
+      expect(apiMock.updateAnnouncement).toHaveBeenCalledWith(
+        53,
+        11,
+        { title: "Registration updated", content: "Photo and copy changed." },
         mockPrimaryImage,
       )
     })
@@ -721,6 +797,7 @@ describe("TournamentDetailPage mutations", () => {
 
   it("hides judge management actions from participants", () => {
     mockCurrentRole = Role.PARTICIPANT
+    mockTournamentOrganizerIds = [99]
 
     render(<TournamentDetailPage />)
     fireEvent.click(screen.getByText("Judges"))
@@ -780,6 +857,7 @@ describe("TournamentDetailPage mutations", () => {
 
   it("does not let participants edit teams directly", () => {
     mockCurrentRole = Role.PARTICIPANT
+    mockTournamentOrganizerIds = [99]
 
     render(<TournamentDetailPage />)
     fireEvent.click(screen.getByText("Teams"))
@@ -972,24 +1050,13 @@ describe("TournamentDetailPage mutations", () => {
     })
   })
 
-  it("changes the selected round group format through the backend", async () => {
-    apiMock.changeRoundGroupFormat.mockResolvedValue(okResponse())
-
+  it("passes locked round group formats to pairings without exposing format changes", () => {
     render(<TournamentDetailPage />)
     fireEvent.click(screen.getByText("Pairing and Matches"))
-    fireEvent.click(screen.getByText("Change Format"))
 
-    await waitFor(() => {
-      expect(apiMock.changeRoundGroupFormat).toHaveBeenCalledWith(
-        53,
-        { format: DebateFormat.LD },
-        { roundGroupType: RoundGroupType.PRELIMINARY },
-      )
-    })
-    expect(mockMutateMatches).toHaveBeenCalledTimes(1)
-    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "Round format updated",
-    }))
+    expect(screen.getByTestId("stage-formats")).toHaveTextContent("APF:BPF:LD")
+    expect(screen.queryByText("Change Format")).not.toBeInTheDocument()
+    expect(apiMock.changeRoundGroupFormat).not.toHaveBeenCalled()
   })
 
   it("randomizes pairings for the selected round through the backend", async () => {

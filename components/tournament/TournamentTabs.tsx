@@ -15,6 +15,7 @@ interface TournamentTabsProps {
   onToggleResultsDropdown: () => void
   onResultsOptionSelect: (option: "APF" | "BPF" | "LD") => void
   resultsDropdownRef: RefObject<HTMLDivElement | null>
+  resultsOptions?: ReadonlyArray<"APF" | "BPF" | "LD">
 }
 
 const SECONDARY_TABS = ["Teams", "Judges", "Pairing and Matches"]
@@ -28,11 +29,11 @@ export function TournamentTabs({
   onToggleMainInfoDropdown,
   onMainInfoOptionSelect,
   mainInfoDropdownRef,
-  selectedResultsOption,
   isResultsDropdownOpen,
   onToggleResultsDropdown,
   onResultsOptionSelect,
   resultsDropdownRef,
+  resultsOptions = ["APF", "BPF", "LD"],
 }: TournamentTabsProps) {
   return (
     <div role="tablist" className="flex border-b border-gray-300 mb-8">
@@ -123,7 +124,7 @@ export function TournamentTabs({
 
         {isResultsDropdownOpen && (
           <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[120px]">
-            {(["APF", "BPF", "LD"] as const).map((option) => (
+            {resultsOptions.map((option) => (
               <button
                 key={option}
                 onClick={() => onResultsOptionSelect(option)}

@@ -11,7 +11,7 @@ const announcement = {
   id: 11,
   title: "Registration open",
   content: "Teams can register now.",
-  imageUrl: { url: "/announcement.png" },
+  imageUrl: { id: 11, url: "/announcement.png" },
   timestamp: "2026-06-18T10:00:00",
   author: { organizedTournaments: [], coOrganizedTournaments: [] },
   user: {
@@ -62,7 +62,7 @@ describe("MainInfoSection announcement comments", () => {
     process.env.NEXT_PUBLIC_API_URL = "https://backend.test/api/"
     const uploadAnnouncement = {
       ...announcement,
-      imageUrl: { url: "/uploads/announcements/53.jpg" },
+      imageUrl: { id: 53, url: "/uploads/announcements/53.jpg" },
     }
 
     render(
@@ -105,8 +105,21 @@ describe("MainInfoSection announcement comments", () => {
     expect(screen.getByLabelText("Announcement comment")).toHaveValue("")
   })
 
+  it("wires organizer edit action for the active announcement", () => {
+    const onEditAnnouncement = jest.fn()
+
+    render(<MainInfoSection {...baseProps} onEditAnnouncement={onEditAnnouncement} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit announcement" }))
+
+    expect(onEditAnnouncement).toHaveBeenCalledWith(expect.objectContaining({
+      id: 11,
+      title: "Registration open",
+    }))
+  })
+
   it("hides organizer-only add controls when no modal handler is wired", () => {
-    const { onOpenModal: _onOpenModal, ...readOnlyProps } = baseProps
+    const readOnlyProps = { ...baseProps, onOpenModal: undefined }
 
     render(<MainInfoSection {...readOnlyProps} />)
 
