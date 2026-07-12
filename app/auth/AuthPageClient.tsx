@@ -144,8 +144,8 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
     setSignInError(null)
     setSignInLoading(true)
     try {
-      const res = await api.login({ 
-        username: signInUsername, 
+      const res = await api.login({
+        username: signInUsername,
         password: signInPassword,
         rememberMe: rememberMe
       });
@@ -176,20 +176,20 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
       <div className="brand-logo absolute top-4 left-6 text-2xl font-bold text-[#0D1321] z-50">
         DeBetter
       </div>
-      
+
       <div
         className={`container relative overflow-hidden bg-white rounded-xl shadow-2xl w-[980px] max-w-full min-h-[640px] ${isSignUp ? 'right-panel-active' : ''}`}
         data-auth-mode={isSignUp ? 'register' : 'login'}
         data-auth-client-ready={isClientReady ? 'true' : 'false'}
       >
-        
+
         {/* Sign Up Form */}
         <div className={`form-container sign-up-container absolute top-0 h-full w-1/2 left-0 transition-all duration-500 ease-in-out ${
           isSignUp ? 'translate-x-full opacity-100 z-10' : 'opacity-0 z-0'
         }`}>
           <form onSubmit={handleSignUpSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Create Account</h2>
-            
+
             <label htmlFor="auth-signup-name" className="sr-only">Full Name</label>
             <input
               id="auth-signup-name"
@@ -250,7 +250,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
               onChange={(e) => setSignUpLastName(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
-            
+
             <div className="w-full mt-4 mb-2">
               <div className="flex items-center justify-center gap-8">
                 <div className="flex items-center">
@@ -312,7 +312,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
 
             {signUpErrorMsg && <p className="text-red-500 text-xs">{signUpErrorMsg}</p>}
             {signUpSuccess && <p className="text-green-500 text-xs">{signUpSuccess}</p>}
-            
+
             <button type="submit" disabled={signUpLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] mt-4 disabled:opacity-50">
               {signUpLoading ? 'Signing up...' : 'Sign Up'}
             </button>
@@ -325,7 +325,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
         }`}>
           <form onSubmit={handleSignInSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Sign in to DeBetter</h2>
-            
+
             <label htmlFor="auth-signin-email" className="sr-only">Username</label>
             <input
               id="auth-signin-email"
@@ -359,9 +359,9 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
                 </label>
             </div>
             {signInError && <p className="text-red-500 text-xs">{signInError}</p>}
-            
+
             <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">Forgot your password?</a>
-            
+
             <button type="submit" disabled={signInLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] disabled:opacity-50">
               {signInLoading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -377,14 +377,14 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
           }`} style={{
             backgroundImage: 'url(/images/log_reg.png)'
           }}>
-            
+
             {/* Left Panel */}
             <div className={`overlay-panel overlay-left absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-500 ease-in-out ${
               isSignUp ? 'translate-x-0' : '-translate-x-[20%]'
             }`}>
               <h1 className="font-bold text-4xl mb-4">Welcome Back!</h1>
               <p className="text-sm mb-6 leading-relaxed">To keep connected with us please login with your personal info</p>
-              <button 
+              <button
                 onClick={() => setIsSignUp(false)}
                 className="rounded-full border-2 border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white hover:bg-opacity-10"
               >
@@ -398,7 +398,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
             }`}>
               <h1 className="font-bold text-4xl mb-4">Hello, Friend!</h1>
               <p className="text-sm mb-6 leading-relaxed">Enter your personal details and start your journey with us</p>
-              <button 
+              <button
                 onClick={() => setIsSignUp(true)}
                 className="rounded-full border-2 border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white hover:bg-opacity-10"
               >
