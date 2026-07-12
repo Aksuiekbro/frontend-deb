@@ -41,7 +41,7 @@ export default function RootLayout({
           <HeaderWrapper />
           {children}
         </SWRProvider>
-        {process.env.NODE_ENV === 'development' && (
+        {process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_INTEGRITY_LOCAL_ONLY !== '1' && (
           <StagewiseToolbarClient config={stagewiseConfig} />
         )}
       </body>
