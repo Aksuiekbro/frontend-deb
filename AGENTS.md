@@ -20,6 +20,16 @@ Conventions for AI agents working in this project.
 - `npm run start`: Run the production build locally.
 - `npm run lint`: Run ESLint/Next.js linting; fix issues before pushing.
 
+## Vercel Deployment
+
+- Use the locally installed Vercel CLI (`vercel`) for all Vercel project, environment, log, and deployment operations in this repository.
+- Do not use a Vercel connector, MCP tool, REST API, browser-based project discovery, or team enumeration for this repository.
+- The only allowed Vercel target is project `debetter` in scope `dauren190307-gmailcoms-projects`.
+- Before any Vercel read or write, verify `.vercel/project.json` contains project name `debetter`, project ID `prj_QgpQLF0A8S6t3FA9PGqqSufK8yBv`, and org ID `team_2AAGIUaAcpItjn5YW960Tihd`. Stop if any value differs.
+- Never select, link, inspect, or deploy through the Dimash team or any other Vercel team.
+- Never run an unscoped `vercel link`. If relinking is required, use `vercel link --yes --project debetter --scope dauren190307-gmailcoms-projects`.
+- Pass `--scope dauren190307-gmailcoms-projects` and `--project debetter` whenever the CLI command supports those flags. Run `vercel --prod` only after the user explicitly requests a production deployment.
+
 ## Coding Style & Naming Conventions
 
 - Use TypeScript (`.ts`, `.tsx`) and 2-space indentation.
