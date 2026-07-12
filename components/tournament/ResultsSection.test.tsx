@@ -415,6 +415,19 @@ describe("ResultsSection", () => {
     })
   })
 
+  it("keeps the BPF results view available when BPF is selected", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        selectedResultsOption="BPF"
+        bpfSubTab="BPF Results"
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "BPF" })).toBeInTheDocument()
+    expect(screen.getByText("Fraction Name")).toBeInTheDocument()
+  })
+
   it("submits BPF ballots with exactly two winners and two losses", async () => {
     const onSubmitResults = jest.fn()
 

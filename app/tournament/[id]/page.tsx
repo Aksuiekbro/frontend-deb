@@ -59,6 +59,9 @@ const PAIRING_FORMAT_BY_DEBATE_FORMAT: Partial<Record<DebateFormat, PairingStage
   [DebateFormat.LD]: "LD",
 }
 
+type ResultsFormat = "APF" | "BPF" | "LD"
+const RESULTS_FORMAT_ORDER: readonly ResultsFormat[] = ["APF", "BPF", "LD"]
+
 const PAIRING_STAGE_ORDER: PairingStageId[] = ["preliminary", "team", "solo"]
 const PAIRING_STAGE_LABELS: Record<PairingStageId, string> = {
   preliminary: "Preliminary",
@@ -234,12 +237,9 @@ export default function TournamentDetailPage() {
   const effectivePairingRound = selectedRoundRecord?.name
     ?? (typeof currentRoundNumber === "number" ? `Round ${currentRoundNumber}` : selectedRound)
 
-  const resultsFormatOptions = useMemo<Array<'APF' | 'BPF' | 'LD'>>(() => {
-    const hasSoloElimination = roundGroups?.some((group) =>
-      group.type === RoundGroupType.SOLO_ELIMINATION &&
-      group.format === DebateFormat.LD
-    )
-    return hasSoloElimination ? ['APF', 'BPF', 'LD'] : ['APF', 'BPF']
+  const resultsFormatOptions = useMemo<ResultsFormat[]>(() => {
+    const configuredFormats = new Set(roundGroups?.map((group) => String(group.format)) ?? [])
+    return RESULTS_FORMAT_ORDER.filter((format) => configuredFormats.has(format))
   }, [roundGroups])
 
   const handleAddPost = async () => {
@@ -1172,7 +1172,7 @@ export default function TournamentDetailPage() {
     setActiveTab('Main Info')
   }
 
-  const handleResultsOptionSelect = (option: 'APF' | 'BPF' | 'LD') => {
+  const handleResultsOptionSelect = (option: ResultsFormat) => {
     setSelectedResultsOption(option)
     setIsResultsDropdownOpen(false)
     setActiveTab('Results and Statistics')
@@ -1191,10 +1191,18 @@ export default function TournamentDetailPage() {
   }
 
   useEffect(() => {
-    if (resultsFormatOptions.includes(selectedResultsOption)) return
+    const nextResultsFormat = resultsFormatOptions[0]
+    if (!nextResultsFormat || resultsFormatOptions.includes(selectedResultsOption)) return
 
-    setSelectedResultsOption('APF')
-    setActiveResultsSection('APF Speaker Score')
+    setSelectedResultsOption(nextResultsFormat)
+    if (nextResultsFormat === DebateFormat.LD) {
+      setActiveResultsSection('1/16')
+      setResultsSubTab('Results')
+      setSelectedRound('1/16')
+      return
+    }
+
+    setActiveResultsSection(`${nextResultsFormat} Speaker Score`)
     setResultsSubTab('Speaker Score')
     setSelectedRound(`Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`)
   }, [currentRoundNumber, resultsFormatOptions, selectedResultsOption, selectedRoundNumber])

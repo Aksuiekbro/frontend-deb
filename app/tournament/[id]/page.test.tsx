@@ -345,13 +345,16 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
 jest.mock("@/components/tournament/ResultsSection", () => ({
   ResultsSection: ({
     onSubmitResults,
+    selectedResultsOption,
   }: {
+    selectedResultsOption: string
     onSubmitResults?: (results: Array<{
       matchId: number
       teamResults: Array<{ teamId: number; won: boolean; participantScores: Array<{ participantId: number; score: number }> }>
     }>) => void
   }) => (
     <div data-testid="results">
+      <div data-testid="selected-results-option">{selectedResultsOption}</div>
       <button
         type="button"
         onClick={() => onSubmitResults?.([
@@ -711,6 +714,147 @@ describe("TournamentDetailPage mutations", () => {
     expect(screen.getByTestId("stage-labels")).toHaveTextContent(
       "Preliminary (APF)|Team elimination (BPF)|Solo elimination (LD)",
     )
+  })
+
+  it("shows APF and LD only for APF team stages with a solo LD stage", () => {
+    configureRoundSelectionGroups([
+      {
+        id: 331,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 431, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 332,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.APF,
+        rounds: [{ id: 432, name: "Final", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 333,
+        type: RoundGroupType.SOLO_ELIMINATION,
+        format: DebateFormat.LD,
+        rounds: [{ id: 433, name: "Semifinal", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+
+    expect(screen.getByRole("button", { name: "Format APF" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Format LD" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Format BPF" })).not.toBeInTheDocument()
+  })
+
+  it("shows and selects BPF when it is the only configured result format", async () => {
+    configureRoundSelectionGroups([{
+      id: 341,
+      type: RoundGroupType.PRELIMINARY,
+      format: DebateFormat.BPF,
+      rounds: [{ id: 441, name: "Round 1", roundNumber: 1 }],
+      currentRoundNumber: 1,
+    }])
+
+    render(<TournamentDetailPage />)
+
+    expect(screen.getByRole("button", { name: "Format BPF" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Format APF" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Format LD" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText("Results and Statistics"))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-option")).toHaveTextContent("BPF")
+    })
+  })
+
+  it("shows each distinct configured result format once", () => {
+    configureRoundSelectionGroups([
+      {
+        id: 351,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 451, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 352,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.BPF,
+        rounds: [{ id: 452, name: "Semifinal", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 353,
+        type: RoundGroupType.SOLO_ELIMINATION,
+        format: DebateFormat.LD,
+        rounds: [{ id: 453, name: "Final", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+
+    expect(screen.getAllByRole("button", { name: "Format APF" })).toHaveLength(1)
+    expect(screen.getAllByRole("button", { name: "Format BPF" })).toHaveLength(1)
+    expect(screen.getAllByRole("button", { name: "Format LD" })).toHaveLength(1)
+  })
+
+  it("falls back to the first remaining result format after round-group revalidation", async () => {
+    const preliminary: FixtureRoundGroup = {
+      id: 361,
+      type: RoundGroupType.PRELIMINARY,
+      format: DebateFormat.APF,
+      rounds: [{ id: 461, name: "Round 1", roundNumber: 1 }],
+      currentRoundNumber: 1,
+    }
+    const team: FixtureRoundGroup = {
+      id: 362,
+      type: RoundGroupType.TEAM_ELIMINATION,
+      format: DebateFormat.BPF,
+      rounds: [{ id: 462, name: "Semifinal", roundNumber: 1 }],
+      currentRoundNumber: 1,
+    }
+    const solo: FixtureRoundGroup = {
+      id: 363,
+      type: RoundGroupType.SOLO_ELIMINATION,
+      format: DebateFormat.LD,
+      rounds: [{ id: 463, name: "Final", roundNumber: 1 }],
+      currentRoundNumber: 1,
+    }
+    let groups = [preliminary, team, solo]
+    configureRoundSelectionGroups(() => groups)
+
+    const { rerender } = render(
+      <StrictMode>
+        <TournamentDetailPage />
+      </StrictMode>,
+    )
+    fireEvent.click(screen.getByText("Format BPF"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-option")).toHaveTextContent("BPF")
+    })
+
+    groups = [preliminary, solo]
+    rerender(
+      <StrictMode>
+        <TournamentDetailPage />
+      </StrictMode>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-option")).toHaveTextContent("APF")
+    })
+    expect(screen.queryByRole("button", { name: "Format BPF" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Format APF" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Format LD" })).toBeInTheDocument()
+
+    const lifecycleWarnings = (console.error as jest.Mock).mock.calls.filter(([message]) =>
+      typeof message === "string" && message.includes("hasn't mounted yet"),
+    )
+    expect(lifecycleWarnings).toHaveLength(0)
   })
 
   it("normalizes an initial solo-only pairing selection to its first round", async () => {
