@@ -1,8 +1,9 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
+import { StrictMode } from "react"
 import TournamentDetailPage from "./page"
 import { api } from "@/lib/api"
 import { Role } from "@/types/user/user"
@@ -290,7 +291,7 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
   PairingsSection: ({
     selectedStage,
     selectedRound,
-    stageFormats,
+    availableStages,
     onSelectStage,
     onSelectRound,
     onProceedToNextRound,
@@ -302,7 +303,12 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
   }: {
     selectedStage: "preliminary" | "team" | "solo"
     selectedRound: string
-    stageFormats?: Partial<Record<"preliminary" | "team" | "solo", "APF" | "BPF" | "LD">>
+    availableStages?: ReadonlyArray<{
+      id: "preliminary" | "team" | "solo"
+      label: string
+      format: "APF" | "BPF" | "LD"
+      defaultRound?: string
+    }>
     onSelectStage: (stage: "preliminary" | "team" | "solo") => void
     onSelectRound: (round: string) => void
     onProceedToNextRound?: () => void
@@ -314,7 +320,8 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
   }) => (
     <div data-testid="pairings">
       <div data-testid="selected-pairing-state">{selectedStage}:{selectedRound}</div>
-      <div data-testid="stage-formats">{stageFormats?.preliminary}:{stageFormats?.team}:{stageFormats?.solo}</div>
+      <div data-testid="stage-formats">{availableStages?.map(({ format }) => format).join(":")}</div>
+      <div data-testid="stage-labels">{availableStages?.map(({ label, format }) => `${label} (${format})`).join("|")}</div>
       <button type="button" onClick={() => {
         onSelectStage("team")
         onSelectRound("1/16")
@@ -380,7 +387,7 @@ const mockExtraImage = new File(["extra"], "extra.png", { type: "image/png" })
 let mockCurrentRole: Role = Role.ORGANIZER
 let mockCurrentUserPresent = true
 let mockTournamentStarted = true
-let mockTournamentOrganizerIds: number[] = [1]
+let mockTournamentOrganizerIds: Array<number | null> = [1]
 let mockTeamsContent: Array<{ id: number; name: string; club: { id: number; name: string }; checkedIn: boolean }> = []
 
 jest.mock("@/hooks/use-toast", () => ({
@@ -447,7 +454,7 @@ jest.mock("@/hooks/use-api", () => ({
   }),
   useTournamentJudges: (...args: unknown[]) => mockUseTournamentJudges(...args),
   useTournamentOrganizers: () => ({
-    organizers: mockTournamentOrganizerIds.map((id) => ({
+    organizers: mockTournamentOrganizerIds.map((id) => id === null ? null : ({
       id,
       username: `organizer${id}`,
       firstName: "Org",
@@ -531,6 +538,46 @@ function fillPostForm(title = "Registration open", description = "Teams can regi
   fireEvent.change(screen.getByLabelText("Post description"), { target: { value: description } })
 }
 
+type FixtureRoundGroup = {
+  id: number
+  type: RoundGroupType
+  format: DebateFormat
+  rounds: Array<{ id: number; name: string; roundNumber: number }>
+  currentRoundNumber: number | null
+}
+
+function configureRoundSelectionGroups(
+  roundGroups: FixtureRoundGroup[] | (() => FixtureRoundGroup[]),
+) {
+  mockUseRoundSelection.mockImplementation((args: { selectedStage?: "preliminary" | "team" | "solo" }) => {
+    const currentRoundGroups = typeof roundGroups === "function" ? roundGroups() : roundGroups
+    const preferredType = args?.selectedStage === "team"
+      ? RoundGroupType.TEAM_ELIMINATION
+      : args?.selectedStage === "solo"
+        ? RoundGroupType.SOLO_ELIMINATION
+        : RoundGroupType.PRELIMINARY
+    const selectedGroup = currentRoundGroups.find(({ type }) => type === preferredType) ?? currentRoundGroups[0]
+    const selectedRound = selectedGroup?.rounds[0]
+
+    return {
+      selectedRoundGroupId: selectedGroup?.id ?? null,
+      selectedRoundId: selectedRound?.id ?? null,
+      selectedRoundNumber: selectedRound?.roundNumber ?? null,
+      currentRoundNumber: selectedGroup?.currentRoundNumber ?? null,
+      selectedRoundGroup: selectedGroup,
+      selectedRound,
+      rounds: selectedGroup?.rounds ?? [],
+      roundGroups: currentRoundGroups,
+      matches: { content: [], totalElements: 0, totalPages: 0 },
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutateMatches,
+      mutateRoundGroups: mockMutateRoundGroups,
+      mutateRounds: mockMutateRounds,
+    }
+  })
+}
+
 beforeEach(() => {
   jest.clearAllMocks()
   mockCurrentRole = Role.ORGANIZER
@@ -572,7 +619,18 @@ beforeEach(() => {
     selectedRoundId: 201,
     selectedRoundNumber: 1,
     currentRoundNumber: 1,
-    rounds: [{ id: 201, name: "Round 1", roundNumber: 1 }],
+    selectedRoundGroup: {
+      id: 101,
+      type: RoundGroupType.PRELIMINARY,
+      format: DebateFormat.APF,
+      rounds: [],
+      currentRoundNumber: 1,
+    },
+    selectedRound: { id: 201, name: "Round 1", roundNumber: 1 },
+    rounds: [
+      { id: 201, name: "Round 1", roundNumber: 1 },
+      { id: 202, name: "1/16", roundNumber: 1 },
+    ],
     roundGroups: [
       { id: 101, type: RoundGroupType.PRELIMINARY, format: DebateFormat.APF, rounds: [], currentRoundNumber: 1 },
       { id: 102, type: RoundGroupType.TEAM_ELIMINATION, format: DebateFormat.BPF, rounds: [], currentRoundNumber: 1 },
@@ -594,6 +652,12 @@ afterEach(() => {
 })
 
 describe("TournamentDetailPage mutations", () => {
+  it("ignores null organizer entries while resolving tournament access", () => {
+    mockTournamentOrganizerIds = [null, 1]
+
+    expect(() => render(<TournamentDetailPage />)).not.toThrow()
+  })
+
   it("requests enough teams to render a full tournament roster", () => {
     render(<TournamentDetailPage />)
 
@@ -613,6 +677,167 @@ describe("TournamentDetailPage mutations", () => {
       selectedStage: "preliminary",
       selectedRoundLabel: "Round 1",
     }))
+  })
+
+  it("renders only existing pairing stages after round-group revalidation", () => {
+    configureRoundSelectionGroups([
+      {
+        id: 201,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 301, name: "Preliminary 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 202,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.APF,
+        rounds: [{ id: 302, name: "Semifinal", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+
+    expect(screen.getByTestId("stage-labels")).toHaveTextContent("Preliminary (APF)|Team elimination (APF)")
+    expect(screen.getByTestId("stage-labels")).not.toHaveTextContent("Solo elimination")
+  })
+
+  it("renders exact mixed-stage labels and formats from round groups", () => {
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+
+    expect(screen.getByTestId("stage-labels")).toHaveTextContent(
+      "Preliminary (APF)|Team elimination (BPF)|Solo elimination (LD)",
+    )
+  })
+
+  it("normalizes an initial solo-only pairing selection to its first round", async () => {
+    configureRoundSelectionGroups([{
+      id: 301,
+      type: RoundGroupType.SOLO_ELIMINATION,
+      format: DebateFormat.LD,
+      rounds: [{ id: 401, name: "Semifinal", roundNumber: 1 }],
+      currentRoundNumber: 1,
+    }])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("solo:Semifinal")
+    })
+    expect(screen.getByTestId("stage-labels")).toHaveTextContent("Solo elimination (LD)")
+    expect(screen.queryByText("Preliminary (APF)")).not.toBeInTheDocument()
+  })
+
+  it("keeps stage visibility current and normalizes a removed selected stage", async () => {
+    const preliminary: FixtureRoundGroup = {
+      id: 311,
+      type: RoundGroupType.PRELIMINARY,
+      format: DebateFormat.APF,
+      rounds: [{ id: 411, name: "Round 1", roundNumber: 1 }],
+      currentRoundNumber: 1,
+    }
+    const team: FixtureRoundGroup = {
+      id: 312,
+      type: RoundGroupType.TEAM_ELIMINATION,
+      format: DebateFormat.BPF,
+      rounds: [
+        { id: 412, name: "1/16", roundNumber: 1 },
+        { id: 413, name: "Semifinal", roundNumber: 2 },
+      ],
+      currentRoundNumber: 1,
+    }
+    const solo: FixtureRoundGroup = {
+      id: 313,
+      type: RoundGroupType.SOLO_ELIMINATION,
+      format: DebateFormat.LD,
+      rounds: [{ id: 414, name: "Final", roundNumber: 2 }],
+      currentRoundNumber: 1,
+    }
+    let groups = [preliminary, team]
+    configureRoundSelectionGroups(() => groups)
+
+    const { rerender } = render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    fireEvent.click(screen.getByText("Select Team Elim"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:1/16")
+    })
+
+    groups = [preliminary, team, solo]
+    rerender(<TournamentDetailPage />)
+    expect(screen.getByTestId("stage-labels")).toHaveTextContent("Solo elimination (LD)")
+    expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:1/16")
+
+    team.rounds = [{ id: 415, name: "Semifinal", roundNumber: 1 }]
+    rerender(<TournamentDetailPage />)
+    expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:Semifinal")
+
+    groups = [preliminary, solo]
+    rerender(<TournamentDetailPage />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("preliminary:Round 1")
+    })
+    expect(screen.getByTestId("stage-labels")).toHaveTextContent("Preliminary (APF)|Solo elimination (LD)")
+    expect(screen.getByTestId("stage-labels")).not.toHaveTextContent("Team elimination")
+  })
+
+  it("does not emit a lifecycle warning when delayed round data arrives in StrictMode", async () => {
+    let groups: FixtureRoundGroup[] = []
+    configureRoundSelectionGroups(() => groups)
+
+    const { rerender } = render(
+      <StrictMode>
+        <TournamentDetailPage />
+      </StrictMode>,
+    )
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      groups = [{
+        id: 321,
+        type: RoundGroupType.SOLO_ELIMINATION,
+        format: DebateFormat.LD,
+        rounds: [{ id: 421, name: "Semifinal", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      }]
+      rerender(
+        <StrictMode>
+          <TournamentDetailPage />
+        </StrictMode>,
+      )
+    })
+
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("solo:Semifinal")
+    })
+
+    const lifecycleWarnings = (console.error as jest.Mock).mock.calls.filter(([message]) =>
+      typeof message === "string" && message.includes("hasn't mounted yet"),
+    )
+    expect(lifecycleWarnings).toHaveLength(0)
+  })
+
+  it("does not emit a lifecycle warning when unmounted immediately in StrictMode", () => {
+    configureRoundSelectionGroups([])
+
+    const { unmount } = render(
+      <StrictMode>
+        <TournamentDetailPage />
+      </StrictMode>,
+    )
+    unmount()
+
+    const lifecycleWarnings = (console.error as jest.Mock).mock.calls.filter(([message]) =>
+      typeof message === "string" && message.includes("hasn't mounted yet"),
+    )
+    expect(lifecycleWarnings).toHaveLength(0)
   })
 
   it("keeps pairing stage and selected round together when switching stages", async () => {

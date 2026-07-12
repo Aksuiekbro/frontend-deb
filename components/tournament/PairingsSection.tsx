@@ -44,6 +44,7 @@ interface PairingsSectionProps {
   onRandomizePairings?: () => void
   onSubmitPairings?: () => void
   onClearMatches?: (stage: StageId) => void
+  availableStages?: readonly StageDescriptor[]
   stageFormats?: Partial<Record<StageId, FormatOption>>
   onUpdateMatchRoom?: (matchId: number, location: string) => void
   onUpdateMatch?: (matchId: number, payload: MatchUpdateRequest) => Promise<void> | void
@@ -58,9 +59,16 @@ const STAGE_TABS = [
 ] as const
 
 const STANDARD_ROUNDS = ["Round 1", "Round 2", "Round 3", "Round 4"] as const
-const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
+const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2", "Final"] as const
+const BACKEND_PRELIMINARY_ROUND_PATTERN = /^Preliminary\s+\d+(?:\.0)?$/
 export type StageId = (typeof STAGE_TABS)[number]["id"]
 export type FormatOption = "APF" | "BPF" | "LD"
+export type StageDescriptor = {
+  id: StageId
+  label: string
+  format: FormatOption
+  defaultRound?: string
+}
 
 const DEFAULT_STAGE_FORMATS: Record<StageId, FormatOption> = STAGE_TABS.reduce((acc, tab) => {
   acc[tab.id] = tab.defaultFormat
@@ -120,6 +128,8 @@ const isMatchCompleteForWorkflow = (
   teamsById: Map<number, SimpleTeamResponse>,
   format: FormatOption,
 ) => {
+  if (match.completed && match.participantScoresComplete === false) return false
+
   const teamSlots = [
     { slot: "team1", team: match.team1, score: match.team1Score },
     { slot: "team2", team: match.team2, score: match.team2Score },
@@ -137,6 +147,11 @@ const isMatchCompleteForWorkflow = (
 
     const members = getTeamMembers(team, teamsById)
     if (!members.length) {
+      scoreSlots.push({ slot, score })
+      return
+    }
+
+    if (hasNumericScore(score)) {
       scoreSlots.push({ slot, score })
       return
     }
@@ -193,12 +208,14 @@ export function PairingsSection({
   onRandomizePairings,
   onSubmitPairings,
   onClearMatches,
+  availableStages,
   stageFormats,
   onUpdateMatchRoom,
   onUpdateMatch,
   savingMatchId,
   resultStorageKey,
 }: PairingsSectionProps) {
+  const [isHydrated, setIsHydrated] = useState(false)
   const [deleteConfirmStage, setDeleteConfirmStage] = useState<StageId | null>(null)
   const [roomDrafts, setRoomDrafts] = useState<Record<number, string>>({})
   const [persistedResultDrafts, setPersistedResultDrafts] = useState<PersistedResultDrafts>({})
@@ -217,7 +234,16 @@ export function PairingsSection({
     ...DEFAULT_STAGE_FORMATS,
     ...stageFormats,
   }), [stageFormats])
-  const selectedStageFormat = configuredStageFormats[selectedStage]
+  const stageDescriptors = useMemo<readonly StageDescriptor[]>(() => (
+    availableStages ?? STAGE_TABS.map((tab) => ({
+      id: tab.id,
+      label: tab.label,
+      format: configuredStageFormats[tab.id],
+      defaultRound: DEFAULT_ROUND_BY_STAGE[tab.id],
+    }))
+  ), [availableStages, configuredStageFormats])
+  const selectedStageFormat = stageDescriptors.find(({ id }) => id === selectedStage)?.format
+    ?? configuredStageFormats[selectedStage]
   const teamsById = useMemo(() => {
     return new Map((teams?.content ?? []).map((team) => [team.id, team]))
   }, [teams?.content])
@@ -233,12 +259,18 @@ export function PairingsSection({
   ).length
   const hasMatches = matchRows.length > 0
   const allMatchesCompleted = hasMatches && completedMatches === matchRows.length
+  const hasNonrepairableMatches = matchRows.some((match) =>
+    match.completed && match.participantScoresComplete === false && match.participantScoresRepairable !== true,
+  )
   const canEditMatches = Boolean(onUpdateMatch) && isEditableRound
   const canUpdateRooms = Boolean(onUpdateMatchRoom) && isEditableRound
   const canRandomizeSelectedRound = Boolean(onRandomizePairings) && isEditableRound
   const canPublishSelectedRound = Boolean(onSubmitPairings) && isEditableRound && hasMatches
   const canProceedToNextRound = Boolean(onProceedToNextRound) && isCurrentRound && allMatchesCompleted
-  const tableColumnCount = canEditMatches ? 5 : 4
+  const teamSlotsToRender = selectedStageFormat === "BPF" || matchRows.some((match) => match.team3 || match.team4)
+    ? (["team1", "team2", "team3", "team4"] as const)
+    : (["team1", "team2"] as const)
+  const tableColumnCount = teamSlotsToRender.length + 3 + (canEditMatches ? 1 : 0)
   const roundLabels = rounds?.length
     ? rounds.map((round) => round.name)
     : selectedStage === "preliminary"
@@ -261,6 +293,10 @@ export function PairingsSection({
 
     if (matchesLoading || matchesError) return null
 
+    if (hasNonrepairableMatches) {
+      return "Some completed matches need correction, but their participant scores cannot be repaired."
+    }
+
     if (!hasMatches) {
       return `No pairings yet for ${selectedRound}. Randomize teams, adjust rooms and judges, then publish pairings.`
     }
@@ -274,14 +310,16 @@ export function PairingsSection({
 
   const handleSelectStage = (stage: StageId) => {
     onSelectStage(stage)
-    onSelectRound(DEFAULT_ROUND_BY_STAGE[stage])
+    const descriptor = stageDescriptors.find(({ id }) => id === stage)
+    onSelectRound(descriptor?.defaultRound ?? DEFAULT_ROUND_BY_STAGE[stage])
   }
 
   const handleSelectRound = (round: string) => {
     const isStandardRound = STANDARD_ROUNDS.includes(round as (typeof STANDARD_ROUNDS)[number])
+    const isBackendPreliminaryRound = BACKEND_PRELIMINARY_ROUND_PATTERN.test(round)
     onSelectRound(round)
 
-    if (isStandardRound) {
+    if (isStandardRound || isBackendPreliminaryRound) {
       onSelectStage("preliminary")
       return
     }
@@ -290,6 +328,10 @@ export function PairingsSection({
       onSelectStage("team")
     }
   }
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   useEffect(() => {
     setRoomDrafts(() => {
@@ -363,6 +405,33 @@ export function PairingsSection({
             <Save className="h-4 w-4" />
           </button>
         </div>
+      </td>
+    )
+  }
+
+  const getMatchStatus = (match: MatchResponse) => {
+    if (!match.completed) return "Open"
+    if (match.participantScoresComplete === false) {
+      return match.participantScoresRepairable === true
+        ? "Needs correction"
+        : "Needs correction (not repairable)"
+    }
+    return "Completed"
+  }
+
+  const renderTeamCell = (match: MatchResponse, slot: (typeof teamSlotsToRender)[number]) => {
+    const team = match[slot]
+    if (!team) {
+      return <td key={slot} className="px-6 py-4 text-lg font-semibold text-[#7A83A0]">-</td>
+    }
+
+    const won = resolveTeamCurrentWon(match, slot, team.id) ?? getPersistedWon(persistedResultDrafts, match.id, slot)
+    const resultLabel = won === true ? "Winner" : won === false ? "Loss" : "Result pending"
+
+    return (
+      <td key={slot} className="px-6 py-4 text-lg font-semibold text-[#0B1327]">
+        <div>{team.name}</div>
+        <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-[#6C738A]">{resultLabel}</div>
       </td>
     )
   }
@@ -468,10 +537,10 @@ export function PairingsSection({
 
     return matchRows.map((match) => (
       <tr key={match.id} className="border-b border-[#E2E6F2] last:border-none">
-        <td className="px-6 py-4 text-lg font-semibold text-[#0B1327]">{match.team1?.name ?? "-"}</td>
-        <td className="px-6 py-4 text-lg font-semibold text-[#0B1327]">{match.team2?.name ?? "-"}</td>
+        {teamSlotsToRender.map((slot) => renderTeamCell(match, slot))}
         {renderRoomCell(match)}
         <td className="px-6 py-4 text-sm text-[#7A83A0]">{match.judge?.fullName ?? "-"}</td>
+        <td className="px-6 py-4 text-sm text-[#4A5168]">{getMatchStatus(match)}</td>
         {canEditMatches ? (
           <td className="px-6 py-4 text-right">
             <button
@@ -489,24 +558,28 @@ export function PairingsSection({
   }
 
   return (
-    <section className="rounded-3xl border border-[#E2E6F2] bg-white text-[#050A18] shadow-[0_20px_50px_rgba(12,21,44,0.08)]">
+    <section
+      data-pairings-hydrated={isHydrated ? "true" : "false"}
+      className="rounded-3xl border border-[#E2E6F2] bg-white text-[#050A18] shadow-[0_20px_50px_rgba(12,21,44,0.08)]"
+    >
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2E6F2] px-6 py-4">
         <nav className="flex flex-wrap gap-2">
-          {STAGE_TABS.map((tab) => {
-            const isActive = selectedStage === tab.id
+          {stageDescriptors.map((stage) => {
+            const isActive = selectedStage === stage.id
             return (
               <div
-                key={tab.id}
+                key={stage.id}
                 className={`flex items-center gap-2 rounded-2xl text-sm font-semibold transition-colors ${
                   isActive ? "bg-[#0B1327] text-white" : "border border-[#D5D9E7] text-[#0B1327] hover:bg-[#F5F7FC]"
                 }`}
               >
                 <button
                   type="button"
-                  onClick={() => handleSelectStage(tab.id)}
+                  aria-pressed={isActive}
+                  onClick={() => handleSelectStage(stage.id)}
                   className="px-4 py-2"
                 >
-                  {tab.label} ({configuredStageFormats[tab.id]})
+                  {stage.label} ({stage.format})
                 </button>
                 {isActive && (
                   <div className="relative flex items-center gap-2 pr-3 text-white/80">
@@ -518,7 +591,7 @@ export function PairingsSection({
                       onClick={(event) => {
                         event.stopPropagation()
                         if (!onClearMatches) return
-                        setDeleteConfirmStage(tab.id)
+                        setDeleteConfirmStage(stage.id)
                       }}
                       aria-label="Clear matches"
                     >
@@ -535,7 +608,7 @@ export function PairingsSection({
         <DialogContent className="rounded-3xl border border-[#E2E6F2] bg-white p-10 shadow-[0_20px_70px_rgba(6,14,39,0.25)] sm:max-w-md">
           <DialogTitle className="text-center text-lg font-semibold text-[#0B1327]">
             {deleteConfirmStage
-              ? `Are you sure you want to delete the pairings for ${STAGE_TABS.find((tab) => tab.id === deleteConfirmStage)?.label ?? "this round"}?`
+              ? `Are you sure you want to delete the pairings for ${stageDescriptors.find(({ id }) => id === deleteConfirmStage)?.label ?? "this round"}?`
               : ""}
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -690,10 +763,12 @@ export function PairingsSection({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="bg-[#0B1327] text-xs uppercase tracking-[0.08em] text-white/70">
-              <th className="px-6 py-4">Fraction 1</th>
-              <th className="px-6 py-4">Fraction 2</th>
+              {teamSlotsToRender.map((slot, index) => (
+                <th key={slot} className="px-6 py-4">Fraction {index + 1}</th>
+              ))}
               <th className="px-6 py-4">Room</th>
               <th className="px-6 py-4">Judge Name</th>
+              <th className="px-6 py-4">Status</th>
               {canEditMatches ? <th className="px-6 py-4 text-right">Actions</th> : null}
             </tr>
           </thead>
@@ -744,6 +819,7 @@ export function PairingsSection({
             <button
               key={round}
               type="button"
+              aria-pressed={selectedRound === round}
               onClick={() => handleSelectRound(round)}
               className={`rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
                 selectedRound === round ? "bg-white text-[#050A18]" : "text-white/70 hover:bg-white/10"

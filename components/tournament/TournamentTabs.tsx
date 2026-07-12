@@ -1,6 +1,6 @@
 "use client"
 
-import { RefObject } from "react"
+import { RefObject, useEffect, useState } from "react"
 
 interface TournamentTabsProps {
   activeTab: string
@@ -35,8 +35,18 @@ export function TournamentTabs({
   resultsDropdownRef,
   resultsOptions = ["APF", "BPF", "LD"],
 }: TournamentTabsProps) {
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   return (
-    <div role="tablist" className="flex border-b border-gray-300 mb-8">
+    <div
+      role="tablist"
+      data-tournament-tabs-hydrated={isHydrated ? "true" : "false"}
+      className="flex border-b border-gray-300 mb-8"
+    >
       <div className="relative" ref={mainInfoDropdownRef}>
         <button
           role="tab"
@@ -99,6 +109,7 @@ export function TournamentTabs({
         <button
           role="tab"
           aria-selected={activeTab === "Results and Statistics"}
+          aria-expanded={isResultsDropdownOpen}
           aria-controls="results-and-statistics-panel"
           tabIndex={activeTab === "Results and Statistics" ? 0 : -1}
           onClick={() => {

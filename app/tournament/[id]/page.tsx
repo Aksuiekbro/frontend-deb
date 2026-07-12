@@ -10,7 +10,10 @@ import { JudgesSection } from "@/components/tournament/JudgesSection"
 import { MainInfoSection } from "@/components/tournament/MainInfoSection"
 import { NewsSection } from "@/components/tournament/NewsSection"
 import { PairingsSection } from "@/components/tournament/PairingsSection"
-import type { FormatOption as PairingFormatOption, StageId as PairingStageId } from "@/components/tournament/PairingsSection"
+import type {
+  StageDescriptor as PairingStageDescriptor,
+  StageId as PairingStageId,
+} from "@/components/tournament/PairingsSection"
 import { ResultsSection } from "@/components/tournament/ResultsSection"
 import { TeamsSection } from "@/components/tournament/TeamsSection"
 import { TournamentHeader } from "@/components/tournament/TournamentHeader"
@@ -42,7 +45,7 @@ import type { NewsRequest } from "@/types/news"
 import type { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/announcement/announcement"
 import type { ScheduleRequest } from "@/types/tournament/schedule"
 import { DebateFormat } from "@/types/tournament/tournament"
-import { RoundGroupType } from "@/types/tournament/round/round-group"
+import { RoundGroupType, type RoundGroupResponse } from "@/types/tournament/round/round-group"
 
 const STAGE_BY_ROUND_GROUP_TYPE: Partial<Record<RoundGroupType, PairingStageId>> = {
   [RoundGroupType.PRELIMINARY]: "preliminary",
@@ -50,10 +53,35 @@ const STAGE_BY_ROUND_GROUP_TYPE: Partial<Record<RoundGroupType, PairingStageId>>
   [RoundGroupType.SOLO_ELIMINATION]: "solo",
 }
 
-const PAIRING_FORMAT_BY_DEBATE_FORMAT: Partial<Record<DebateFormat, PairingFormatOption>> = {
+const PAIRING_FORMAT_BY_DEBATE_FORMAT: Partial<Record<DebateFormat, PairingStageDescriptor["format"]>> = {
   [DebateFormat.APF]: "APF",
   [DebateFormat.BPF]: "BPF",
   [DebateFormat.LD]: "LD",
+}
+
+const PAIRING_STAGE_ORDER: PairingStageId[] = ["preliminary", "team", "solo"]
+const PAIRING_STAGE_LABELS: Record<PairingStageId, string> = {
+  preliminary: "Preliminary",
+  team: "Team elimination",
+  solo: "Solo elimination",
+}
+
+function getAvailablePairingStageDescriptors(
+  roundGroups: readonly RoundGroupResponse[] | null | undefined,
+): PairingStageDescriptor[] {
+  return PAIRING_STAGE_ORDER.flatMap((stage) => {
+    const group = roundGroups?.find((candidate) => STAGE_BY_ROUND_GROUP_TYPE[candidate.type] === stage)
+    const format = group ? PAIRING_FORMAT_BY_DEBATE_FORMAT[group.format] : undefined
+
+    if (!group || !format) return []
+
+    return [{
+      id: stage,
+      label: PAIRING_STAGE_LABELS[stage],
+      format,
+      defaultRound: group.rounds?.[0]?.name,
+    }]
+  })
 }
 
 const TOURNAMENT_ROSTER_PAGEABLE = { page: 0, size: 100 }
@@ -154,7 +182,7 @@ export default function TournamentDetailPage() {
     toast,
   })
 
-  const ELIMINATION_ROUND_NAMES = new Set(['1/16', '1/8', '1/4', '1/2'])
+  const ELIMINATION_ROUND_NAMES = new Set(['1/16', '1/8', '1/4', '1/2', 'Final'])
   const effectiveStage: PairingStageId = activeTab === 'Results and Statistics'
     ? selectedResultsOption === 'LD'
       ? 'solo'
@@ -168,6 +196,8 @@ export default function TournamentDetailPage() {
     selectedRoundId,
     selectedRoundNumber,
     currentRoundNumber,
+    selectedRoundGroup,
+    selectedRound: selectedRoundRecord,
     rounds,
     matches,
     isLoading: matchesLoading,
@@ -194,17 +224,15 @@ export default function TournamentDetailPage() {
       ? `tournament:${tournamentId}:round-group:${selectedRoundGroupId}:round:${selectedRoundId}:match-results`
       : undefined
 
-  const pairingStageFormats = useMemo<Partial<Record<PairingStageId, PairingFormatOption>>>(() => {
-    const next: Partial<Record<PairingStageId, PairingFormatOption>> = {}
-    roundGroups?.forEach((group) => {
-      const stage = STAGE_BY_ROUND_GROUP_TYPE[group.type]
-      const format = PAIRING_FORMAT_BY_DEBATE_FORMAT[group.format]
-      if (stage && format) {
-        next[stage] = format
-      }
-    })
-    return next
-  }, [roundGroups])
+  const availablePairingStages = useMemo(
+    () => getAvailablePairingStageDescriptors(roundGroups),
+    [roundGroups],
+  )
+  const effectivePairingStage = selectedRoundGroup
+    ? STAGE_BY_ROUND_GROUP_TYPE[selectedRoundGroup.type] ?? selectedPairingStage
+    : selectedPairingStage
+  const effectivePairingRound = selectedRoundRecord?.name
+    ?? (typeof currentRoundNumber === "number" ? `Round ${currentRoundNumber}` : selectedRound)
 
   const resultsFormatOptions = useMemo<Array<'APF' | 'BPF' | 'LD'>>(() => {
     const hasSoloElimination = roundGroups?.some((group) =>
@@ -512,7 +540,7 @@ export default function TournamentDetailPage() {
 
   const isOrganizer = Boolean(
     currentUser &&
-    organizers?.some((organizer) => organizer.id === currentUser.id)
+    organizers?.some((organizer) => organizer?.id === currentUser.id)
   )
   const canManageTeams = isOrganizer
 
@@ -1304,8 +1332,8 @@ export default function TournamentDetailPage() {
             judges={judges}
             matchesLoading={matchesLoading}
             matchesError={matchesError}
-            selectedStage={selectedPairingStage}
-            selectedRound={selectedRound}
+            selectedStage={effectivePairingStage}
+            selectedRound={effectivePairingRound}
             selectedRoundNumber={selectedRoundNumber}
             currentRoundNumber={currentRoundNumber}
             onSelectStage={setSelectedPairingStage}
@@ -1314,7 +1342,7 @@ export default function TournamentDetailPage() {
             onRandomizePairings={isOrganizer ? handleRandomizePairings : undefined}
             onSubmitPairings={isOrganizer ? handleSubmitPairings : undefined}
             onClearMatches={isOrganizer ? handleClearMatches : undefined}
-            stageFormats={pairingStageFormats}
+            availableStages={availablePairingStages}
             onUpdateMatchRoom={isOrganizer ? handleUpdateMatchRoom : undefined}
             onUpdateMatch={isOrganizer ? handleUpdateMatch : undefined}
             savingMatchId={savingMatchId}

@@ -196,6 +196,39 @@ describe("PairingsSection", () => {
     expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
   })
 
+  it("allows advancing from completed team scores when participant-level scores are omitted", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 302,
+              team1: { id: 1, name: "Team 1", members: team1Members },
+              team2: { id: 2, name: "Team 2", members: team2Members },
+              team1Score: 141,
+              team2Score: 145,
+              team1Won: true,
+              team2Won: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        teams={{ content: [], totalElements: 0, totalPages: 0 }}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByText("All matches in this round are completed. You can proceed to the next round.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+  })
+
   it("does not advance from team scores alone without win/loss results", () => {
     const onProceedToNextRound = jest.fn()
 
@@ -490,6 +523,46 @@ describe("PairingsSection", () => {
     expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
   })
 
+  it("renders all four BPF entrants and each persisted winner state in the generated Final", () => {
+    render(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="team"
+        selectedRound="Final"
+        stageFormats={{ team: "BPF" }}
+        rounds={[{ id: 501, name: "Final", roundNumber: 2, customFormat: "BPF" as never }]}
+        matches={{
+          content: [
+            {
+              id: 50101,
+              team1: { id: 1, name: "BPF Team 1" },
+              team2: { id: 2, name: "BPF Team 2" },
+              team3: { id: 3, name: "BPF Team 3" },
+              team4: { id: 4, name: "BPF Team 4" },
+              team1Won: true,
+              team2Won: false,
+              team3Won: true,
+              team4Won: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={2}
+        currentRoundNumber={2}
+      />,
+    )
+
+    expect(screen.getByRole("columnheader", { name: "Fraction 4" })).toBeInTheDocument()
+    expect(screen.getByText("BPF Team 1")).toBeInTheDocument()
+    expect(screen.getByText("BPF Team 2")).toBeInTheDocument()
+    expect(screen.getByText("BPF Team 3")).toBeInTheDocument()
+    expect(screen.getByText("BPF Team 4")).toBeInTheDocument()
+    expect(screen.getAllByText("Winner")).toHaveLength(2)
+    expect(screen.getAllByText("Loss")).toHaveLength(2)
+  })
+
   it("keeps the selected stage and round synchronized", () => {
     const onSelectStage = jest.fn()
     const onSelectRound = jest.fn()
@@ -503,7 +576,12 @@ describe("PairingsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Team elimination (BPF)" }))
+    const preliminaryButton = screen.getByRole("button", { name: "Preliminary (APF)" })
+    const teamButton = screen.getByRole("button", { name: "Team elimination (BPF)" })
+    expect(preliminaryButton).toHaveAttribute("aria-pressed", "true")
+    expect(teamButton).toHaveAttribute("aria-pressed", "false")
+
+    fireEvent.click(teamButton)
     expect(onSelectStage).toHaveBeenCalledWith("team")
     expect(onSelectRound).toHaveBeenCalledWith("1/16")
 
@@ -516,9 +594,134 @@ describe("PairingsSection", () => {
         onSelectRound={onSelectRound}
       />,
     )
+    expect(screen.getByRole("button", { name: "Preliminary (APF)" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "Team elimination (BPF)" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: /^1\/16$/ })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: /^Round 1$/ })).toHaveAttribute("aria-pressed", "false")
+
     fireEvent.click(screen.getByRole("button", { name: "Round 1" }))
     expect(onSelectStage).toHaveBeenCalledWith("preliminary")
     expect(onSelectRound).toHaveBeenCalledWith("Round 1")
+
+    rerender(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="preliminary"
+        selectedRound="Round 1"
+        onSelectStage={onSelectStage}
+        onSelectRound={onSelectRound}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Preliminary (APF)" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Team elimination (BPF)" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: /^Round 1$/ })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: /^1\/16$/ })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("renders only the stages supplied by the round groups", () => {
+    render(
+      <PairingsSection
+        {...baseProps}
+        availableStages={[
+          { id: "preliminary", label: "Preliminary", format: "APF", defaultRound: "Preliminary 1" },
+          { id: "team", label: "Team elimination", format: "APF", defaultRound: "Semifinal" },
+        ]}
+        selectedRound="Preliminary 1"
+        rounds={[{ id: 701, name: "Preliminary 1", roundNumber: 1 } as never]}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Preliminary (APF)" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Team elimination (APF)" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Solo elimination (LD)" })).not.toBeInTheDocument()
+  })
+
+  it("uses exact mixed-stage labels and backend rounds for stage selection", () => {
+    const onSelectStage = jest.fn()
+    const onSelectRound = jest.fn()
+    const availableStages = [
+      { id: "preliminary" as const, label: "Preliminary", format: "APF" as const, defaultRound: "Preliminary 1" },
+      { id: "team" as const, label: "Team elimination", format: "BPF" as const, defaultRound: "Semifinal" },
+      { id: "solo" as const, label: "Solo elimination", format: "LD" as const, defaultRound: "Final" },
+    ]
+    const { rerender } = render(
+      <PairingsSection
+        {...baseProps}
+        availableStages={availableStages}
+        selectedRound="Preliminary 1"
+        rounds={[
+          { id: 701, name: "Preliminary 1", roundNumber: 1 },
+          { id: 702, name: "Semifinal", roundNumber: 1 },
+          { id: 703, name: "Final", roundNumber: 2 },
+        ] as never}
+        onSelectStage={onSelectStage}
+        onSelectRound={onSelectRound}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Preliminary (APF)" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Team elimination (BPF)" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "Solo elimination (LD)" })).toHaveAttribute("aria-pressed", "false")
+
+    fireEvent.click(screen.getByRole("button", { name: "Team elimination (BPF)" }))
+    expect(onSelectStage).toHaveBeenCalledWith("team")
+    expect(onSelectRound).toHaveBeenCalledWith("Semifinal")
+
+    rerender(
+      <PairingsSection
+        {...baseProps}
+        availableStages={availableStages}
+        selectedStage="team"
+        selectedRound="Semifinal"
+        rounds={[
+          { id: 701, name: "Preliminary 1", roundNumber: 1 },
+          { id: 702, name: "Semifinal", roundNumber: 1 },
+          { id: 703, name: "Final", roundNumber: 2 },
+        ] as never}
+        onSelectStage={onSelectStage}
+        onSelectRound={onSelectRound}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Preliminary (APF)" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "Team elimination (BPF)" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Solo elimination (LD)" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "Semifinal" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Preliminary 1" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it.each(["Preliminary 1", "Preliminary 1.0"])(
+    "keeps backend preliminary round %s on the preliminary stage",
+    (roundLabel) => {
+      const onSelectStage = jest.fn()
+      const onSelectRound = jest.fn()
+
+      render(
+        <PairingsSection
+          {...baseProps}
+          rounds={[{ id: 701, name: roundLabel, roundNumber: 1 } as never]}
+          selectedRound={roundLabel}
+          onSelectStage={onSelectStage}
+          onSelectRound={onSelectRound}
+        />,
+      )
+
+      fireEvent.click(screen.getByRole("button", { name: roundLabel }))
+
+      expect(onSelectRound).toHaveBeenCalledWith(roundLabel)
+      expect(onSelectStage).toHaveBeenCalledWith("preliminary")
+      expect(onSelectStage).not.toHaveBeenCalledWith("team")
+    },
+  )
+
+  it("exposes client hydration on the Pairings section", async () => {
+    render(<PairingsSection {...baseProps} />)
+    const pairingsSection = document.querySelector("[data-pairings-hydrated]")
+
+    await waitFor(() => {
+      expect(pairingsSection).toBeInTheDocument()
+      expect(pairingsSection).toHaveAttribute("data-pairings-hydrated", "true")
+    })
   })
 
   it("lets organizers edit and save a room for a match", () => {

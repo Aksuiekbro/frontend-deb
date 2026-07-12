@@ -25,7 +25,18 @@ export interface MatchResponse {
     winningTeamIds?: number[] | null;
     debater1Score?: number | null;
     debater2Score?: number | null;
+    team1ParticipantScores?: ParticipantScoreResponse[] | null;
+    team2ParticipantScores?: ParticipantScoreResponse[] | null;
+    team3ParticipantScores?: ParticipantScoreResponse[] | null;
+    team4ParticipantScores?: ParticipantScoreResponse[] | null;
+    participantScoresComplete?: boolean | null;
+    participantScoresRepairable?: boolean | null;
     completed: boolean;
+}
+
+export interface ParticipantScoreResponse {
+    participantId: number;
+    score: number;
 }
 
 export interface ParticipantScoreRequest {

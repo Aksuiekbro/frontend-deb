@@ -142,6 +142,99 @@ describe("ResultsSection", () => {
     })
   })
 
+  it("keeps an open match editable when a later round is already current", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 651,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={3}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText("Speaker points for Arman in match 651")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Boris in match 651")).toBeEnabled()
+  })
+
+  it("uses the editable result workspace for open knockout matches", () => {
+    const onSubmitResults = jest.fn()
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        activeResultsSection="1/16"
+        selectedRound="1/16"
+        matches={{
+          content: [
+            {
+              id: 901,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 901" })).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 901")).toBeEnabled()
+    expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument()
+  })
+
+  it("keeps an open Final reachable and editable after a knockout reload", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        activeResultsSection="Final"
+        selectedRound="Final"
+        matches={{
+          content: [
+            {
+              id: 902,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={5}
+        currentRoundNumber={5}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Final" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Final results and speaker points" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Speaker points for Arman in match 902")).toBeEnabled()
+  })
+
   it("submits the fully-scored matches without waiting for every match in the round", async () => {
     const onSubmitResults = jest.fn(async () => true)
 
@@ -285,6 +378,43 @@ describe("ResultsSection", () => {
     })
   })
 
+  it("shows LD Win/Loss from distinct persisted debater scores", async () => {
+    const debater1 = makeParticipant(1301, "Winner")
+    const debater2 = makeParticipant(1351, "Runner")
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        selectedResultsOption="LD"
+        activeResultsSection="Final"
+        selectedRound="Final"
+        matches={{
+          content: [
+            {
+              id: 501,
+              debater1,
+              debater2,
+              debater1Score: 71,
+              debater2Score: 69,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Speaker points for Winner in match 501").closest("tr")).toHaveTextContent("Win")
+      expect(screen.getByLabelText("Speaker points for Runner in match 501").closest("tr")).toHaveTextContent("Loss")
+    })
+  })
+
   it("submits BPF ballots with exactly two winners and two losses", async () => {
     const onSubmitResults = jest.fn()
 
@@ -373,6 +503,56 @@ describe("ResultsSection", () => {
     })
   })
 
+  it("renders all four BPF entrants and persisted winner states after a Final reload", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        selectedResultsOption="BPF"
+        activeResultsSection="Final"
+        selectedRound="Final"
+        rounds={[{ id: 412, name: "Final", roundNumber: 2, customFormat: "BPF" as never }]}
+        matches={{
+          content: [
+            {
+              id: 41201,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              team3: { id: 3, name: "Team 3", club: { id: 3, name: "Club 3" }, members: team3Members },
+              team4: { id: 4, name: "Team 4", club: { id: 4, name: "Club 4" }, members: team4Members },
+              team1ParticipantScores: [{ participantId: 11, score: 75 }, { participantId: 12, score: 76 }],
+              team2ParticipantScores: [{ participantId: 21, score: 74 }, { participantId: 22, score: 73 }],
+              team3ParticipantScores: [{ participantId: 31, score: 72 }, { participantId: 32, score: 71 }],
+              team4ParticipantScores: [{ participantId: 41, score: 70 }, { participantId: 42, score: 69 }],
+              team1Won: true,
+              team2Won: true,
+              team3Won: false,
+              team4Won: false,
+              participantScoresComplete: true,
+              participantScoresRepairable: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={2}
+        currentRoundNumber={2}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+      />,
+    )
+
+    for (const team of ["Team 1", "Team 2", "Team 3", "Team 4"]) {
+      expect(screen.getByText(team)).toBeInTheDocument()
+    }
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 41201" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 2 as winner in match 41201" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 3 as not winner in match 41201" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 4 as not winner in match 41201" })).toBeDisabled()
+    expect(screen.getByText("Completed")).toBeInTheDocument()
+  })
+
   it("allows organizers to repair invalid completed results from a past round", async () => {
     const onSubmitResults = jest.fn()
 
@@ -385,6 +565,8 @@ describe("ResultsSection", () => {
               id: 220,
               team1: { id: 15, name: "Team 15", club: { id: 15, name: "Club 15" }, members: team1Members },
               team2: { id: 23, name: "Team 23", club: { id: 23, name: "Club 23" }, members: team2Members },
+              participantScoresComplete: false,
+              participantScoresRepairable: true,
               completed: true,
             },
           ],
@@ -434,6 +616,45 @@ describe("ResultsSection", () => {
         },
       ] satisfies MatchResultRequest[])
     })
+  })
+
+  it("marks a backend-declared nonrepairable partial match read-only", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 221,
+              team1: { id: 15, name: "Team 15", club: { id: 15, name: "Club 15" }, members: team1Members },
+              team2: { id: 23, name: "Team 23", club: { id: 23, name: "Club 23" }, members: team2Members },
+              team1Score: 151,
+              team2Score: 145,
+              team1Won: true,
+              team2Won: false,
+              team1ParticipantScores: [],
+              team2ParticipantScores: [],
+              participantScoresComplete: false,
+              participantScoresRepairable: false,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+      />,
+    )
+
+    expect(screen.getByRole("cell", { name: "Needs correction (not repairable)" })).toBeInTheDocument()
+    expect(screen.getByText("This completed match has nonrepairable participant scores and cannot be submitted.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Mark Team 15 as winner in match 221" })).toBeDisabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 221")).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
   })
 
   it("renders organizer preliminary standings, speaker details, and win count views from all round matches", () => {
@@ -921,6 +1142,61 @@ describe("ResultsSection", () => {
     expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeDisabled()
     expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
+  })
+
+  it("keeps a repairable completed match editable and submits scores matching aggregates", async () => {
+    const onSubmitResults = jest.fn(async () => true)
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{
+          content: [
+            {
+              id: 220,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              team1Score: 151,
+              team2Score: 145,
+              team1Won: true,
+              team2Won: false,
+              team1ParticipantScores: [],
+              team2ParticipantScores: [],
+              participantScoresComplete: false,
+              participantScoresRepairable: true,
+              completed: true,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    expect(screen.getByLabelText("Speaker points for Arman in match 220")).toBeEnabled()
+    expect(screen.getByRole("cell", { name: "Needs correction" })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 220"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 220"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 220"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 220"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([
+        {
+          matchId: 220,
+          teamResults: [
+            { teamId: 1, won: true, participantScores: [{ participantId: 11, score: 75 }, { participantId: 12, score: 76 }] },
+            { teamId: 2, won: false, participantScores: [{ participantId: 21, score: 72 }, { participantId: 22, score: 73 }] },
+          ],
+        },
+      ])
+    })
   })
 
   it("switches between backend-provided rounds from the results screen", () => {

@@ -55,7 +55,8 @@ interface ResultsSectionProps {
   preliminaryRoundMatchesError?: Error
 }
 
-const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2"] as const
+const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2", "Final"] as const
+const displayRoundLabel = (round: string) => round.replace(/\.0$/, "")
 type DebaterSlotName = "debater1" | "debater2"
 type ScoreSlotName = string
 
@@ -160,7 +161,13 @@ export function ResultsSection({
   const hasRoundProgress =
     typeof selectedRoundNumber === "number" &&
     typeof currentRoundNumber === "number"
-  const canEditSelectedRound = !hasRoundProgress || selectedRoundNumber === currentRoundNumber
+  const hasOpenMatchesInSelectedRound = matchRows.some((match) =>
+    !match.completed && Boolean(match.team1 || match.team2 || match.team3 || match.team4 || match.debater1 || match.debater2),
+  )
+  const canEditSelectedRound =
+    !hasRoundProgress ||
+    selectedRoundNumber === currentRoundNumber ||
+    hasOpenMatchesInSelectedRound
 
   const submitDisabled = true
   const submitButtonClass = `px-8 py-3 bg-[#3E5C76] text-white rounded-lg text-[16px] font-medium transition-colors ${
@@ -223,6 +230,24 @@ export function ResultsSection({
   const getScoreSlots = useCallback((match: MatchResponse): ScoreSlot[] => {
     return getResultSlots(match).flatMap((slot): ScoreSlot[] => slot.kind === "team" ? slot.speakers : [slot])
   }, [getResultSlots])
+
+  const getDebaterResult = (match: MatchResponse, slot: DebaterSlotName) => {
+    const debaterSlots = getResultSlots(match).filter(
+      (resultSlot): resultSlot is DebaterResultSlot => resultSlot.kind === "debater",
+    )
+    const currentSlot = debaterSlots.find((resultSlot) => resultSlot.slot === slot)
+    const opponentSlot = debaterSlots.find((resultSlot) => resultSlot.slot !== slot)
+    if (!currentSlot || !opponentSlot) return null
+
+    const resolveScore = (resultSlot: DebaterResultSlot) => {
+      const draft = scoreDrafts[scoreKey(match.id, resultSlot.slot)]
+      return isValidScoreValue(draft) ? Number(draft) : resultSlot.currentScore
+    }
+    const currentScore = resolveScore(currentSlot)
+    const opponentScore = resolveScore(opponentSlot)
+    if (typeof currentScore !== "number" || typeof opponentScore !== "number" || currentScore === opponentScore) return null
+    return currentScore > opponentScore ? "Win" : "Loss"
+  }
 
   const hasDraftScore = useCallback((matchId: number, slot: ScoreSlot) => {
     return isValidScoreValue(scoreDrafts[scoreKey(matchId, slot.slot)])
@@ -364,6 +389,8 @@ export function ResultsSection({
   }, [getResultSlots, hasDraftScore, hasValidTeamResultSet, resultDrafts, scoreKey])
 
   const isMatchBackendComplete = useCallback((match: MatchResponse) => {
+    if (match.participantScoresComplete === false) return false
+
     const slots = getResultSlots(match)
     const teamSlots = slots.filter((slot): slot is TeamResultSlot => slot.kind === "team")
     const debaterSlots = slots.filter((slot): slot is DebaterResultSlot => slot.kind === "debater")
@@ -390,20 +417,20 @@ export function ResultsSection({
   }, [getResultSlots, hasValidTeamResultSet])
 
   const isMatchReadOnly = useCallback((match: MatchResponse) => {
-    if (match.completed && isMatchBackendComplete(match)) return true
+    const canRepairParticipantScores =
+      match.completed && match.participantScoresRepairable === true && match.participantScoresComplete !== true
+    if (match.completed) return !canRepairParticipantScores
     return Boolean(locallyCompletedMatchIds[match.id]) && isMatchDraftComplete(match)
-  }, [isMatchBackendComplete, isMatchDraftComplete, locallyCompletedMatchIds])
+  }, [isMatchDraftComplete, locallyCompletedMatchIds])
 
   const editableMatches = useMemo(
     () => matchRows.filter((match) => !isMatchReadOnly(match) && getResultSlots(match).length > 0),
     [getResultSlots, isMatchReadOnly, matchRows]
   )
-  const canRepairSelectedRound =
-    hasRoundProgress &&
-    typeof selectedRoundNumber === "number" &&
-    typeof currentRoundNumber === "number" &&
-    selectedRoundNumber < currentRoundNumber &&
-    editableMatches.length > 0
+  const hasRepairableParticipantScoreMatches = editableMatches.some(
+    (match) => match.participantScoresRepairable === true && match.participantScoresComplete !== true,
+  )
+  const canRepairSelectedRound = hasRepairableParticipantScoreMatches
 
   // Organizers fill results match-by-match as rounds finish, so allow submitting the
   // matches that are fully scored rather than forcing every open match to be ready first.
@@ -428,11 +455,24 @@ export function ResultsSection({
   const matchSubmitButtonClass = `px-8 py-3 bg-[#3E5C76] text-white rounded-lg text-[16px] font-medium transition-colors ${
     canSubmitMatchResults ? "hover:bg-[#2D3748]" : "cursor-not-allowed opacity-50"
   }`
+  const isRepairableParticipantScoreMatch = (match: MatchResponse) =>
+    match.completed && match.participantScoresRepairable === true && match.participantScoresComplete !== true
+
+  const isNonrepairableCorrection = (match: MatchResponse) =>
+    match.completed && !isRepairableParticipantScoreMatch(match) && !isMatchBackendComplete(match)
+
+  const getMatchStatusLabel = (match: MatchResponse) => {
+    if (isRepairableParticipantScoreMatch(match)) return "Needs correction"
+    if (isNonrepairableCorrection(match)) return "Needs correction (not repairable)"
+    if (match.completed || isMatchReadOnly(match)) return "Completed"
+    return "Open"
+  }
+  const nonrepairableCorrectionCount = matchRows.filter(isNonrepairableCorrection).length
   const summaryRoundMatches = useMemo(() => {
     return [...(preliminaryRoundMatches ?? [])].sort((a, b) => a.round.roundNumber - b.round.roundNumber)
   }, [preliminaryRoundMatches])
   const preliminarySummary = useMemo(() => {
-    const teamStandings = new Map<number, {
+    type TeamStanding = {
       teamId: number
       teamName: string
       clubName: string
@@ -443,8 +483,8 @@ export function ResultsSection({
       speakerPointCount: number
       roundResults: Record<number, string[]>
       roundSpeakerTotals: Record<number, number[]>
-    }>()
-    const speakerStandings = new Map<number, {
+    }
+    type SpeakerStanding = {
       participantId: number
       speakerName: string
       teamId: number
@@ -453,12 +493,14 @@ export function ResultsSection({
       total: number
       count: number
       roundScores: Record<number, number[]>
-    }>()
+    }
+    const teamStandings = new Map<number, TeamStanding>()
+    const speakerStandings = new Map<number, SpeakerStanding>()
 
     const ensureTeam = (team: SimpleTeamResponse) => {
       const existing = teamStandings.get(team.id)
       if (existing) return existing
-      const row = {
+      const row: TeamStanding = {
         teamId: team.id,
         teamName: team.name,
         clubName: team.club?.name ?? "—",
@@ -486,7 +528,7 @@ export function ResultsSection({
         existing.aggregateScore = aggregateScore
       }
       if (existing) return existing
-      const row = {
+      const row: SpeakerStanding = {
         participantId,
         speakerName,
         teamId,
@@ -910,8 +952,8 @@ export function ResultsSection({
       return slots.map((slot, index) => {
         const key = scoreKey(match.id, slot.slot)
         const matchIsReadOnly = isMatchReadOnly(match)
-        const canEditResult = canManageTeams && (canEditSelectedRound || canRepairSelectedRound) && !matchIsReadOnly
-        const statusLabel = matchIsReadOnly ? "Completed" : match.completed ? "Needs correction" : "Open"
+        const canEditResult = canManageTeams && (canEditSelectedRound || isRepairableParticipantScoreMatch(match)) && !matchIsReadOnly
+        const statusLabel = getMatchStatusLabel(match)
         return (
           <tr key={key} className="hover:bg-gray-50">
             {index === 0 ? (
@@ -951,7 +993,7 @@ export function ResultsSection({
                   })}
                 </div>
               ) : (
-                <span className="text-sm text-[#7A83A0]">—</span>
+                <span className="text-sm text-[#0D1321]">{getDebaterResult(match, slot.slot) ?? "—"}</span>
               )}
             </td>
             <td className="border border-gray-300 px-6 py-4">
@@ -1196,7 +1238,7 @@ export function ResultsSection({
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h3 className="text-xl font-semibold text-[#0D1321]">
-            {selectedRound} results and speaker points
+            {displayRoundLabel(selectedRound)} results and speaker points
           </h3>
         </div>
         {roundOptions.length > 1 ? (
@@ -1235,6 +1277,11 @@ export function ResultsSection({
         </table>
       </div>
       {scoreError ? <p className="mt-4 text-sm text-red-500" role="alert">{scoreError}</p> : null}
+      {nonrepairableCorrectionCount > 0 ? (
+        <p className="mt-4 text-sm text-amber-700" role="status">
+          {nonrepairableCorrectionCount === 1 ? "This completed match has" : `${nonrepairableCorrectionCount} completed matches have`} nonrepairable participant scores and cannot be submitted.
+        </p>
+      ) : null}
       {hasEditableMatches ? (
         <p className="mt-4 text-sm text-[#4A5168]">
           {readyToSubmitCount > 0
@@ -1321,7 +1368,7 @@ export function ResultsSection({
   const isEliminationRound =
     selectedResultsOption !== "LD" &&
     ELIMINATION_ROUNDS.includes(activeResultsSection as (typeof ELIMINATION_ROUNDS)[number])
-  const isMatchResultsMode = !isEliminationRound && shouldRenderMatchResults
+  const isMatchResultsMode = shouldRenderMatchResults
 
   type TeamWithEliminationResult = SimpleTeamResponse & {
     eliminationResult?: {
@@ -1395,7 +1442,9 @@ export function ResultsSection({
       <h2 className="text-[#0D1321] text-[32px] font-bold mb-8">{selectedResultsOption}</h2>
 
       <div className="relative">
-        {isEliminationRound ? (
+        {isMatchResultsMode ? (
+          renderResultsWorkspace()
+        ) : isEliminationRound ? (
           <>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
@@ -1415,8 +1464,6 @@ export function ResultsSection({
               </button>
             </div>
           </>
-        ) : isMatchResultsMode ? (
-          renderResultsWorkspace()
         ) : (
           <>
         {selectedResultsOption === "APF" && activeResultsSection === "APF Speaker Score" && (
@@ -1544,8 +1591,7 @@ export function ResultsSection({
           </>
         )}
 
-        {!isMatchResultsMode && (
-          <div className="bg-[#0D1321] rounded-lg p-4">
+        <div className="bg-[#0D1321] rounded-lg p-4">
             <div className="flex items-center justify-center gap-2">
               {selectedResultsOption !== "LD" && (
                 <>
@@ -1596,7 +1642,6 @@ export function ResultsSection({
               ))}
             </div>
           </div>
-        )}
       </div>
     </div>
   )
