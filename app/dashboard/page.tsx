@@ -168,7 +168,8 @@ export default function Dashboard() {
                   title="Welcome to DeBetter!"
                   description="Please log in to view your personalized dashboard"
                   actionText="Login"
-                  actionHref="/auth"
+                  actionHref="/auth?mode=login"
+                  prefetch={false}
                 />
               )}
             </LoadingState>

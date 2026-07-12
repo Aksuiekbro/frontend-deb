@@ -560,10 +560,10 @@ export default function JoinDebatesPage() {
                   <div role="alert" className="rounded-md border border-[#CFD6EA] bg-white px-4 py-3 text-center">
                     <p className="text-[#0D1321] text-[14px]">Please sign in before registering a team.</p>
                     <div className="mt-3 flex justify-center gap-3">
-                      <Link href="/auth?mode=login" className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm text-white hover:bg-[#2D3748]">
+                      <Link href="/auth?mode=login" prefetch={false} className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm text-white hover:bg-[#2D3748]">
                         Log In
                       </Link>
-                      <Link href="/auth?mode=register" className="rounded-md border border-[#3E5C76] px-4 py-2 text-sm text-[#0D1321] hover:bg-white">
+                      <Link href="/auth?mode=register" prefetch={false} className="rounded-md border border-[#3E5C76] px-4 py-2 text-sm text-[#0D1321] hover:bg-white">
                         Register
                       </Link>
                     </div>

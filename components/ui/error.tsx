@@ -1,4 +1,5 @@
 import { AlertCircle, RefreshCw } from "lucide-react"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 interface ErrorStateProps {
@@ -36,10 +37,22 @@ interface EmptyStateProps {
   description: string
   actionLabel?: string
   onAction?: () => void
+  actionText?: string
+  actionHref?: string
+  prefetch?: boolean
   className?: string
 }
 
-export function EmptyState({ title, description, actionLabel, onAction, className }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  actionLabel,
+  onAction,
+  actionText,
+  actionHref,
+  prefetch,
+  className,
+}: EmptyStateProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center py-12 px-4", className)}>
       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -47,14 +60,22 @@ export function EmptyState({ title, description, actionLabel, onAction, classNam
       </div>
       <h3 className="text-lg font-medium text-[#0D1321] mb-2">{title}</h3>
       <p className="text-[#4a4e69] text-center mb-4 max-w-md">{description}</p>
-      {actionLabel && onAction && (
+      {actionText && actionHref ? (
+        <Link
+          href={actionHref}
+          prefetch={prefetch}
+          className="bg-[#3E5C76] text-white px-4 py-2 rounded-lg hover:bg-[#22223b] text-sm font-medium transition-colors"
+        >
+          {actionText}
+        </Link>
+      ) : actionLabel && onAction ? (
         <button
           onClick={onAction}
           className="bg-[#3E5C76] text-white px-4 py-2 rounded-lg hover:bg-[#22223b] text-sm font-medium transition-colors"
         >
           {actionLabel}
         </button>
-      )}
+      ) : null}
     </div>
   )
 }

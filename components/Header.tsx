@@ -71,8 +71,8 @@ export default function Header() {
             </Link>
           ) : (
             <div className="flex items-center space-x-4">
-              <Link href="/auth?mode=login" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium">Log In</Link>
-              <Link href="/auth?mode=register" className="bg-[#3E5C76] text-white px-4 py-2 rounded-[8px] hover:bg-[#748CAB] transition-colors duration-200 text-[16px] font-medium shadow-sm">Register</Link>
+              <Link href="/auth?mode=login" prefetch={false} className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium">Log In</Link>
+              <Link href="/auth?mode=register" prefetch={false} className="bg-[#3E5C76] text-white px-4 py-2 rounded-[8px] hover:bg-[#748CAB] transition-colors duration-200 text-[16px] font-medium shadow-sm">Register</Link>
             </div>
           )}
         </div>

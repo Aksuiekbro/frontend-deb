@@ -3,8 +3,18 @@
  */
 import { render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
+import type { ComponentPropsWithoutRef } from "react"
 
 import Dashboard from "./page"
+
+type MockLinkProps = ComponentPropsWithoutRef<"a"> & { prefetch?: boolean }
+
+jest.mock("next/link", () => ({
+  __esModule: true,
+  default: ({ prefetch, ...props }: MockLinkProps) => (
+    <a {...props} data-prefetch={prefetch === undefined ? "default" : String(prefetch)} />
+  ),
+}))
 
 const mockUseCurrentUser = jest.fn()
 const mockUseUpcomingTournaments = jest.fn()
@@ -84,5 +94,22 @@ describe("Dashboard", () => {
     expect(screen.getByText("Upcoming Open")).toBeInTheDocument()
     expect(screen.getByText("Past Open")).toBeInTheDocument()
     expect(screen.getByText("school")).toBeInTheDocument()
+  })
+
+  it("uses the login auth destination without prefetching and leaves other links unchanged", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: null,
+      isLoading: false,
+      error: undefined,
+    })
+
+    render(<Dashboard />)
+
+    expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/auth?mode=login")
+    expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("data-prefetch", "false")
+    expect(screen.getByRole("link", { name: "Host Debate" })).toHaveAttribute("data-prefetch", "default")
+    for (const link of screen.getAllByRole("link", { name: "Join Debates" })) {
+      expect(link).toHaveAttribute("data-prefetch", "default")
+    }
   })
 })

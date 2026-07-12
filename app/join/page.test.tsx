@@ -3,10 +3,20 @@
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
+import type { ComponentPropsWithoutRef } from "react"
 import JoinDebatesPage from "./page"
 import { api } from "@/lib/api"
 import { DebateFormat, TournamentLeague } from "@/types/tournament/tournament"
 import { Role } from "@/types/user/user"
+
+type MockLinkProps = ComponentPropsWithoutRef<"a"> & { prefetch?: boolean }
+
+jest.mock("next/link", () => ({
+  __esModule: true,
+  default: ({ prefetch, ...props }: MockLinkProps) => (
+    <a {...props} data-prefetch={prefetch === undefined ? "default" : String(prefetch)} />
+  ),
+}))
 
 jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
@@ -155,7 +165,10 @@ describe("JoinDebatesPage team registration", () => {
 
     expect(screen.getAllByText("Please sign in before registering a team.").length).toBeGreaterThan(0)
     expect(screen.getByRole("link", { name: "Log In" })).toHaveAttribute("href", "/auth?mode=login")
+    expect(screen.getByRole("link", { name: "Log In" })).toHaveAttribute("data-prefetch", "false")
     expect(screen.getByRole("link", { name: "Register" })).toHaveAttribute("href", "/auth?mode=register")
+    expect(screen.getByRole("link", { name: "Register" })).toHaveAttribute("data-prefetch", "false")
+    expect(screen.getByRole("link", { name: "More..." })).toHaveAttribute("data-prefetch", "default")
     expect(screen.getByRole("button", { name: "Register Team" })).toBeDisabled()
   })
 })

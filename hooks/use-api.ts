@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import { api } from '@/lib/api'
 import {
@@ -403,8 +404,14 @@ export function useUser(id: number) {
 
 export function useCurrentUser() {
   const previewUser = PREVIEW_USERS_BY_ROLE[PREVIEW_ROLE]
-  const { data, error, isLoading, mutate } = useSWR(
-    IS_PREVIEW ? null : ['current-user'],
+  const [consumerHasCommitted, setConsumerHasCommitted] = useState(false)
+
+  useEffect(() => {
+    setConsumerHasCommitted(true)
+  }, [])
+
+  const { data, error, isLoading, mutate } = useSWR<UserResponse | null>(
+    IS_PREVIEW || !consumerHasCommitted ? null : ['current-user'],
     async () => {
       const response = await api.getMe()
       if (response.status === 401 || response.status === 403) {
@@ -432,7 +439,7 @@ export function useCurrentUser() {
 
   return {
     user: data ?? undefined,
-    isLoading,
+    isLoading: !consumerHasCommitted || isLoading,
     error,
     mutate
   }
