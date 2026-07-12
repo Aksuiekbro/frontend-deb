@@ -30,12 +30,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Hiragino+Sans:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className={`${inter.className} font-hikasami`}>
         <SWRProvider>
           <HeaderWrapper />
