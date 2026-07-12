@@ -27,6 +27,7 @@ docker/.env
 # Personal / machine-local
 .claude/settings.local.json
 .DS_Store
+.prod-backups/
 
 # Two-agent AI pipeline working files — kept out of the committed paper trail.
 .ai/scratch/
