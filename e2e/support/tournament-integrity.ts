@@ -3591,9 +3591,16 @@ export async function selectResultsRound(page: Page, stage: IntegrityStage, form
   const formatButton = page.getByRole("button", { name: format, exact: true })
   await expect(formatButton).toBeVisible({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
   await formatButton.click({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
-  const roundEntryButton = page.getByRole("button", { name: "Round entry", exact: true })
-  await expect(roundEntryButton).toBeVisible({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
-  await roundEntryButton.click({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
+  // Outcome-only stages (elimination LD) render a single results view, so the
+  // "Select results view" row — and its "Round entry" button — is not in the DOM
+  // and the entry view is already active. Click it only when the row exists.
+  await expect(page.getByRole("heading", { name: format, exact: true })).toBeVisible({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
+  const resultsViewRow = page.locator('[aria-label="Select results view"]')
+  if (await resultsViewRow.count() > 0) {
+    const roundEntryButton = resultsViewRow.getByRole("button", { name: "Round entry", exact: true })
+    await expect(roundEntryButton).toBeVisible({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
+    await roundEntryButton.click({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
+  }
   if (stage === "preliminary") {
     const picker = page.locator('[aria-label="Select results round"]')
     if (await picker.count() > 0) {

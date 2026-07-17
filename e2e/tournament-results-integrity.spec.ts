@@ -90,7 +90,7 @@ const REQUIRED_CASE_IDS = [
   "partial-row-nonrepairable-9105",
   "progression-gating-9101",
   "invalid-ballots-9101",
-  "invalid-tie-ballot-9103",
+  "invalid-missing-winner-9103",
   "privacy-and-authorization-9102",
   "mixed-and-no-ld-contract",
 ] as const
@@ -2225,7 +2225,9 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
       expect(noLdReloadResultsControls).toMatchObject({ selected: "true", expanded: "true" })
       for (const controls of [noLdResultsControls.controls, noLdReloadResultsControls.controls]) {
         expect(controls.find(({ format }) => format === "APF")).toMatchObject({ count: 1, visible: true })
-        expect(controls.find(({ format }) => format === "BPF")).toMatchObject({ count: 1, visible: true })
+        // Fixture 9104 runs APF preliminary + APF team elimination; since the
+        // "hide unavailable result formats" change, unused formats are absent.
+        expect(controls.find(({ format }) => format === "BPF")).toMatchObject({ count: 0, visible: false })
         expect(controls.find(({ format }) => format === "LD")).toMatchObject({ count: 0, visible: false })
       }
       for (const controls of [noLdPairingControls.controls, noLdReloadPairingControls.controls]) {

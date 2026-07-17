@@ -1,0 +1,52 @@
+# Isolated Docker stack for the Luna tournament-integrity e2e matrix.
+# Expected by e2e/run-luna-browser-matrix.sh:
+#   - postgres container `debetter-postgres` (db `debetter`, user `debetter_user`)
+#   - backend container `luna-backend-app` from image `debetter-spring-app:luna-backend-v2`
+#   - backend API reachable at http://localhost:18080/api
+# Bring it up with luna-stack.sh (handles the two-phase liquibase boot on a fresh DB).
+name: luna-backend-v2
+
+services:
+  db:
+    image: postgres:16.3-alpine3.20
+    container_name: debetter-postgres
+    environment:
+      POSTGRES_DB: debetter
+      POSTGRES_USER: debetter_user
+      POSTGRES_PASSWORD: debetter_dev_password
+    volumes:
+      - luna-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U debetter_user -d debetter"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8.0.3-alpine
+    container_name: luna-redis
+    command: [redis-server, "--requirepass", "debetter_redis_password"]
+
+  app:
+    image: debetter-spring-app:luna-backend-v2
+    container_name: luna-backend-app
+    ports:
+      - "18080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/debetter
+      SPRING_DATASOURCE_USERNAME: debetter_user
+      SPRING_DATASOURCE_PASSWORD: debetter_dev_password
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: "6379"
+      SPRING_REDIS_PASSWORD: debetter_redis_password
+      SECURITY_REMEMBER_ME_KEY: luna-local-remember-me-key
+      # Overridden to "true" by luna-stack.sh for the second boot phase.
+      SPRING_LIQUIBASE_ENABLED: ${SPRING_LIQUIBASE_ENABLED:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  luna-db-data:

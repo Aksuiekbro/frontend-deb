@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev-luna",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["BACKEND_URL=http://localhost:18080/api", "npm", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}
