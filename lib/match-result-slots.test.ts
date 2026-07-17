@@ -1,4 +1,4 @@
-import { resolveParticipantCurrentScore } from "./match-result-slots"
+import { resolveDebaterCurrentWon, resolveParticipantCurrentScore } from "./match-result-slots"
 
 describe("resolveParticipantCurrentScore", () => {
   it("reads participant scores from the typed team response fields", () => {
@@ -38,5 +38,50 @@ describe("resolveParticipantCurrentScore", () => {
     )
 
     expect(score).toBeNull()
+  })
+})
+
+describe("resolveDebaterCurrentWon", () => {
+  const debater1 = { id: 701 }
+  const debater2 = { id: 702 }
+
+  it("uses the explicit winner participant from the elimination contract", () => {
+    const match = {
+      id: 303,
+      debater1,
+      debater2,
+      winnerParticipantId: 702,
+      completed: true,
+    } as never
+
+    expect(resolveDebaterCurrentWon(match, "debater1", 701)).toBe(false)
+    expect(resolveDebaterCurrentWon(match, "debater2", 702)).toBe(true)
+  })
+
+  it("falls back to historical distinct LD scores for old completed matches", () => {
+    const match = {
+      id: 304,
+      debater1,
+      debater2,
+      debater1Score: 71,
+      debater2Score: 69,
+      completed: true,
+    } as never
+
+    expect(resolveDebaterCurrentWon(match, "debater1", 701)).toBe(true)
+    expect(resolveDebaterCurrentWon(match, "debater2", 702)).toBe(false)
+  })
+
+  it("does not turn an unrelated winner participant into two losses", () => {
+    const match = {
+      id: 305,
+      debater1,
+      debater2,
+      winnerParticipantId: 999,
+      completed: true,
+    } as never
+
+    expect(resolveDebaterCurrentWon(match, "debater1", 701)).toBeNull()
+    expect(resolveDebaterCurrentWon(match, "debater2", 702)).toBeNull()
   })
 })

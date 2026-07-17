@@ -3,6 +3,7 @@ import type { SimpleTeamResponse } from "@/types/tournament/team"
 import type { SimpleTournamentParticipantResponse } from "@/types/tournament/tournament-participant"
 
 export type TeamSlotName = "team1" | "team2" | "team3" | "team4"
+export type DebaterSlotName = "debater1" | "debater2"
 
 export const participantScoreSlot = (teamSlot: TeamSlotName, participantId: number) =>
   `${teamSlot}:participant:${participantId}`
@@ -166,4 +167,53 @@ export const resolveTeamCurrentWon = (match: MatchResponse, teamSlot: TeamSlotNa
   }
 
   return null
+}
+
+export const resolveDebaterCurrentWon = (
+  match: MatchResponse,
+  debaterSlot: DebaterSlotName,
+  participantId: number,
+) => {
+  const record = match as MatchResponse & Record<string, unknown>
+  const winnerParticipantId =
+    getNumber(record.winnerParticipantId) ??
+    getNumber(record.winnerDebaterId)
+
+  if (winnerParticipantId !== null) {
+    const assignedParticipantIds = [match.debater1?.id, match.debater2?.id]
+      .filter((id): id is number => typeof id === "number")
+    if (assignedParticipantIds.length > 0 && !assignedParticipantIds.includes(winnerParticipantId)) {
+      return null
+    }
+    return winnerParticipantId === participantId
+  }
+
+  const booleanKeys = [
+    `${debaterSlot}Won`,
+    `${debaterSlot}Win`,
+    `${debaterSlot}Winner`,
+    `${debaterSlot}IsWinner`,
+  ]
+  for (const key of booleanKeys) {
+    if (typeof record[key] === "boolean") return record[key] as boolean
+  }
+
+  const participantResults = Array.isArray(record.participantResults)
+    ? record.participantResults
+    : Array.isArray(record.debaterResults)
+      ? record.debaterResults
+      : []
+  const participantResult = participantResults.find((item) => {
+    if (!item || typeof item !== "object") return false
+    return getParticipantIdFromRecord(item as Record<string, unknown>) === participantId
+  }) as Record<string, unknown> | undefined
+  if (participantResult) {
+    const won = getWonFromRecord(participantResult)
+    if (typeof won === "boolean") return won
+  }
+
+  const currentScore = getNumber(record[`${debaterSlot}Score`])
+  const opponentScore = getNumber(record[`${debaterSlot === "debater1" ? "debater2" : "debater1"}Score`])
+  if (currentScore === null || opponentScore === null || currentScore === opponentScore) return null
+  return currentScore > opponentScore
 }

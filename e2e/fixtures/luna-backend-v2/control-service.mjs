@@ -233,6 +233,7 @@ SELECT jsonb_build_object(
                 ) AS w(slot_number, team_id, team_won)
                 WHERE w.team_id IS NOT NULL AND w.team_won IS TRUE
               ), '[]'::jsonb),
+              'winnerParticipantId', m.winner_participant_id,
               'participantScoreRows', COALESCE((
                 SELECT jsonb_agg(jsonb_build_object(
                   'id', ps.id,
@@ -243,18 +244,20 @@ SELECT jsonb_build_object(
                 FROM match_participant_score ps WHERE ps.match_id = m.id
               ), '[]'::jsonb),
               'expectedParticipantScoreRows', CASE
-                WHEN rg.type = 'SOLO_ELIMINATION' THEN num_nonnulls(m.debater1_id, m.debater2_id)
+                WHEN rg.type <> 'PRELIMINARY' THEN 0
+                WHEN num_nonnulls(m.debater1_id, m.debater2_id) > 0 THEN num_nonnulls(m.debater1_id, m.debater2_id)
                 ELSE (SELECT count(*) FROM tournament_participant tp WHERE tp.team_id IN (m.team1_id, m.team2_id, m.team3_id, m.team4_id))
               END,
               'participantScoreRowCount', (SELECT count(*) FROM match_participant_score ps WHERE ps.match_id = m.id),
               'participantScoresComplete', (
                 (SELECT count(*) FROM match_participant_score ps WHERE ps.match_id = m.id) = CASE
-                  WHEN rg.type = 'SOLO_ELIMINATION' THEN num_nonnulls(m.debater1_id, m.debater2_id)
+                  WHEN rg.type <> 'PRELIMINARY' THEN 0
+                  WHEN num_nonnulls(m.debater1_id, m.debater2_id) > 0 THEN num_nonnulls(m.debater1_id, m.debater2_id)
                   ELSE (SELECT count(*) FROM tournament_participant tp WHERE tp.team_id IN (m.team1_id, m.team2_id, m.team3_id, m.team4_id))
                 END
               ),
               'participantScoresRepairable', (
-                m.completed AND rg.type <> 'SOLO_ELIMINATION' AND
+                m.completed AND rg.type = 'PRELIMINARY' AND
                 (SELECT count(*) FROM match_participant_score ps WHERE ps.match_id = m.id) = 0
               )
             ) ORDER BY m.id)

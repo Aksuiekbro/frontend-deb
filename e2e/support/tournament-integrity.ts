@@ -54,6 +54,7 @@ export type IntegrityStage = "preliminary" | "team" | "solo"
 export type IntegrityMatch = {
   id: number
   completed: boolean
+  winnerParticipantId: number | null
   participantScoresComplete: boolean | null
   participantScoresRepairable: boolean | null
   teams: Array<{
@@ -3233,6 +3234,7 @@ function summarizeMatch(match: MatchResponse, teams: Map<number, SimpleTeamRespo
   return {
     id: match.id,
     completed: match.completed,
+    winnerParticipantId: toNumberOrNull(match.winnerParticipantId),
     participantScoresComplete: typeof match.participantScoresComplete === "boolean" ? match.participantScoresComplete : null,
     participantScoresRepairable: typeof match.participantScoresRepairable === "boolean" ? match.participantScoresRepairable : null,
     teams: teamSlots,
@@ -3439,16 +3441,28 @@ export function buildValidExpectedPoints(match: IntegrityMatch, seed = 0) {
   return values
 }
 
-export function buildValidResult(match: IntegrityMatch, format: DebateFormat, seed = 0): MatchResultRequest {
+export function buildValidResult(
+  match: IntegrityMatch,
+  format: DebateFormat,
+  seed = 0,
+  stage: IntegrityStage = "preliminary",
+): MatchResultRequest {
   const expectedPoints = buildValidExpectedPoints(match, seed)
   if (match.teams.length) {
     const winnerCount = format === "BPF" || match.teams.length >= 4 ? 2 : 1
     const teamResults = match.teams.map((team, index) => ({
       teamId: team.id,
       won: index < winnerCount,
-      participantScores: team.speakers.map((speaker) => ({ participantId: speaker.id, score: expectedPoints.get(speaker.id) ?? 70 })),
+      ...(stage === "preliminary"
+        ? { participantScores: team.speakers.map((speaker) => ({ participantId: speaker.id, score: expectedPoints.get(speaker.id) ?? 70 })) }
+        : {}),
     }))
     return { matchId: match.id, teamResults }
+  }
+  if (stage === "solo") {
+    const winner = match.debaters[0]
+    if (!winner) throw new Error(`Match ${match.id} has no debater to select as winner.`)
+    return { matchId: match.id, winnerParticipantId: winner.id }
   }
   return {
     matchId: match.id,
@@ -3488,7 +3502,13 @@ export function buildRepairExpectedPoints(match: IntegrityMatch) {
   return values
 }
 
-export async function fillValidMatch(page: Page, match: IntegrityMatch, format: DebateFormat, seed = 0) {
+export async function fillValidMatch(
+  page: Page,
+  match: IntegrityMatch,
+  format: DebateFormat,
+  seed = 0,
+  stage: IntegrityStage = "preliminary",
+) {
   const expectedPoints = buildValidExpectedPoints(match, seed)
   if (match.teams.length) {
     const winnerCount = format === "BPF" || match.teams.length >= 4 ? 2 : 1
@@ -3496,17 +3516,23 @@ export async function fillValidMatch(page: Page, match: IntegrityMatch, format: 
       const result = index < winnerCount ? "winner" : "not winner"
       await page.getByRole("button", { name: `Mark ${team.name} as ${result} in match ${match.id}`, exact: true }).click()
     }
-    for (const team of match.teams) {
-      for (const speaker of team.speakers) {
-        await page.getByLabel(`Speaker points for ${speaker.name} in match ${match.id}`, { exact: true }).fill(String(expectedPoints.get(speaker.id) ?? 70))
+    if (stage === "preliminary") {
+      for (const team of match.teams) {
+        for (const speaker of team.speakers) {
+          await page.getByLabel(`Speaker points for ${speaker.name} in match ${match.id}`, { exact: true }).fill(String(expectedPoints.get(speaker.id) ?? 70))
+        }
       }
     }
+  } else if (stage === "solo") {
+    const winner = match.debaters[0]
+    if (!winner) throw new Error(`Match ${match.id} has no debater to select as winner.`)
+    await page.getByRole("button", { name: `Mark ${winner.name} as winner in match ${match.id}`, exact: true }).click()
   } else {
     for (const debater of match.debaters) {
       await page.getByLabel(`Speaker points for ${debater.name} in match ${match.id}`, { exact: true }).fill(String(expectedPoints.get(debater.id) ?? 70))
     }
   }
-  return expectedPoints
+  return stage === "preliminary" ? expectedPoints : new Map<number, number>()
 }
 
 export async function fillRepairableMatch(page: Page, match: IntegrityMatch) {
@@ -3582,7 +3608,10 @@ export async function selectResultsRound(page: Page, stage: IntegrityStage, form
     await expect(bracketAliasButton).toBeVisible({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
     await bracketAliasButton.click({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
   }
-  const heading = page.getByRole("heading", { name: `${expectedRoundLabel} results and speaker points`, exact: true })
+  const expectedHeading = stage === "preliminary"
+    ? `${expectedRoundLabel} results and speaker points`
+    : `${expectedRoundLabel} results`
+  const heading = page.getByRole("heading", { name: expectedHeading, exact: true })
   await expect(heading).toBeVisible({ timeout: TAB_ACTIVATION_TIMEOUT_MS })
 }
 

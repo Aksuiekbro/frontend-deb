@@ -7,6 +7,7 @@ import "@testing-library/jest-dom"
 import { ResultsSection } from "./ResultsSection"
 import { getResultInputDraftStorageKey } from "@/lib/tournament-result-drafts"
 import type { MatchResultRequest } from "@/types/tournament/match"
+import { RoundGroupType } from "@/types/tournament/round/round-group"
 import { Role } from "@/types/user/user"
 
 const participantProfile = {
@@ -42,6 +43,7 @@ const baseProps = {
   onActiveResultsSectionChange: jest.fn(),
   selectedRound: "Round 1",
   onSelectedRoundChange: jest.fn(),
+  roundGroupType: RoundGroupType.PRELIMINARY,
   teams: { content: [], totalElements: 0, totalPages: 0 },
   teamsLoading: false,
   teamsError: undefined,
@@ -170,12 +172,13 @@ describe("ResultsSection", () => {
     expect(screen.getByLabelText("Speaker points for Boris in match 651")).toBeEnabled()
   })
 
-  it("uses the editable result workspace for open knockout matches", () => {
+  it("submits team knockout results without speaker points", async () => {
     const onSubmitResults = jest.fn()
 
     render(
       <ResultsSection
         {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
         activeResultsSection="1/16"
         selectedRound="1/16"
         matches={{
@@ -198,16 +201,61 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 901" })).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Arman in match 901")).toBeEnabled()
+    expect(screen.queryByText("Speaker points")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Speaker points for Arman in match 901")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 901" }))
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeEnabled()
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([{
+        matchId: 901,
+        teamResults: [
+          { teamId: 1, won: true },
+          { teamId: 2, won: false },
+        ],
+      }] satisfies MatchResultRequest[])
+    })
+  })
+
+  it("keeps speaker points required until the round-group type is known", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={undefined}
+        matches={{
+          content: [
+            {
+              id: 905,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 905" }))
+    expect(screen.getByLabelText("Speaker points for Arman in match 905")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
   })
 
   it("keeps an open Final reachable and editable after a knockout reload", () => {
     render(
       <ResultsSection
         {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
         activeResultsSection="Final"
         selectedRound="Final"
         matches={{
@@ -230,9 +278,63 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: "Final" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Final results and speaker points" })).toBeInTheDocument()
-    expect(screen.getByLabelText("Speaker points for Arman in match 902")).toBeEnabled()
+    expect(screen.getByRole("heading", { name: "Final results" })).toBeInTheDocument()
+    expect(screen.queryByLabelText("Speaker points for Arman in match 902")).not.toBeInTheDocument()
+  })
+
+  it("returns to round entry when switching from preliminary statistics to elimination", () => {
+    const result = render(
+      <ResultsSection
+        {...baseProps}
+        matches={{ content: [], totalElements: 0, totalPages: 1 } as never}
+        matchesLoading={false}
+        canManageTeams
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Speaker details" }))
+    expect(screen.getByRole("button", { name: "Speaker details" })).toHaveAttribute("aria-pressed", "true")
+
+    result.rerender(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="Final"
+        selectedRound="Final"
+        matches={{ content: [], totalElements: 0, totalPages: 1 } as never}
+        matchesLoading={false}
+        canManageTeams
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Final results" })).toBeInTheDocument()
+  })
+
+  it("treats a redacted completed elimination match as complete for read-only users", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="Final"
+        selectedRound="Final"
+        matches={{
+          content: [{
+            id: 906,
+            team1: { id: 1, name: "Team 1", members: team1Members },
+            team2: { id: 2, name: "Team 2", members: team2Members },
+            completed: true,
+          }],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        canManageTeams={false}
+      />,
+    )
+
+    expect(screen.getByText("Completed")).toBeInTheDocument()
+    expect(screen.queryByText(/Needs correction/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/invalid outcome/)).not.toBeInTheDocument()
   })
 
   it("submits the fully-scored matches without waiting for every match in the round", async () => {
@@ -378,13 +480,15 @@ describe("ResultsSection", () => {
     })
   })
 
-  it("shows LD Win/Loss from distinct persisted debater scores", async () => {
+  it("submits LD Win/Lose using the explicit winner participant", async () => {
     const debater1 = makeParticipant(1301, "Winner")
     const debater2 = makeParticipant(1351, "Runner")
+    const onSubmitResults = jest.fn()
 
     render(
       <ResultsSection
         {...baseProps}
+        roundGroupType={RoundGroupType.SOLO_ELIMINATION}
         selectedResultsOption="LD"
         activeResultsSection="Final"
         selectedRound="Final"
@@ -394,9 +498,7 @@ describe("ResultsSection", () => {
               id: 501,
               debater1,
               debater2,
-              debater1Score: 71,
-              debater2Score: 69,
-              completed: true,
+              completed: false,
             },
           ],
           totalElements: 1,
@@ -406,12 +508,20 @@ describe("ResultsSection", () => {
         selectedRoundNumber={1}
         currentRoundNumber={1}
         canManageTeams
+        onSubmitResults={onSubmitResults}
       />,
     )
 
+    expect(screen.queryByText("Speaker points")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Mark Winner as winner in match 501" }))
+    expect(screen.getByRole("button", { name: "Mark Runner as not winner in match 501" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
     await waitFor(() => {
-      expect(screen.getByLabelText("Speaker points for Winner in match 501").closest("tr")).toHaveTextContent("Win")
-      expect(screen.getByLabelText("Speaker points for Runner in match 501").closest("tr")).toHaveTextContent("Loss")
+      expect(onSubmitResults).toHaveBeenCalledWith([{
+        matchId: 501,
+        winnerParticipantId: 1301,
+      }] satisfies MatchResultRequest[])
     })
   })
 
@@ -520,6 +630,7 @@ describe("ResultsSection", () => {
     render(
       <ResultsSection
         {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
         selectedResultsOption="BPF"
         activeResultsSection="Final"
         selectedRound="Final"

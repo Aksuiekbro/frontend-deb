@@ -16,6 +16,7 @@ import {
 import {
   getTeamMembers,
   participantScoreSlot,
+  resolveDebaterCurrentWon,
   resolveParticipantCurrentScore,
   resolveTeamCurrentWon,
 } from "@/lib/match-result-slots"
@@ -127,8 +128,21 @@ const isMatchCompleteForWorkflow = (
   drafts: PersistedResultDrafts,
   teamsById: Map<number, SimpleTeamResponse>,
   format: FormatOption,
+  stage: StageId,
 ) => {
-  if (match.completed && match.participantScoresComplete === false) return false
+  if (stage === "preliminary" && match.completed && match.participantScoresComplete === false) return false
+
+  if (stage === "solo") {
+    if (!match.debater1 || !match.debater2) return false
+    const results = ([
+      { slot: "debater1", debater: match.debater1 },
+      { slot: "debater2", debater: match.debater2 },
+    ] as const).map(({ slot, debater }) => {
+      const currentWon = resolveDebaterCurrentWon(match, slot, debater.id)
+      return typeof currentWon === "boolean" ? currentWon : getPersistedWon(drafts, match.id, slot)
+    })
+    return results.every((won) => typeof won === "boolean") && results.filter(Boolean).length === 1
+  }
 
   const teamSlots = [
     { slot: "team1", team: match.team1, score: match.team1Score },
@@ -180,6 +194,8 @@ const isMatchCompleteForWorkflow = (
       teamResultValues.filter(Boolean).length === requiredWinnerCount
     )
   })()
+
+  if (stage === "team") return teamResultValues.length > 0 && hasValidTeamResults
 
   return (
     scoreSlots.length > 0 &&
@@ -254,13 +270,18 @@ export function PairingsSection({
   const isPastRound = hasRoundProgress && selectedRoundNumber < currentRoundNumber
   const isCurrentRound = !hasRoundProgress || selectedRoundNumber === currentRoundNumber
   const isEditableRound = isCurrentRound && !isFutureRound && !isPastRound
+  const canManageWorkflow = Boolean(onProceedToNextRound || onRandomizePairings || onSubmitPairings)
   const completedMatches = matchRows.filter((match) =>
-    isMatchCompleteForWorkflow(match, persistedResultDrafts, teamsById, selectedStageFormat)
+    (!canManageWorkflow && selectedStage !== "preliminary" && match.completed) ||
+    isMatchCompleteForWorkflow(match, persistedResultDrafts, teamsById, selectedStageFormat, selectedStage)
   ).length
   const hasMatches = matchRows.length > 0
   const allMatchesCompleted = hasMatches && completedMatches === matchRows.length
   const hasNonrepairableMatches = matchRows.some((match) =>
-    match.completed && match.participantScoresComplete === false && match.participantScoresRepairable !== true,
+    selectedStage === "preliminary" &&
+    match.completed &&
+    match.participantScoresComplete === false &&
+    match.participantScoresRepairable !== true,
   )
   const canEditMatches = Boolean(onUpdateMatch) && isEditableRound
   const canUpdateRooms = Boolean(onUpdateMatchRoom) && isEditableRound
@@ -302,10 +323,15 @@ export function PairingsSection({
     }
 
     if (!allMatchesCompleted) {
+      if (!canManageWorkflow) {
+        return `Results are pending. Completed ${completedMatches} of ${matchRows.length} matches.`
+      }
       return `Enter results for all matches before proceeding. Completed ${completedMatches} of ${matchRows.length} matches.`
     }
 
-    return "All matches in this round are completed. You can proceed to the next round."
+    return canManageWorkflow
+      ? "All matches in this round are completed. You can proceed to the next round."
+      : "All matches in this round are completed."
   })()
 
   const handleSelectStage = (stage: StageId) => {
@@ -411,7 +437,7 @@ export function PairingsSection({
 
   const getMatchStatus = (match: MatchResponse) => {
     if (!match.completed) return "Open"
-    if (match.participantScoresComplete === false) {
+    if (selectedStage === "preliminary" && match.participantScoresComplete === false) {
       return match.participantScoresRepairable === true
         ? "Needs correction"
         : "Needs correction (not repairable)"

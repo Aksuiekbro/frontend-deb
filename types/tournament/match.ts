@@ -25,6 +25,7 @@ export interface MatchResponse {
     winningTeamIds?: number[] | null;
     debater1Score?: number | null;
     debater2Score?: number | null;
+    winnerParticipantId?: number | null;
     team1ParticipantScores?: ParticipantScoreResponse[] | null;
     team2ParticipantScores?: ParticipantScoreResponse[] | null;
     team3ParticipantScores?: ParticipantScoreResponse[] | null;
@@ -47,13 +48,14 @@ export interface ParticipantScoreRequest {
 export interface TeamResultRequest {
     teamId: number;
     won?: boolean;
-    participantScores: ParticipantScoreRequest[];
+    participantScores?: ParticipantScoreRequest[];
 }
 
 export interface MatchResultRequest {
     matchId: number;
     teamResults?: TeamResultRequest[];
     participantScores?: ParticipantScoreRequest[];
+    winnerParticipantId?: number;
 }
 
 export interface MatchUpdateRequest {

@@ -785,7 +785,11 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
       for (const [participantId, score] of expected) expect(actualScores.get(participantId)).toBe(score)
       if (format === DebateFormat.LD) {
         expect(actual.debaters).toHaveLength(2)
-        expect(actual.debaters[0].score).not.toBe(actual.debaters[1].score)
+        if (stage === "solo") {
+          expect(actual.winnerParticipantId).toBe(actual.debaters[0].id)
+        } else {
+          expect(actual.debaters[0].score).not.toBe(actual.debaters[1].score)
+        }
       } else {
         const expectedWinnerCount = format === DebateFormat.BPF ? 2 : 1
         expect(actual.teams.filter((team) => team.won === true)).toHaveLength(expectedWinnerCount)
@@ -807,7 +811,19 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
       expect(await visibleMatchRowText(page, matchId)).toContain("Completed")
       const match = round.matches.find((candidate) => candidate.id === matchId)
       if (!match) throw new Error(`No source match ${matchId} in ${round.name}.`)
-      if (format === DebateFormat.LD) continue
+      if (format === DebateFormat.LD) {
+        if (expected.size === 0) {
+          for (const [index, debater] of match.debaters.entries()) {
+            const selectedButton = page.getByRole("button", {
+              name: `Mark ${debater.name} as ${index === 0 ? "winner" : "not winner"} in match ${match.id}`,
+              exact: true,
+            })
+            await expect(selectedButton).toHaveAttribute("aria-pressed", "true")
+            await expect(selectedButton).toBeDisabled()
+          }
+        }
+        continue
+      }
       const winnerCount = format === DebateFormat.BPF ? 2 : 1
       for (const [index, team] of match.teams.entries()) {
         const isWinner = index < winnerCount
@@ -857,8 +873,10 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
     expect(openMatches.length, `${caseName}/${round.name} must have open matches`).toBeGreaterThan(0)
     const expectedByMatch = new Map<number, Map<number, number>>()
     for (const match of openMatches) {
-      const expected = await fillValidMatch(session.page, match, format, seed + match.id)
-      const expectedRowCount = format === DebateFormat.BPF ? 8 : format === DebateFormat.LD ? 2 : 4
+      const expected = await fillValidMatch(session.page, match, format, seed + match.id, stage)
+      const expectedRowCount = stage === "preliminary"
+        ? format === DebateFormat.BPF ? 8 : format === DebateFormat.LD ? 2 : 4
+        : 0
       expect(expected.size, `${caseName}/match-${match.id} score row count`).toBe(expectedRowCount)
       expectedByMatch.set(match.id, expected)
     }
@@ -1636,7 +1654,7 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
           name: "duplicate-participant",
           build: (match) => {
             const valid = buildValidResult(match, DebateFormat.APF, 2)
-            const first = valid.teamResults![0].participantScores[0]
+            const first = valid.teamResults![0].participantScores![0]
             return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: [first, first] } : team) }]
           },
         },
@@ -1644,7 +1662,7 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
           name: "missing-participant",
           build: (match) => {
             const valid = buildValidResult(match, DebateFormat.APF, 2)
-            return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: team.participantScores.slice(0, -1) } : team) }]
+            return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: team.participantScores!.slice(0, -1) } : team) }]
           },
         },
         {
@@ -1657,14 +1675,14 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
             if (!foreignParticipant) throw new Error("The other Preliminary match has no participant for the foreign-participant ballot.")
             const matchParticipantIds = new Set(match.teams.flatMap((team) => team.speakers.map((speaker) => speaker.id)))
             if (matchParticipantIds.has(foreignParticipant.id)) throw new Error("Foreign participant ballot selected a participant from the source match.")
-            return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: team.participantScores.map((score, scoreIndex) => scoreIndex === 0 ? { ...score, participantId: foreignParticipant.id } : score) } : team) }]
+            return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: team.participantScores!.map((score, scoreIndex) => scoreIndex === 0 ? { ...score, participantId: foreignParticipant.id } : score) } : team) }]
           },
         },
         {
           name: "negative-score",
           build: (match) => {
             const valid = buildValidResult(match, DebateFormat.APF, 2)
-            return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: team.participantScores.map((score, scoreIndex) => scoreIndex === 0 ? { ...score, score: -1 } : score) } : team) }]
+            return [{ ...valid, teamResults: valid.teamResults!.map((team, index) => index === 0 ? { ...team, participantScores: team.participantScores!.map((score, scoreIndex) => scoreIndex === 0 ? { ...score, score: -1 } : score) } : team) }]
           },
         },
         {
@@ -1733,7 +1751,7 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
       expect(generatedSemifinal, `${crossRoundCaseName} generated current Team Semifinal`).toBeDefined()
       expect(generatedSemifinal!.matches.length, `${crossRoundCaseName} generated Semifinal match count`).toBeGreaterThan(0)
       const payloadMatch = generatedSemifinal!.matches[0]
-      const payload = buildValidResult(payloadMatch, DebateFormat.APF, payloadMatch.id)
+      const payload = buildValidResult(payloadMatch, DebateFormat.APF, payloadMatch.id, "team")
       const payloadMatchEvidence = {
         id: payloadMatch.id,
         teamIds: payloadMatch.teams.map((team) => team.id),
@@ -1862,15 +1880,15 @@ async function createIntegritySuite(browser: Browser, config: IntegrityConfig, r
       return { fixture: 9101, outcomes }
     })
 
-    await runCase("invalid-tie-ballot-9103", async () => {
-      let session = await resetFresh(fixture(9103), "invalid-tie-ballot-9103")
+    await runCase("invalid-missing-winner-9103", async () => {
+      let session = await resetFresh(fixture(9103), "invalid-missing-winner-9103")
       const inventory = await collectTournamentInventory(session.context, config, fixture(9103).tournamentId)
       const solo = findStage(inventory, "solo")
       const round = findRound(solo, solo.currentRoundNumber as number)
       const match = round.matches.find((candidate) => !candidate.completed)
       expect(match).toBeDefined()
-      const tie: MatchResultRequest[] = [{ matchId: match!.id, participantScores: match!.debaters.map((debater) => ({ participantId: debater.id, score: 75 })) }]
-      const result = await directMutationWithReload(session, fixture(9103), "solo", DebateFormat.LD, round, tie, "invalid-tie-ballot-9103")
+      const missingWinner: MatchResultRequest[] = [{ matchId: match!.id }]
+      const result = await directMutationWithReload(session, fixture(9103), "solo", DebateFormat.LD, round, missingWinner, "invalid-missing-winner-9103")
       session = result.session
       expect(result.mutation.status).toBeGreaterThanOrEqual(400)
       expect(result.mutation.status).toBeLessThan(500)

@@ -6,6 +6,7 @@ import type { PageResult } from "@/types/page"
 import type { MatchResponse, MatchResultRequest } from "@/types/tournament/match"
 import type { SimpleRoundResponse } from "@/types/tournament/round/round"
 import type { SimpleTeamResponse } from "@/types/tournament/team"
+import { RoundGroupType } from "@/types/tournament/round/round-group"
 import {
   clearResultInputDrafts,
   readPersistedResultDrafts,
@@ -21,8 +22,10 @@ import {
   getParticipantName,
   getTeamMembers,
   participantScoreSlot,
+  resolveDebaterCurrentWon,
   resolveParticipantCurrentScore,
   resolveTeamCurrentWon,
+  type DebaterSlotName,
   type TeamSlotName,
 } from "@/lib/match-result-slots"
 
@@ -35,6 +38,7 @@ interface ResultsSectionProps {
   onActiveResultsSectionChange: (section: string) => void
   selectedRound: string
   onSelectedRoundChange: (round: string) => void
+  roundGroupType?: RoundGroupType
   rounds?: SimpleRoundResponse[]
   teams?: PageResult<SimpleTeamResponse>
   teamsLoading: boolean
@@ -57,8 +61,8 @@ interface ResultsSectionProps {
 
 const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2", "Final"] as const
 const displayRoundLabel = (round: string) => round.replace(/\.0$/, "")
-type DebaterSlotName = "debater1" | "debater2"
 type ScoreSlotName = string
+type OutcomeSlotName = TeamSlotName | DebaterSlotName
 
 type SpeakerScoreSlot = {
   kind: "speaker"
@@ -84,6 +88,7 @@ type DebaterResultSlot = {
   entityId: number
   name: string
   currentScore?: number | null
+  currentWon?: boolean | null
 }
 
 type ResultSlot = TeamResultSlot | DebaterResultSlot
@@ -124,6 +129,7 @@ export function ResultsSection({
   onActiveResultsSectionChange,
   selectedRound,
   onSelectedRoundChange,
+  roundGroupType,
   rounds,
   teams,
   teamsLoading,
@@ -143,6 +149,11 @@ export function ResultsSection({
   preliminaryRoundMatchesLoading = false,
   preliminaryRoundMatchesError,
 }: ResultsSectionProps) {
+  const isOutcomeOnlyStage =
+    roundGroupType === RoundGroupType.TEAM_ELIMINATION ||
+    roundGroupType === RoundGroupType.SOLO_ELIMINATION
+  const requiresSpeakerPoints = !isOutcomeOnlyStage
+  const isSoloElimination = roundGroupType === RoundGroupType.SOLO_ELIMINATION
   const teamRows = useMemo(() => teams?.content ?? [], [teams?.content])
   const teamsById = useMemo(() => {
     return new Map(teamRows.map((team) => [team.id, team]))
@@ -216,6 +227,7 @@ export function ResultsSection({
         entityId: debater.id,
         name: getParticipantName(debater, `Debater ${debater.id}`),
         currentScore: score,
+        currentWon: resolveDebaterCurrentWon(match, slot, debater.id),
       })
     })
 
@@ -285,6 +297,14 @@ export function ResultsSection({
     )
   }, [getTeamResultRule])
 
+  const hasValidDebaterResultSet = useCallback((results: ResultDraftValue[]) => {
+    return (
+      results.length === 2 &&
+      results.every(isCompleteResultValue) &&
+      results.filter((result) => result === "won").length === 1
+    )
+  }, [])
+
   const hasCompletePersistedResult = useCallback((match: MatchResponse, drafts: PersistedResultDrafts) => {
     const slots = getResultSlots(match)
     const teamSlots = slots.filter((slot): slot is TeamResultSlot => slot.kind === "team")
@@ -292,17 +312,23 @@ export function ResultsSection({
 
     if (teamSlots.length > 0) {
       const results = teamSlots.map((slot) => getPersistedResult(drafts, match.id, slot.slot))
-      return (
-        hasValidTeamResultSet(teamSlots.length, results) &&
-        teamSlots.every((slot) =>
-          slot.speakers.length > 0 &&
-          slot.speakers.every((speaker) => hasPersistedScore(drafts, match.id, speaker))
-        )
+      if (!hasValidTeamResultSet(teamSlots.length, results)) return false
+      if (!requiresSpeakerPoints) return true
+
+      return teamSlots.every((slot) =>
+        slot.speakers.length > 0 &&
+        slot.speakers.every((speaker) => hasPersistedScore(drafts, match.id, speaker))
+      )
+    }
+
+    if (!requiresSpeakerPoints) {
+      return hasValidDebaterResultSet(
+        debaterSlots.map((slot) => toResultDraftValue(drafts[scoreKey(match.id, slot.slot)]?.result)),
       )
     }
 
     return debaterSlots.length > 0 && debaterSlots.every((slot) => hasPersistedScore(drafts, match.id, slot))
-  }, [getPersistedResult, getResultSlots, hasPersistedScore, hasValidTeamResultSet])
+  }, [getPersistedResult, getResultSlots, hasPersistedScore, hasValidDebaterResultSet, hasValidTeamResultSet, requiresSpeakerPoints, scoreKey])
 
   const saveInputDraft = useCallback((key: string, patch: PersistedResultDraft) => {
     const drafts = readResultInputDrafts(resultStorageKey)
@@ -331,6 +357,7 @@ export function ResultsSection({
 
     setScoreDrafts(() => {
       const next: Record<string, string> = {}
+      if (!requiresSpeakerPoints) return next
       matchRows.forEach((match) => {
         getScoreSlots(match).forEach((slot) => {
           const key = scoreKey(match.id, slot.slot)
@@ -350,7 +377,7 @@ export function ResultsSection({
       const next: Record<string, ResultDraftValue> = {}
       matchRows.forEach((match) => {
         getResultSlots(match).forEach((slot) => {
-          if (slot.kind !== "team") return
+          if (slot.kind !== "team" && requiresSpeakerPoints) return
           const key = scoreKey(match.id, slot.slot)
           next[key] =
             typeof slot.currentWon === "boolean"
@@ -367,7 +394,7 @@ export function ResultsSection({
     })
     setLocallyCompletedMatchIds(nextCompletedMatches)
     setScoreError(null)
-  }, [getResultSlots, getScoreSlots, hasCompletePersistedResult, matchRows, resultStorageKey, scoreKey])
+  }, [getResultSlots, getScoreSlots, hasCompletePersistedResult, matchRows, requiresSpeakerPoints, resultStorageKey, scoreKey])
 
   const isMatchDraftComplete = useCallback((match: MatchResponse) => {
     const slots = getResultSlots(match)
@@ -376,20 +403,27 @@ export function ResultsSection({
 
     if (teamSlots.length > 0) {
       const results = teamSlots.map((slot) => resultDrafts[scoreKey(match.id, slot.slot)])
-      return (
-        hasValidTeamResultSet(teamSlots.length, results) &&
-        teamSlots.every((slot) =>
-          slot.speakers.length > 0 &&
-          slot.speakers.every((speaker) => hasDraftScore(match.id, speaker))
-        )
+      if (!hasValidTeamResultSet(teamSlots.length, results)) return false
+      if (!requiresSpeakerPoints) return true
+
+      return teamSlots.every((slot) =>
+        slot.speakers.length > 0 &&
+        slot.speakers.every((speaker) => hasDraftScore(match.id, speaker))
+      )
+    }
+
+    if (!requiresSpeakerPoints) {
+      return hasValidDebaterResultSet(
+        debaterSlots.map((slot) => resultDrafts[scoreKey(match.id, slot.slot)]),
       )
     }
 
     return debaterSlots.length > 0 && debaterSlots.every((slot) => hasDraftScore(match.id, slot))
-  }, [getResultSlots, hasDraftScore, hasValidTeamResultSet, resultDrafts, scoreKey])
+  }, [getResultSlots, hasDraftScore, hasValidDebaterResultSet, hasValidTeamResultSet, requiresSpeakerPoints, resultDrafts, scoreKey])
 
   const isMatchBackendComplete = useCallback((match: MatchResponse) => {
-    if (match.participantScoresComplete === false) return false
+    if (!requiresSpeakerPoints && !canManageTeams && match.completed) return true
+    if (requiresSpeakerPoints && match.participantScoresComplete === false) return false
 
     const slots = getResultSlots(match)
     const teamSlots = slots.filter((slot): slot is TeamResultSlot => slot.kind === "team")
@@ -401,34 +435,45 @@ export function ResultsSection({
         if (slot.currentWon === false) return "lost"
         return ""
       })
-      return (
-        hasValidTeamResultSet(teamSlots.length, results) &&
-        teamSlots.every((slot) =>
-          (
-            slot.speakers.length > 0 &&
-            slot.speakers.every((speaker) => isValidScoreValue(speaker.currentScore))
-          ) ||
-          isValidScoreValue(getMatchTeamScore(match, slot.slot))
-        )
+      if (!hasValidTeamResultSet(teamSlots.length, results)) return false
+      if (!requiresSpeakerPoints) return true
+
+      return teamSlots.every((slot) =>
+        (
+          slot.speakers.length > 0 &&
+          slot.speakers.every((speaker) => isValidScoreValue(speaker.currentScore))
+        ) ||
+        isValidScoreValue(getMatchTeamScore(match, slot.slot))
       )
     }
 
+    if (!requiresSpeakerPoints) {
+      return hasValidDebaterResultSet(debaterSlots.map((slot) => {
+        if (slot.currentWon === true) return "won"
+        if (slot.currentWon === false) return "lost"
+        return ""
+      }))
+    }
+
     return debaterSlots.length > 0 && debaterSlots.every((slot) => isValidScoreValue(slot.currentScore))
-  }, [getResultSlots, hasValidTeamResultSet])
+  }, [canManageTeams, getResultSlots, hasValidDebaterResultSet, hasValidTeamResultSet, requiresSpeakerPoints])
 
   const isMatchReadOnly = useCallback((match: MatchResponse) => {
     const canRepairParticipantScores =
-      match.completed && match.participantScoresRepairable === true && match.participantScoresComplete !== true
+      requiresSpeakerPoints &&
+      match.completed &&
+      match.participantScoresRepairable === true &&
+      match.participantScoresComplete !== true
     if (match.completed) return !canRepairParticipantScores
     return Boolean(locallyCompletedMatchIds[match.id]) && isMatchDraftComplete(match)
-  }, [isMatchDraftComplete, locallyCompletedMatchIds])
+  }, [isMatchDraftComplete, locallyCompletedMatchIds, requiresSpeakerPoints])
 
   const editableMatches = useMemo(
     () => matchRows.filter((match) => !isMatchReadOnly(match) && getResultSlots(match).length > 0),
     [getResultSlots, isMatchReadOnly, matchRows]
   )
   const hasRepairableParticipantScoreMatches = editableMatches.some(
-    (match) => match.participantScoresRepairable === true && match.participantScoresComplete !== true,
+    (match) => requiresSpeakerPoints && match.participantScoresRepairable === true && match.participantScoresComplete !== true,
   )
   const canRepairSelectedRound = hasRepairableParticipantScoreMatches
 
@@ -442,8 +487,11 @@ export function ResultsSection({
   const hasEditableMatches = editableMatches.length > 0
   const readyToSubmitCount = completedDraftMatches.length
   const pendingMatchCount = editableMatches.length - readyToSubmitCount
+  const outcomeRequirementMessage = isSoloElimination
+    ? "LD matches need one winner and one loser."
+    : "APF matches need one winner; BPF matches need two winners."
   const hasTeamsWithoutSpeakers = editableMatches.some((match) =>
-    getResultSlots(match).some((slot) => slot.kind === "team" && slot.speakers.length === 0)
+    requiresSpeakerPoints && getResultSlots(match).some((slot) => slot.kind === "team" && slot.speakers.length === 0)
   )
   const canSubmitMatchResults =
     Boolean(onSubmitResults) &&
@@ -456,7 +504,7 @@ export function ResultsSection({
     canSubmitMatchResults ? "hover:bg-[#2D3748]" : "cursor-not-allowed opacity-50"
   }`
   const isRepairableParticipantScoreMatch = (match: MatchResponse) =>
-    match.completed && match.participantScoresRepairable === true && match.participantScoresComplete !== true
+    requiresSpeakerPoints && match.completed && match.participantScoresRepairable === true && match.participantScoresComplete !== true
 
   const isNonrepairableCorrection = (match: MatchResponse) =>
     match.completed && !isRepairableParticipantScoreMatch(match) && !isMatchBackendComplete(match)
@@ -626,19 +674,21 @@ export function ResultsSection({
     )
   }, [isMatchBackendComplete, summaryRoundMatches])
   const availableResultsViewOptions = useMemo(() => {
+    if (isOutcomeOnlyStage) return RESULTS_VIEW_OPTIONS.filter((option) => option.id === "entry")
     return RESULTS_VIEW_OPTIONS.filter((option) =>
       canManageTeams || option.id === "standings" || option.id === "win-count"
     )
-  }, [canManageTeams])
+  }, [canManageTeams, isOutcomeOnlyStage])
   const activeResultsView = (() => {
     if (selectedResultsView === "auto") {
+      if (isOutcomeOnlyStage) return "entry"
       if (!canManageTeams) return "standings"
       return preliminaryIsComplete ? "standings" : "entry"
     }
 
     return availableResultsViewOptions.some((option) => option.id === selectedResultsView)
       ? selectedResultsView
-      : "standings"
+      : availableResultsViewOptions[0]?.id ?? "entry"
   })()
 
   const renderTeamRows = (columnCount: number, renderRow: (team: SimpleTeamResponse) => ReactNode) => {
@@ -677,28 +727,36 @@ export function ResultsSection({
 
   const buildResultPayload = (): MatchResultRequest[] => {
     return completedDraftMatches.map((match) => {
-      const teamResults = getResultSlots(match)
+      const resultSlots = getResultSlots(match)
+      const teamResults = resultSlots
         .filter((slot) => slot.kind === "team")
         .map((slot) => ({
           teamId: slot.entityId,
           won: resultDrafts[scoreKey(match.id, slot.slot)] === "won",
-          participantScores: slot.speakers.map((speaker) => ({
-            participantId: speaker.entityId,
-            score: Number(scoreDrafts[scoreKey(match.id, speaker.slot)]),
-          })),
+          ...(requiresSpeakerPoints ? {
+            participantScores: slot.speakers.map((speaker) => ({
+              participantId: speaker.entityId,
+              score: Number(scoreDrafts[scoreKey(match.id, speaker.slot)]),
+            })),
+          } : {}),
         }))
 
-      const participantScores = getResultSlots(match)
+      const debaterSlots = resultSlots.filter((slot) => slot.kind === "debater")
+      const participantScores = debaterSlots
         .filter((slot) => slot.kind === "debater")
         .map((slot) => ({
           participantId: slot.entityId,
           score: Number(scoreDrafts[scoreKey(match.id, slot.slot)]),
         }))
+      const winningDebater = debaterSlots.find(
+        (slot) => resultDrafts[scoreKey(match.id, slot.slot)] === "won",
+      )
 
       return {
         matchId: match.id,
         ...(teamResults.length ? { teamResults } : {}),
-        ...(participantScores.length ? { participantScores } : {}),
+        ...(requiresSpeakerPoints && participantScores.length ? { participantScores } : {}),
+        ...(!requiresSpeakerPoints && winningDebater ? { winnerParticipantId: winningDebater.entityId } : {}),
       }
     })
   }
@@ -710,16 +768,20 @@ export function ResultsSection({
           acc[scoreKey(match.id, slot.slot)] = {
             result: resultDrafts[scoreKey(match.id, slot.slot)] ?? "",
           }
-          slot.speakers.forEach((speaker) => {
-            acc[scoreKey(match.id, speaker.slot)] = {
-              score: scoreDrafts[scoreKey(match.id, speaker.slot)] ?? "",
-            }
-          })
+          if (requiresSpeakerPoints) {
+            slot.speakers.forEach((speaker) => {
+              acc[scoreKey(match.id, speaker.slot)] = {
+                score: scoreDrafts[scoreKey(match.id, speaker.slot)] ?? "",
+              }
+            })
+          }
           return
         }
 
         acc[scoreKey(match.id, slot.slot)] = {
-          score: scoreDrafts[scoreKey(match.id, slot.slot)] ?? "",
+          ...(requiresSpeakerPoints
+            ? { score: scoreDrafts[scoreKey(match.id, slot.slot)] ?? "" }
+            : { result: resultDrafts[scoreKey(match.id, slot.slot)] ?? "" }),
         }
       })
 
@@ -742,9 +804,11 @@ export function ResultsSection({
 
     if (readyToSubmitCount === 0) {
       setScoreError(
-        hasTeamsWithoutSpeakers
+        requiresSpeakerPoints && hasTeamsWithoutSpeakers
           ? "Add participants to every team before submitting speaker points."
-          : "APF matches need one winner; BPF matches need two winners. Every speaker also needs points."
+          : requiresSpeakerPoints
+            ? `${outcomeRequirementMessage} Every speaker also needs points.`
+            : outcomeRequirementMessage
       )
       return
     }
@@ -877,6 +941,30 @@ export function ResultsSection({
     })
   }, [getTeamResultUpdates, saveInputDraft, scoreKey])
 
+  const updateDebaterResultDraft = useCallback((
+    match: MatchResponse,
+    selectedSlot: DebaterSlotName,
+    value: ResultDraftValue,
+  ) => {
+    const debaterSlots = getResultSlots(match).filter(
+      (slot): slot is DebaterResultSlot => slot.kind === "debater",
+    )
+    const updates = new Map<OutcomeSlotName, ResultDraftValue>([[selectedSlot, value]])
+    const otherSlot = debaterSlots.find((slot) => slot.slot !== selectedSlot)
+    if (otherSlot) updates.set(otherSlot.slot, value === "won" ? "lost" : "won")
+
+    setResultDrafts((current) => {
+      const next = { ...current }
+      updates.forEach((result, slot) => {
+        next[scoreKey(match.id, slot)] = result
+      })
+      return next
+    })
+    updates.forEach((result, slot) => {
+      saveInputDraft(scoreKey(match.id, slot), { result })
+    })
+  }, [getResultSlots, saveInputDraft, scoreKey])
+
   const renderScoreInput = (
     match: MatchResponse,
     slot: ScoreSlot,
@@ -907,11 +995,55 @@ export function ResultsSection({
     )
   }
 
+  const renderOutcomeControl = (
+    match: MatchResponse,
+    slot: TeamResultSlot | DebaterResultSlot,
+    canEditResult: boolean,
+  ) => {
+    const key = scoreKey(match.id, slot.slot)
+    return (
+      <div
+        role="group"
+        aria-label={`Result for ${slot.name} in match ${match.id}`}
+        className="inline-flex h-10 overflow-hidden rounded-lg border border-[#D5D9E7] bg-white"
+      >
+        {(["won", "lost"] as const).map((value) => {
+          const isSelected = resultDrafts[key] === value
+          return (
+            <button
+              key={value}
+              type="button"
+              disabled={!canEditResult || isSubmittingResults}
+              aria-pressed={isSelected}
+              aria-label={`Mark ${slot.name} as ${value === "won" ? "winner" : "not winner"} in match ${match.id}`}
+              onClick={() => {
+                if (slot.kind === "team") {
+                  updateTeamResultDraft(match, slot.slot, value)
+                } else {
+                  updateDebaterResultDraft(match, slot.slot, value)
+                }
+              }}
+              className={`px-3 text-sm font-medium transition-colors ${
+                isSelected
+                  ? "bg-[#0D1321] text-white"
+                  : "text-[#0B1327] hover:bg-[#F5F7FC]"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {value === "won" ? "Win" : "Lose"}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const resultTableColumnCount = requiresSpeakerPoints ? 7 : 6
+
   const renderMatchResultRows = () => {
     if (matchesLoading) {
       return (
         <tr>
-          <td colSpan={7} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
             Loading matches...
           </td>
         </tr>
@@ -921,7 +1053,7 @@ export function ResultsSection({
     if (matchesError) {
       return (
         <tr>
-          <td colSpan={7} className="border border-gray-300 px-6 py-8 text-center text-red-500">
+          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-red-500">
             Failed to load matches
           </td>
         </tr>
@@ -931,7 +1063,7 @@ export function ResultsSection({
     if (!matchRows.length) {
       return (
         <tr>
-          <td colSpan={7} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
             No matches for this round
           </td>
         </tr>
@@ -944,7 +1076,7 @@ export function ResultsSection({
         return (
           <tr key={match.id} className="hover:bg-gray-50">
             <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">Match {match.id}</td>
-            <td colSpan={6} className="border border-gray-300 px-6 py-4 text-[#4a4e69]">No sides assigned</td>
+            <td colSpan={resultTableColumnCount - 1} className="border border-gray-300 px-6 py-4 text-[#4a4e69]">No sides assigned</td>
           </tr>
         )
       }
@@ -963,54 +1095,29 @@ export function ResultsSection({
             ) : null}
             <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{slot.name}</td>
             <td className="border border-gray-300 px-6 py-4">
-              {slot.kind === "team" ? (
-                <div
-                  role="group"
-                  aria-label={`Result for ${slot.name} in match ${match.id}`}
-                  className="inline-flex h-10 overflow-hidden rounded-lg border border-[#D5D9E7] bg-white"
-                >
-                  {(["won", "lost"] as const).map((value) => {
-                    const isSelected = resultDrafts[key] === value
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        disabled={!canEditResult || isSubmittingResults}
-                        aria-pressed={isSelected}
-                        aria-label={`Mark ${slot.name} as ${value === "won" ? "winner" : "not winner"} in match ${match.id}`}
-                        onClick={() => {
-                          updateTeamResultDraft(match, slot.slot, value)
-                        }}
-                        className={`px-3 text-sm font-medium transition-colors ${
-                          isSelected
-                            ? "bg-[#0D1321] text-white"
-                            : "text-[#0B1327] hover:bg-[#F5F7FC]"
-                        } disabled:cursor-not-allowed disabled:opacity-60`}
-                      >
-                        {value === "won" ? "Win" : "Loss"}
-                      </button>
-                    )
-                  })}
-                </div>
+              {slot.kind === "team" || !requiresSpeakerPoints ? (
+                renderOutcomeControl(match, slot, canEditResult)
               ) : (
                 <span className="text-sm text-[#0D1321]">{getDebaterResult(match, slot.slot) ?? "—"}</span>
               )}
             </td>
-            <td className="border border-gray-300 px-6 py-4">
-              {slot.kind === "team" ? (
-                slot.speakers.length > 0 ? (
-                  <div className="grid min-w-64 gap-2">
-                    {slot.speakers.map((speaker, speakerIndex) =>
-                      renderScoreInput(match, speaker, canEditResult, `Speaker ${speakerIndex + 1}`)
-                    )}
-                  </div>
+            {requiresSpeakerPoints ? (
+              <td className="border border-gray-300 px-6 py-4">
+                {slot.kind === "team" ? (
+                  slot.speakers.length > 0 ? (
+                    <div className="grid min-w-64 gap-2">
+                      {slot.speakers.map((speaker, speakerIndex) =>
+                        renderScoreInput(match, speaker, canEditResult, `Speaker ${speakerIndex + 1}`)
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-red-500">No participants assigned</span>
+                  )
                 ) : (
-                  <span className="text-sm text-red-500">No participants assigned</span>
-                )
-              ) : (
-                renderScoreInput(match, slot, canEditResult)
-              )}
-            </td>
+                  renderScoreInput(match, slot, canEditResult)
+                )}
+              </td>
+            ) : null}
             {index === 0 ? (
               <>
                 <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#4a4e69]">
@@ -1238,7 +1345,7 @@ export function ResultsSection({
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h3 className="text-xl font-semibold text-[#0D1321]">
-            {displayRoundLabel(selectedRound)} results and speaker points
+            {displayRoundLabel(selectedRound)} results{requiresSpeakerPoints ? " and speaker points" : ""}
           </h3>
         </div>
         {roundOptions.length > 1 ? (
@@ -1267,7 +1374,9 @@ export function ResultsSection({
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Match</th>
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Side</th>
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Result</th>
-              <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Speaker points</th>
+              {requiresSpeakerPoints ? (
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Speaker points</th>
+              ) : null}
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Room</th>
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge</th>
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Status</th>
@@ -1279,7 +1388,9 @@ export function ResultsSection({
       {scoreError ? <p className="mt-4 text-sm text-red-500" role="alert">{scoreError}</p> : null}
       {nonrepairableCorrectionCount > 0 ? (
         <p className="mt-4 text-sm text-amber-700" role="status">
-          {nonrepairableCorrectionCount === 1 ? "This completed match has" : `${nonrepairableCorrectionCount} completed matches have`} nonrepairable participant scores and cannot be submitted.
+          {requiresSpeakerPoints
+            ? `${nonrepairableCorrectionCount === 1 ? "This completed match has" : `${nonrepairableCorrectionCount} completed matches have`} nonrepairable participant scores and cannot be submitted.`
+            : `${nonrepairableCorrectionCount === 1 ? "This completed match has" : `${nonrepairableCorrectionCount} completed matches have`} an invalid outcome and cannot be submitted.`}
         </p>
       ) : null}
       {hasEditableMatches ? (
@@ -1287,10 +1398,12 @@ export function ResultsSection({
           {readyToSubmitCount > 0
             ? `${readyToSubmitCount} of ${editableMatches.length} ${editableMatches.length === 1 ? "match" : "matches"} ready to submit${
                 pendingMatchCount > 0
-                  ? `. ${pendingMatchCount} still need${pendingMatchCount === 1 ? "s" : ""} a result and speaker points.`
+                  ? `. ${pendingMatchCount} still need${pendingMatchCount === 1 ? "s" : ""} ${requiresSpeakerPoints ? "a result and speaker points" : "a Win/Lose result"}.`
                   : "."
               }`
-            : "APF matches need one winner; BPF matches need two winners. Every speaker also needs points."}
+            : requiresSpeakerPoints
+              ? `${outcomeRequirementMessage} Every speaker also needs points.`
+              : outcomeRequirementMessage}
         </p>
       ) : null}
       <div className="flex justify-end mt-8 mb-8">
@@ -1308,23 +1421,25 @@ export function ResultsSection({
 
   const renderResultsWorkspace = () => (
     <>
-      <div className="mb-6 flex flex-wrap gap-2" aria-label="Select results view">
-        {availableResultsViewOptions.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            aria-pressed={activeResultsView === option.id}
-            onClick={() => setSelectedResultsView(option.id)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              activeResultsView === option.id
-                ? "bg-[#0D1321] text-white"
-                : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      {availableResultsViewOptions.length > 1 ? (
+        <div className="mb-6 flex flex-wrap gap-2" aria-label="Select results view">
+          {availableResultsViewOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={activeResultsView === option.id}
+              onClick={() => setSelectedResultsView(option.id)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                activeResultsView === option.id
+                  ? "bg-[#0D1321] text-white"
+                  : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {activeResultsView === "entry" ? renderRoundEntryTable() : null}
       {activeResultsView === "standings" ? renderPreliminaryStandingsTable() : null}
       {activeResultsView === "speaker-details" ? renderSpeakerDetailsTable() : null}

@@ -346,8 +346,12 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
   ResultsSection: ({
     onSubmitResults,
     selectedResultsOption,
+    roundGroupType,
+    onActiveResultsSectionChange,
   }: {
     selectedResultsOption: string
+    roundGroupType?: RoundGroupType
+    onActiveResultsSectionChange?: (section: string) => void
     onSubmitResults?: (results: Array<{
       matchId: number
       teamResults: Array<{ teamId: number; won: boolean; participantScores: Array<{ participantId: number; score: number }> }>
@@ -355,6 +359,8 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
   }) => (
     <div data-testid="results">
       <div data-testid="selected-results-option">{selectedResultsOption}</div>
+      <div data-testid="results-round-group-type">{roundGroupType ?? "unknown"}</div>
+      <button type="button" onClick={() => onActiveResultsSectionChange?.("Final")}>Select Elimination Results</button>
       <button
         type="button"
         onClick={() => onSubmitResults?.([
@@ -799,6 +805,46 @@ describe("TournamentDetailPage mutations", () => {
     expect(screen.getAllByRole("button", { name: "Format APF" })).toHaveLength(1)
     expect(screen.getAllByRole("button", { name: "Format BPF" })).toHaveLength(1)
     expect(screen.getAllByRole("button", { name: "Format LD" })).toHaveLength(1)
+  })
+
+  it("passes the selected result stage type into the results workspace", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 351,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 451, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 352,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.BPF,
+        rounds: [{ id: 452, name: "Final", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 353,
+        type: RoundGroupType.SOLO_ELIMINATION,
+        format: DebateFormat.LD,
+        rounds: [{ id: 453, name: "Final", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Results and Statistics"))
+    expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.PRELIMINARY)
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Elimination Results" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Format LD" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.SOLO_ELIMINATION)
+    })
   })
 
   it("falls back to the first remaining result format after round-group revalidation", async () => {

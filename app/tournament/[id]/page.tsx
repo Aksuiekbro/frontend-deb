@@ -1368,6 +1368,7 @@ export default function TournamentDetailPage() {
             onActiveResultsSectionChange={setActiveResultsSection}
             selectedRound={selectedRound}
             onSelectedRoundChange={setSelectedRound}
+            roundGroupType={selectedRoundGroup?.type}
             rounds={rounds}
             teams={teams}
             teamsLoading={teamsLoading}

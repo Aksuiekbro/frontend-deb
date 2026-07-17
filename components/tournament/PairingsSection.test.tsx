@@ -229,6 +229,90 @@ describe("PairingsSection", () => {
     expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
   })
 
+  it("allows team elimination to advance from Win/Lose outcomes without speaker points", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="team"
+        stageFormats={{ team: "APF" }}
+        selectedRound="1/8"
+        matches={{
+          content: [{
+            id: 901,
+            team1: { id: 1, name: "Team 1", members: team1Members },
+            team2: { id: 2, name: "Team 2", members: team2Members },
+            team1Won: true,
+            team2Won: false,
+            participantScoresComplete: false,
+            completed: true,
+          }],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+    expect(screen.queryByText(/Needs correction/)).not.toBeInTheDocument()
+  })
+
+  it("allows solo elimination to advance from an explicit winning participant", () => {
+    const onProceedToNextRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="solo"
+        selectedRound="1/8"
+        matches={{
+          content: [{
+            id: 902,
+            debater1: makeParticipant(701, "First"),
+            debater2: makeParticipant(702, "Second"),
+            winnerParticipantId: 702,
+            completed: true,
+          }],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        onProceedToNextRound={onProceedToNextRound}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
+  })
+
+  it("treats redacted completed elimination outcomes as complete for read-only users", () => {
+    render(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="team"
+        stageFormats={{ team: "APF" }}
+        selectedRound="Final"
+        matches={{
+          content: [{
+            id: 903,
+            team1: { id: 1, name: "Team 1" },
+            team2: { id: 2, name: "Team 2" },
+            completed: true,
+          }],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+      />,
+    )
+
+    expect(screen.getByText("All matches in this round are completed.")).toBeInTheDocument()
+    expect(screen.queryByText(/Enter results/)).not.toBeInTheDocument()
+  })
+
   it("does not advance from team scores alone without win/loss results", () => {
     const onProceedToNextRound = jest.fn()
 
