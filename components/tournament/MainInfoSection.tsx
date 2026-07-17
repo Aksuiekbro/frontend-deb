@@ -117,12 +117,20 @@ export function MainInfoSection({
               <>
                 <div className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border border-[#D6DEEF] bg-[#1F5957]">
                   {currentAnnouncement?.imageUrl?.url && !removedAnnouncementImages.has(currentAnnouncement.id) ? (
-                    <img
-                      src={resolveMediaUrl(currentAnnouncement.imageUrl.url)}
-                      alt={currentAnnouncement.title}
-                      className="h-[320px] w-full object-cover"
-                      onError={() => handleRemoveAnnouncementImage(currentAnnouncement.id)}
-                    />
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={resolveMediaUrl(currentAnnouncement.imageUrl.url)}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-75"
+                      />
+                      <img
+                        src={resolveMediaUrl(currentAnnouncement.imageUrl.url)}
+                        alt={currentAnnouncement.title}
+                        className="relative max-h-[560px] min-h-[320px] w-full object-contain"
+                        onError={() => handleRemoveAnnouncementImage(currentAnnouncement.id)}
+                      />
+                    </div>
                   ) : (
                     <div className="h-[320px] w-full bg-[#1F5957]" />
                   )}
@@ -174,6 +182,23 @@ export function MainInfoSection({
                       ) : null}
                     </div>
                   </div>
+                  {(() => {
+                    const category = (currentAnnouncement.tags ?? [])
+                      .map((tag) => tag.name)
+                      .find((name) => name === "Important" || name === "Update" || name === "Info")
+                    if (!category) return null
+                    const badgeClass =
+                      category === "Important"
+                        ? "bg-[#3E5C76] text-white"
+                        : category === "Update"
+                          ? "bg-[#9a8c98] text-white"
+                          : "bg-green-500 text-white"
+                    return (
+                      <span className={`${badgeClass} mt-4 inline-block rounded-full px-3 py-1 text-[12px] font-medium`}>
+                        {category}
+                      </span>
+                    )
+                  })()}
                   <h3 className="mt-4 text-2xl font-semibold text-[#0B1327]">{currentAnnouncement.title}</h3>
                   <p className="mt-3 text-lg leading-relaxed text-[#3A4156]">{currentAnnouncement.content}</p>
                   <div className="mt-6 space-y-3 border-t border-[#E3E8F6] pt-4">
@@ -252,18 +277,24 @@ export function MainInfoSection({
             ) : sortedSchedules.length === 0 ? (
               <div className="text-center text-[#9a8c98] text-[16px] py-20">No schedule entries yet</div>
             ) : (
-              <div className="flex max-h-[480px] flex-col gap-6 overflow-y-auto pr-2">
+              <div className="flex max-h-[720px] flex-col gap-6 overflow-y-auto pr-2">
                 {sortedSchedules.map((schedule) => (
                   <div
                     key={schedule.id}
-                    className="flex flex-col overflow-hidden rounded-2xl border border-[#E3E8F6] bg-[#F7F9FF] shadow-sm"
+                    className="flex shrink-0 flex-col overflow-hidden rounded-2xl border border-[#E3E8F6] bg-[#F7F9FF] shadow-sm"
                   >
                     {schedule.imageUrl?.url && !removedScheduleImages.has(schedule.id) ? (
-                      <div className="group relative">
+                      <div className="group relative overflow-hidden">
+                        <img
+                          src={resolveMediaUrl(schedule.imageUrl.url)}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-75"
+                        />
                         <img
                           src={resolveMediaUrl(schedule.imageUrl.url)}
                           alt={schedule.name}
-                          className="h-64 w-full object-cover transition duration-300 group-hover:blur-sm group-hover:brightness-75"
+                          className="relative max-h-[480px] w-full object-contain transition duration-300 group-hover:blur-sm group-hover:brightness-75"
                         />
                         <button
                           type="button"

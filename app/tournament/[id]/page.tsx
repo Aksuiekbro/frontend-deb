@@ -82,7 +82,9 @@ function getAvailablePairingStageDescriptors(
       id: stage,
       label: PAIRING_STAGE_LABELS[stage],
       format,
-      defaultRound: group.rounds?.[0]?.name,
+      defaultRound: group.rounds
+        ?.slice()
+        .sort((a, b) => a.roundNumber - b.roundNumber)[0]?.name,
     }]
   })
 }
@@ -97,7 +99,7 @@ export default function TournamentDetailPage() {
 
   // API hooks
   const { tournament, isLoading: tournamentLoading, error: tournamentError, mutate: mutateTournament } = useTournament(tournamentId)
-  const { participants } = useTournamentParticipants(tournamentId)
+  const { participants } = useTournamentParticipants(tournamentId, undefined, TOURNAMENT_ROSTER_PAGEABLE)
   const { teams, isLoading: teamsLoading, error: teamsError, mutate: mutateTeams } = useTournamentTeams(
     tournamentId,
     TOURNAMENT_ROSTER_PAGEABLE
@@ -278,7 +280,7 @@ export default function TournamentDetailPage() {
       setPostError(null)
 
       if (isAnnouncement) {
-        const body: AnnouncementRequest = { title, content: description }
+        const body: AnnouncementRequest = { title, content: description, tags: [selectedNewsCategory] }
         const response = isEditingAnnouncement
           ? await api.updateAnnouncement(tournamentId, editingAnnouncement.id, body, primaryImage)
           : await api.createAnnouncement(tournamentId, body, primaryImage)
@@ -301,7 +303,7 @@ export default function TournamentDetailPage() {
         const body: NewsRequest = {
           title,
           content: description,
-          tags: [`tournament:${tournamentId}`, selectedNewsCategory],
+          tags: [`tournament:${tournamentId}`],
         }
         const response = await api.createNews(body, primaryImage, extraImages)
         if (!response.ok) throw new Error(await readResponseError(response, {
@@ -1221,6 +1223,7 @@ export default function TournamentDetailPage() {
     setEditingAnnouncement(null)
     setPostTitle('')
     setPostDescription('')
+    setSelectedNewsCategory('Info')
     resetUploads()
     setModalContext(context)
     setIsAddPostModalOpen(true)
@@ -1233,6 +1236,11 @@ export default function TournamentDetailPage() {
     setEditingAnnouncement(announcement)
     setPostTitle(announcement.title ?? '')
     setPostDescription(announcement.content ?? '')
+    const existingCategory = (announcement.tags ?? [])
+      .map((tag) => tag.name)
+      .find((name): name is 'Important' | 'Update' | 'Info' =>
+        name === 'Important' || name === 'Update' || name === 'Info')
+    setSelectedNewsCategory(existingCategory ?? 'Info')
     setIsAddPostModalOpen(true)
   }
 
@@ -1337,6 +1345,7 @@ export default function TournamentDetailPage() {
             matches={matches}
             rounds={rounds}
             teams={teams}
+            participants={participants}
             judges={judges}
             matchesLoading={matchesLoading}
             matchesError={matchesError}

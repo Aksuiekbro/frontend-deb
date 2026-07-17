@@ -19,4 +19,5 @@ export interface AnnouncementResponse {
 export interface AnnouncementRequest {
     title?: string;
     content?: string;
+    tags?: string[];
 }

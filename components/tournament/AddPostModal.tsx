@@ -129,7 +129,7 @@ export function AddPostModal({
               {isEditMode && resolvedCurrentImageUrl && imagePreviews.length === 0 ? (
                 <div className="mt-4 md:mt-0 md:w-[260px]">
                   <div className="overflow-hidden rounded-lg border border-gray-300 bg-white">
-                    <img src={resolvedCurrentImageUrl} alt="Current announcement" className="h-40 w-full object-cover" />
+                    <img src={resolvedCurrentImageUrl} alt="Current announcement" className="h-40 w-full bg-[#F7F9FF] object-contain" />
                     <div className="px-3 py-2 text-sm font-medium text-[#4a4e69]">Current image</div>
                   </div>
                 </div>
@@ -225,7 +225,7 @@ export function AddPostModal({
                   required
                 />
               </div>
-              {modalContext === "news" && (
+              {modalContext === "announcements" && (
                 <div>
                   <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Category</label>
                   <select

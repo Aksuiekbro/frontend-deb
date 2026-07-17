@@ -37,15 +37,6 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
             <div className="text-center text-red-500">Failed to load news</div>
           ) : news && news.content.length > 0 ? (
             news.content.map((item) => {
-              const tags = (item.tags || []).map((tag) => tag.name)
-              const category = tags.find((tag) => !tag.startsWith("tournament:")) || "Info"
-              const badgeClass =
-                category === "Important"
-                  ? "bg-[#3E5C76] text-white"
-                  : category === "Update"
-                  ? "bg-[#9a8c98] text-white"
-                  : "bg-green-500 text-white"
-
               const dt = new Date(item.timestamp)
               const dateStr = dt.toLocaleDateString()
               const timeStr = dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -64,9 +55,6 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
                         <span>{timeStr}</span>
                       </div>
                     </div>
-                    <span className={`${badgeClass} px-3 py-1 rounded-full text-[12px] font-medium`}>
-                      {category}
-                    </span>
                   </div>
                   <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{item.content}</p>
                 </article>

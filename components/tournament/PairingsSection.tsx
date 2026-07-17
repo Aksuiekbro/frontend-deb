@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Pencil, Save, Trash2 } from "lucide-react"
 
 import type { PageResult } from "@/types/page"
@@ -8,12 +8,14 @@ import type { MatchResponse, MatchUpdateRequest } from "@/types/tournament/match
 import type { JudgeResponse } from "@/types/tournament/judge"
 import type { SimpleRoundResponse } from "@/types/tournament/round/round"
 import type { SimpleTeamResponse } from "@/types/tournament/team"
+import type { SimpleTournamentParticipantResponse } from "@/types/tournament/tournament-participant"
 import {
   readPersistedResultDrafts,
   RESULT_DRAFTS_CHANGED_EVENT,
   type PersistedResultDrafts,
 } from "@/lib/tournament-result-drafts"
 import {
+  getParticipantName,
   getTeamMembers,
   participantScoreSlot,
   resolveDebaterCurrentWon,
@@ -32,6 +34,7 @@ interface PairingsSectionProps {
   matches?: PageResult<MatchResponse>
   rounds?: SimpleRoundResponse[]
   teams?: PageResult<SimpleTeamResponse>
+  participants?: PageResult<SimpleTournamentParticipantResponse>
   judges?: PageResult<JudgeResponse>
   matchesLoading: boolean
   matchesError?: Error
@@ -89,6 +92,8 @@ type MatchDraft = {
   team2Id: string
   team3Id: string
   team4Id: string
+  debater1Id: string
+  debater2Id: string
 }
 
 const toSelectValue = (id?: number | null) => (typeof id === "number" ? String(id) : "")
@@ -211,6 +216,7 @@ export function PairingsSection({
   matches,
   rounds,
   teams,
+  participants,
   judges,
   matchesLoading,
   matchesError,
@@ -234,6 +240,7 @@ export function PairingsSection({
   const [isHydrated, setIsHydrated] = useState(false)
   const [deleteConfirmStage, setDeleteConfirmStage] = useState<StageId | null>(null)
   const [roomDrafts, setRoomDrafts] = useState<Record<number, string>>({})
+  const serverRoomsRef = useRef<Record<number, string>>({})
   const [persistedResultDrafts, setPersistedResultDrafts] = useState<PersistedResultDrafts>({})
   const [editingMatch, setEditingMatch] = useState<MatchResponse | null>(null)
   const [matchDraft, setMatchDraft] = useState<MatchDraft>({
@@ -243,6 +250,8 @@ export function PairingsSection({
     team2Id: "",
     team3Id: "",
     team4Id: "",
+    debater1Id: "",
+    debater2Id: "",
   })
   const [matchEditError, setMatchEditError] = useState<string | null>(null)
   const matchRows = matches?.content ?? []
@@ -288,10 +297,13 @@ export function PairingsSection({
   const canRandomizeSelectedRound = Boolean(onRandomizePairings) && isEditableRound
   const canPublishSelectedRound = Boolean(onSubmitPairings) && isEditableRound && hasMatches
   const canProceedToNextRound = Boolean(onProceedToNextRound) && isCurrentRound && allMatchesCompleted
+  const isSoloStage = selectedStage === "solo"
   const teamSlotsToRender = selectedStageFormat === "BPF" || matchRows.some((match) => match.team3 || match.team4)
     ? (["team1", "team2", "team3", "team4"] as const)
     : (["team1", "team2"] as const)
-  const tableColumnCount = teamSlotsToRender.length + 3 + (canEditMatches ? 1 : 0)
+  const debaterSlotsToRender = ["debater1", "debater2"] as const
+  const pairSlotCount = isSoloStage ? debaterSlotsToRender.length : teamSlotsToRender.length
+  const tableColumnCount = pairSlotCount + 3 + (canEditMatches ? 1 : 0)
   const roundLabels = rounds?.length
     ? rounds.map((round) => round.name)
     : selectedStage === "preliminary"
@@ -319,7 +331,7 @@ export function PairingsSection({
     }
 
     if (!hasMatches) {
-      return `No pairings yet for ${selectedRound}. Randomize teams, adjust rooms and judges, then publish pairings.`
+      return `No pairings yet for ${selectedRound}. Randomize ${isSoloStage ? "debaters" : "teams"}, adjust rooms and judges, then publish pairings.`
     }
 
     if (!allMatchesCompleted) {
@@ -360,13 +372,24 @@ export function PairingsSection({
   }, [])
 
   useEffect(() => {
-    setRoomDrafts(() => {
+    setRoomDrafts((current) => {
       const next: Record<number, string> = {}
+      const previousServerRooms = serverRoomsRef.current
+      const nextServerRooms: Record<number, string> = {}
 
       matches?.content.forEach((match) => {
-        next[match.id] = match.location ?? ""
+        const serverValue = match.location ?? ""
+        nextServerRooms[match.id] = serverValue
+
+        // A draft is unsaved when it differs from the server value it was typed
+        // over, so a refetch (e.g. after saving a neighbouring row) keeps it.
+        const draft = current[match.id]
+        const previousServerValue = previousServerRooms[match.id] ?? ""
+        const hasUnsavedEdit = draft !== undefined && draft.trim() !== previousServerValue.trim()
+        next[match.id] = hasUnsavedEdit ? draft : serverValue
       })
 
+      serverRoomsRef.current = nextServerRooms
       return next
     })
   }, [matches])
@@ -462,6 +485,23 @@ export function PairingsSection({
     )
   }
 
+  const renderDebaterCell = (match: MatchResponse, slot: (typeof debaterSlotsToRender)[number]) => {
+    const debater = match[slot]
+    if (!debater) {
+      return <td key={slot} className="px-6 py-4 text-lg font-semibold text-[#7A83A0]">-</td>
+    }
+
+    const won = resolveDebaterCurrentWon(match, slot, debater.id) ?? getPersistedWon(persistedResultDrafts, match.id, slot)
+    const resultLabel = won === true ? "Winner" : won === false ? "Loss" : "Result pending"
+
+    return (
+      <td key={slot} className="px-6 py-4 text-lg font-semibold text-[#0B1327]">
+        <div>{getParticipantName(debater, `Debater ${debater.id}`)}</div>
+        <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-[#6C738A]">{resultLabel}</div>
+      </td>
+    )
+  }
+
   const openMatchEditor = (match: MatchResponse) => {
     setEditingMatch(match)
     setMatchDraft({
@@ -471,6 +511,8 @@ export function PairingsSection({
       team2Id: toSelectValue(match.team2?.id),
       team3Id: toSelectValue(match.team3?.id),
       team4Id: toSelectValue(match.team4?.id),
+      debater1Id: toSelectValue(match.debater1?.id),
+      debater2Id: toSelectValue(match.debater2?.id),
     })
     setMatchEditError(null)
   }
@@ -480,7 +522,7 @@ export function PairingsSection({
   }
 
   const shouldShowFourTeamSlots = Boolean(
-    editingMatch && (
+    editingMatch && !isSoloStage && (
       selectedStageFormat === "BPF" ||
       editingMatch.team3 ||
       editingMatch.team4
@@ -489,6 +531,29 @@ export function PairingsSection({
 
   const handleSaveMatchDraft = async () => {
     if (!editingMatch || !onUpdateMatch) return
+
+    if (isSoloStage) {
+      const selectedDebaterIds = [matchDraft.debater1Id, matchDraft.debater2Id].filter(Boolean)
+
+      if (new Set(selectedDebaterIds).size !== selectedDebaterIds.length) {
+        setMatchEditError("A debater can only appear once in the same match.")
+        return
+      }
+
+      if (selectedDebaterIds.length !== 2) {
+        setMatchEditError("LD matches require exactly two debaters.")
+        return
+      }
+
+      await onUpdateMatch(editingMatch.id, {
+        location: matchDraft.location.trim() || null,
+        judgeId: toOptionalId(matchDraft.judgeId),
+        debater1Id: toOptionalId(matchDraft.debater1Id),
+        debater2Id: toOptionalId(matchDraft.debater2Id),
+      })
+      setEditingMatch(null)
+      return
+    }
 
     const selectedTeamIds = [
       matchDraft.team1Id,
@@ -502,8 +567,8 @@ export function PairingsSection({
       return
     }
 
-    const requiredTeamCount = shouldShowFourTeamSlots ? 4 : selectedStage === "solo" ? 0 : 2
-    if (requiredTeamCount > 0 && selectedTeamIds.length !== requiredTeamCount) {
+    const requiredTeamCount = shouldShowFourTeamSlots ? 4 : 2
+    if (selectedTeamIds.length !== requiredTeamCount) {
       setMatchEditError(
         shouldShowFourTeamSlots
           ? "BPF matches require exactly four teams."
@@ -563,7 +628,9 @@ export function PairingsSection({
 
     return matchRows.map((match) => (
       <tr key={match.id} className="border-b border-[#E2E6F2] last:border-none">
-        {teamSlotsToRender.map((slot) => renderTeamCell(match, slot))}
+        {isSoloStage
+          ? debaterSlotsToRender.map((slot) => renderDebaterCell(match, slot))
+          : teamSlotsToRender.map((slot) => renderTeamCell(match, slot))}
         {renderRoomCell(match)}
         <td className="px-6 py-4 text-sm text-[#7A83A0]">{match.judge?.fullName ?? "-"}</td>
         <td className="px-6 py-4 text-sm text-[#4A5168]">{getMatchStatus(match)}</td>
@@ -674,34 +741,73 @@ export function PairingsSection({
           </DialogDescription>
 
           <div className="grid gap-4 py-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-              Team 1
-              <select
-                value={matchDraft.team1Id}
-                onChange={(event) => setDraftField("team1Id", event.target.value)}
-                className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                aria-label="Team 1"
-              >
-                <option value="">Unassigned</option>
-                {teams?.content.map((team) => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-              Team 2
-              <select
-                value={matchDraft.team2Id}
-                onChange={(event) => setDraftField("team2Id", event.target.value)}
-                className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                aria-label="Team 2"
-              >
-                <option value="">Unassigned</option>
-                {teams?.content.map((team) => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
-                ))}
-              </select>
-            </label>
+            {isSoloStage ? (
+              <>
+                <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
+                  Debater 1
+                  <select
+                    value={matchDraft.debater1Id}
+                    onChange={(event) => setDraftField("debater1Id", event.target.value)}
+                    className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
+                    aria-label="Debater 1"
+                  >
+                    <option value="">Unassigned</option>
+                    {participants?.content.map((participant) => (
+                      <option key={participant.id} value={participant.id}>
+                        {getParticipantName(participant, `Debater ${participant.id}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
+                  Debater 2
+                  <select
+                    value={matchDraft.debater2Id}
+                    onChange={(event) => setDraftField("debater2Id", event.target.value)}
+                    className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
+                    aria-label="Debater 2"
+                  >
+                    <option value="">Unassigned</option>
+                    {participants?.content.map((participant) => (
+                      <option key={participant.id} value={participant.id}>
+                        {getParticipantName(participant, `Debater ${participant.id}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : (
+              <>
+                <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
+                  Team 1
+                  <select
+                    value={matchDraft.team1Id}
+                    onChange={(event) => setDraftField("team1Id", event.target.value)}
+                    className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
+                    aria-label="Team 1"
+                  >
+                    <option value="">Unassigned</option>
+                    {teams?.content.map((team) => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
+                  Team 2
+                  <select
+                    value={matchDraft.team2Id}
+                    onChange={(event) => setDraftField("team2Id", event.target.value)}
+                    className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
+                    aria-label="Team 2"
+                  >
+                    <option value="">Unassigned</option>
+                    {teams?.content.map((team) => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
 
             {shouldShowFourTeamSlots ? (
               <>
@@ -789,9 +895,13 @@ export function PairingsSection({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="bg-[#0B1327] text-xs uppercase tracking-[0.08em] text-white/70">
-              {teamSlotsToRender.map((slot, index) => (
-                <th key={slot} className="px-6 py-4">Fraction {index + 1}</th>
-              ))}
+              {isSoloStage
+                ? debaterSlotsToRender.map((slot, index) => (
+                    <th key={slot} className="px-6 py-4">Debater {index + 1}</th>
+                  ))
+                : teamSlotsToRender.map((slot, index) => (
+                    <th key={slot} className="px-6 py-4">Fraction {index + 1}</th>
+                  ))}
               <th className="px-6 py-4">Room</th>
               <th className="px-6 py-4">Judge Name</th>
               <th className="px-6 py-4">Status</th>

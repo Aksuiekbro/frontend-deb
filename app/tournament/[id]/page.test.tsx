@@ -1049,12 +1049,13 @@ describe("TournamentDetailPage mutations", () => {
     render(<TournamentDetailPage />)
     fireEvent.click(screen.getByText("Open Announcement"))
     fillPostForm()
+    fireEvent.change(screen.getByLabelText("News category"), { target: { value: "Important" } })
     fireEvent.click(screen.getByText("Submit Post"))
 
     await waitFor(() => {
       expect(apiMock.createAnnouncement).toHaveBeenCalledWith(
         53,
-        { title: "Registration open", content: "Teams can register now." },
+        { title: "Registration open", content: "Teams can register now.", tags: ["Important"] },
         mockPrimaryImage,
       )
     })
@@ -1080,7 +1081,7 @@ describe("TournamentDetailPage mutations", () => {
       expect(apiMock.updateAnnouncement).toHaveBeenCalledWith(
         53,
         11,
-        { title: "Registration updated", content: "Photo and copy changed." },
+        { title: "Registration updated", content: "Photo and copy changed.", tags: ["Info"] },
         mockPrimaryImage,
       )
     })
@@ -1110,7 +1111,6 @@ describe("TournamentDetailPage mutations", () => {
     fireEvent.click(screen.getByText("News"))
     fireEvent.click(screen.getByText("Open News"))
     fillPostForm("Round highlights", "The first round finished.")
-    fireEvent.change(screen.getByLabelText("News category"), { target: { value: "Important" } })
     fireEvent.click(screen.getByText("Submit Post"))
 
     await waitFor(() => {
@@ -1118,7 +1118,7 @@ describe("TournamentDetailPage mutations", () => {
         {
           title: "Round highlights",
           content: "The first round finished.",
-          tags: ["tournament:53", "Important"],
+          tags: ["tournament:53"],
         },
         mockPrimaryImage,
         [mockExtraImage],

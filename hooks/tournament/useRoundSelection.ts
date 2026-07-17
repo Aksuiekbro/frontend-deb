@@ -29,7 +29,13 @@ export function useRoundSelection({ tournamentId, selectedStage, selectedRoundLa
   }, [roundGroups, selectedStage])
 
   const selectedRoundGroupId = selectedRoundGroup?.id ?? null
-  const { rounds, mutate: mutateRounds } = useRounds(tournamentId, selectedRoundGroupId ?? undefined)
+  const { rounds: fetchedRounds, mutate: mutateRounds } = useRounds(tournamentId, selectedRoundGroupId ?? undefined)
+
+  // The backend returns rounds in unspecified order; keep bracket progression stable.
+  const rounds = useMemo(
+    () => fetchedRounds ? [...fetchedRounds].sort((a, b) => a.roundNumber - b.roundNumber) : fetchedRounds,
+    [fetchedRounds],
+  )
 
   const selectedRound = useMemo(() => {
     if (!rounds || rounds.length === 0) return

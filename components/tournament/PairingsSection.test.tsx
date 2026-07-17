@@ -886,6 +886,43 @@ describe("PairingsSection", () => {
     expect(screen.getByLabelText("Room for match 301")).toHaveValue("Room B")
   })
 
+  it("keeps unsaved room drafts when a refetch replaces match data", () => {
+    const onUpdateMatchRoom = jest.fn()
+    const buildMatches = (locations: Record<number, string | null>) => ({
+      content: [301, 302].map((id) => ({
+        id,
+        team1: { id: 1, name: "Team 1" },
+        team2: { id: 2, name: "Team 2" },
+        location: locations[id] ?? null,
+        judge: { id: 7, fullName: "Judge 1" },
+      })),
+      totalElements: 2,
+      totalPages: 1,
+    }) as never
+
+    const { rerender } = render(
+      <PairingsSection
+        {...baseProps}
+        matches={buildMatches({ 301: null, 302: null })}
+        onUpdateMatchRoom={onUpdateMatchRoom}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText("Room for match 301"), { target: { value: "12" } })
+
+    // Saving match 302 triggers a refetch; the unsaved draft for 301 must survive.
+    rerender(
+      <PairingsSection
+        {...baseProps}
+        matches={buildMatches({ 301: null, 302: "34" })}
+        onUpdateMatchRoom={onUpdateMatchRoom}
+      />,
+    )
+
+    expect(screen.getByLabelText("Room for match 301")).toHaveValue("12")
+    expect(screen.getByLabelText("Room for match 302")).toHaveValue("34")
+  })
+
   it("lets organizers manually edit teams room and judge for a randomized match", async () => {
     const onUpdateMatch = jest.fn().mockResolvedValue(undefined)
 
