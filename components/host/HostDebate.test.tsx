@@ -156,10 +156,33 @@ describe("HostDebate", () => {
         teamEliminationFormat: "APF",
         preliminaryRoundCount: 5,
         eliminationRoundCount: 3,
+        ldEnabled: true,
       }),
       file,
     )
     expect(pushMock).toHaveBeenCalledWith("/tournament/42")
+  })
+
+  it("lets the organizer opt out of the LD bracket", async () => {
+    createTournamentMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 42 }),
+    } as Response)
+
+    const { container } = render(<HostDebate />)
+    fillTournamentForm(container)
+
+    const ldCheckbox = screen.getByRole("checkbox", { name: /include ld/i })
+    expect(ldCheckbox).toBeChecked()
+    fireEvent.click(ldCheckbox)
+
+    fireEvent.submit(container.querySelector("form")!)
+
+    await waitFor(() => expect(createTournamentMock).toHaveBeenCalledTimes(1))
+    expect(createTournamentMock).toHaveBeenCalledWith(
+      expect.objectContaining({ ldEnabled: false }),
+      expect.anything(),
+    )
   })
 
   it("falls back to the tournaments list when the backend does not return an id", async () => {

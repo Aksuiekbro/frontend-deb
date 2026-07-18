@@ -44,6 +44,7 @@ function createInitialForm(): HostFormState {
     teamEliminationFormat: undefined,
     preliminaryRoundCount: undefined,
     eliminationRoundCount: undefined,
+    ldEnabled: true,
   }
 }
 
@@ -100,7 +101,7 @@ export default function HostDebate() {
       !TEAM_FORMATS.has(form.preliminaryFormat as DebateFormat) ||
       !TEAM_FORMATS.has(form.teamEliminationFormat as DebateFormat)
     ) {
-      setSubmitError("Team stages support APF or BPF only. LD is configured separately after preliminary rounds.")
+      setSubmitError("Team stages support APF or BPF only. Use the LD option below to add a solo bracket.")
       return
     }
 
@@ -159,6 +160,7 @@ export default function HostDebate() {
       teamEliminationFormat: form.teamEliminationFormat,
       preliminaryRoundCount: form.preliminaryRoundCount,
       eliminationRoundCount: form.eliminationRoundCount,
+      ldEnabled: form.ldEnabled ?? true,
     }
 
     setIsSubmitting(true)
@@ -344,6 +346,20 @@ export default function HostDebate() {
               onChange={e => update("eliminationRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-3 text-[#0D1321] text-[16px]">
+              <input
+                type="checkbox"
+                checked={form.ldEnabled ?? true}
+                onChange={e => update("ldEnabled", e.target.checked)}
+                className="h-4 w-4 accent-[#0D1321]"
+              />
+              Include LD (solo speaker) bracket
+            </label>
+            <p className="text-[14px] text-[#9a8c98]">
+              Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.
+            </p>
           </div>
         </div>
 

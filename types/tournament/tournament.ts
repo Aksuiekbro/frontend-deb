@@ -60,6 +60,7 @@ export interface TournamentRequest {
     teamEliminationFormat?: DebateFormat;
     preliminaryRoundCount?: number;
     eliminationRoundCount?: number;
+    ldEnabled?: boolean;
 }
 
 export interface TournamentGetParams {
