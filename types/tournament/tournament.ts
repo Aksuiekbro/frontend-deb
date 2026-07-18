@@ -61,6 +61,7 @@ export interface TournamentRequest {
     preliminaryRoundCount?: number;
     eliminationRoundCount?: number;
     ldEnabled?: boolean;
+    ldRoundCount?: number;
 }
 
 export interface TournamentGetParams {

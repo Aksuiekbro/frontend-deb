@@ -157,6 +157,7 @@ describe("HostDebate", () => {
         preliminaryRoundCount: 5,
         eliminationRoundCount: 3,
         ldEnabled: true,
+        ldRoundCount: 4,
       }),
       file,
     )
@@ -181,6 +182,26 @@ describe("HostDebate", () => {
     await waitFor(() => expect(createTournamentMock).toHaveBeenCalledTimes(1))
     expect(createTournamentMock).toHaveBeenCalledWith(
       expect.objectContaining({ ldEnabled: false }),
+      expect.anything(),
+    )
+    expect(createTournamentMock.mock.calls[0][0]).not.toHaveProperty("ldRoundCount")
+  })
+
+  it("lets the organizer pick the LD bracket size independently of team elimination", async () => {
+    createTournamentMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 42 }),
+    } as Response)
+
+    const { container } = render(<HostDebate />)
+    fillTournamentForm(container)
+
+    fireEvent.change(screen.getByLabelText(/ld bracket size/i), { target: { value: "5" } })
+    fireEvent.submit(container.querySelector("form")!)
+
+    await waitFor(() => expect(createTournamentMock).toHaveBeenCalledTimes(1))
+    expect(createTournamentMock).toHaveBeenCalledWith(
+      expect.objectContaining({ eliminationRoundCount: 3, ldRoundCount: 5 }),
       expect.anything(),
     )
   })

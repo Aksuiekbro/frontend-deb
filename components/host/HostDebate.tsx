@@ -45,6 +45,7 @@ function createInitialForm(): HostFormState {
     preliminaryRoundCount: undefined,
     eliminationRoundCount: undefined,
     ldEnabled: true,
+    ldRoundCount: 4,
   }
 }
 
@@ -161,6 +162,7 @@ export default function HostDebate() {
       preliminaryRoundCount: form.preliminaryRoundCount,
       eliminationRoundCount: form.eliminationRoundCount,
       ldEnabled: form.ldEnabled ?? true,
+      ...(form.ldEnabled ?? true ? { ldRoundCount: form.ldRoundCount ?? 4 } : {}),
     }
 
     setIsSubmitting(true)
@@ -360,6 +362,20 @@ export default function HostDebate() {
             <p className="text-[14px] text-[#9a8c98]">
               Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.
             </p>
+            {(form.ldEnabled ?? true) && (
+              <div className="space-y-2">
+                <label className="text-[#0D1321] text-[16px]" htmlFor="ld-bracket-size">LD bracket size</label>
+                <select
+                  id="ld-bracket-size"
+                  value={form.ldRoundCount ?? 4}
+                  onChange={e => update("ldRoundCount", Number(e.target.value))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value={4}>Top 16 speakers</option>
+                  <option value={5}>Top 32 speakers</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
