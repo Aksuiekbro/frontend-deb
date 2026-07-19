@@ -283,6 +283,8 @@ export const api = {
 
     updateMatch: (tournamentId: number, roundGroupId: number, roundId: number, matchId: number, body: MatchUpdateRequest) => patch<MatchResponse>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/${matchId}`, body),
 
+    updateMatchLocations: (tournamentId: number, roundGroupId: number, roundId: number, entries: { matchId: number; location: string | null }[]) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/locations`, entries),
+
     submitMatchResults: (tournamentId: number, roundGroupId: number, roundId: number, body: MatchResultRequest[]) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/results`, body),
 
     randomizeMatches: (tournamentId: number, roundGroupId: number, roundId: number) => patch<void>(`/tournaments/${tournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/randomize`),

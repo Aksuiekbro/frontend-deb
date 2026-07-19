@@ -298,7 +298,7 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
     onRandomizePairings,
     onSubmitPairings,
     onClearMatches,
-    onUpdateMatchRoom,
+    onSaveAllRooms,
     onUpdateMatch,
   }: {
     selectedStage: "preliminary" | "team" | "solo"
@@ -312,10 +312,10 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
     onSelectStage: (stage: "preliminary" | "team" | "solo") => void
     onSelectRound: (round: string) => void
     onProceedToNextRound?: () => void
-    onRandomizePairings?: () => void
-    onSubmitPairings?: () => void
+    onRandomizePairings?: () => Promise<boolean | void>
+    onSubmitPairings?: () => Promise<boolean | void>
     onClearMatches?: (stage: "preliminary") => void
-    onUpdateMatchRoom?: (matchId: number, location: string) => void
+    onSaveAllRooms?: (entries: { matchId: number; location: string }[]) => Promise<boolean | void>
     onUpdateMatch?: (matchId: number, payload: { location: string; team1Id: number; team2Id: number; judgeId: number }) => void
   }) => (
     <div data-testid="pairings">
@@ -332,7 +332,7 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
       <button type="button" onClick={() => onRandomizePairings?.()}>Randomize Pairings</button>
       <button type="button" onClick={() => onSubmitPairings?.()}>Submit Pairings</button>
       <button type="button" onClick={() => onClearMatches?.("preliminary")}>Clear Matches</button>
-      <button type="button" onClick={() => onUpdateMatchRoom?.(301, "Room B-12")}>Save Room</button>
+      <button type="button" onClick={() => onSaveAllRooms?.([{ matchId: 301, location: " Room B-12 " }])}>Save Rooms</button>
       <button type="button" onClick={() => onUpdateMatch?.(301, {
         location: "Room C-15",
         team1Id: 8,
@@ -514,6 +514,7 @@ jest.mock("@/lib/api", () => ({
     proceedToNextRound: jest.fn(),
     changeRoundGroupFormat: jest.fn(),
     updateMatch: jest.fn(),
+    updateMatchLocations: jest.fn(),
     randomizeMatches: jest.fn(),
     publishMatches: jest.fn(),
     submitMatchResults: jest.fn(),
@@ -1490,21 +1491,22 @@ describe("TournamentDetailPage mutations", () => {
     }))
   })
 
-  it("updates a match room for the selected round through the backend", async () => {
-    apiMock.updateMatch.mockResolvedValue(okResponse())
+  it("bulk updates trimmed match rooms for the selected round", async () => {
+    apiMock.updateMatchLocations.mockResolvedValue(okResponse())
 
     render(<TournamentDetailPage />)
     fireEvent.click(screen.getByText("Pairing and Matches"))
-    fireEvent.click(screen.getByText("Save Room"))
+    fireEvent.click(screen.getByText("Save Rooms"))
 
     await waitFor(() => {
-      expect(apiMock.updateMatch).toHaveBeenCalledWith(53, 101, 201, 301, {
+      expect(apiMock.updateMatchLocations).toHaveBeenCalledWith(53, 101, 201, [{
+        matchId: 301,
         location: "Room B-12",
-      })
+      }])
     })
     expect(mockMutateMatches).toHaveBeenCalledTimes(1)
     expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "Room updated",
+      title: "1 rooms saved",
     }))
   })
 

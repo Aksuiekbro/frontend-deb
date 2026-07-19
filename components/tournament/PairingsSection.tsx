@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Pencil, Save, Trash2 } from "lucide-react"
+import { Loader2, Pencil, Trash2 } from "lucide-react"
 
 import type { PageResult } from "@/types/page"
 import type { MatchResponse, MatchUpdateRequest } from "@/types/tournament/match"
@@ -29,6 +29,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useActionFeedback } from "@/components/tournament/useActionFeedback"
 
 interface PairingsSectionProps {
   matches?: PageResult<MatchResponse>
@@ -45,12 +46,12 @@ interface PairingsSectionProps {
   onSelectStage: (stage: StageId) => void
   onSelectRound: (round: string) => void
   onProceedToNextRound?: () => void
-  onRandomizePairings?: () => void
-  onSubmitPairings?: () => void
+  onRandomizePairings?: () => Promise<boolean | void>
+  onSubmitPairings?: () => Promise<boolean | void>
   onClearMatches?: (stage: StageId) => void
   availableStages?: readonly StageDescriptor[]
   stageFormats?: Partial<Record<StageId, FormatOption>>
-  onUpdateMatchRoom?: (matchId: number, location: string) => void
+  onSaveAllRooms?: (entries: { matchId: number; location: string }[]) => Promise<boolean | void>
   onUpdateMatch?: (matchId: number, payload: MatchUpdateRequest) => Promise<void> | void
   savingMatchId?: number | null
   resultStorageKey?: string
@@ -232,7 +233,7 @@ export function PairingsSection({
   onClearMatches,
   availableStages,
   stageFormats,
-  onUpdateMatchRoom,
+  onSaveAllRooms,
   onUpdateMatch,
   savingMatchId,
   resultStorageKey,
@@ -255,6 +256,23 @@ export function PairingsSection({
   })
   const [matchEditError, setMatchEditError] = useState<string | null>(null)
   const matchRows = matches?.content ?? []
+  const dirtyRoomEntries = matchRows.flatMap((match) => {
+    const draft = roomDrafts[match.id] ?? match.location ?? ""
+    const currentRoom = match.location ?? ""
+    return draft.trim() === currentRoom.trim() ? [] : [{ matchId: match.id, location: draft }]
+  })
+  const randomizeFeedback = useActionFeedback(async () => {
+    if (!onRandomizePairings) return false
+    return onRandomizePairings()
+  })
+  const publishFeedback = useActionFeedback(async () => {
+    if (!onSubmitPairings) return false
+    return onSubmitPairings()
+  })
+  const saveRoomsFeedback = useActionFeedback(async () => {
+    if (!onSaveAllRooms || !dirtyRoomEntries.length) return false
+    return onSaveAllRooms(dirtyRoomEntries)
+  })
   const configuredStageFormats = useMemo<Record<StageId, FormatOption>>(() => ({
     ...DEFAULT_STAGE_FORMATS,
     ...stageFormats,
@@ -293,7 +311,7 @@ export function PairingsSection({
     match.participantScoresRepairable !== true,
   )
   const canEditMatches = Boolean(onUpdateMatch) && isEditableRound
-  const canUpdateRooms = Boolean(onUpdateMatchRoom) && isEditableRound
+  const canUpdateRooms = Boolean(onSaveAllRooms) && isEditableRound
   const canRandomizeSelectedRound = Boolean(onRandomizePairings) && isEditableRound
   const canPublishSelectedRound = Boolean(onSubmitPairings) && isEditableRound && hasMatches
   const canProceedToNextRound = Boolean(onProceedToNextRound) && isCurrentRound && allMatchesCompleted
@@ -425,34 +443,21 @@ export function PairingsSection({
     }
 
     const draft = roomDrafts[match.id] ?? match.location ?? ""
-    const currentRoom = match.location ?? ""
-    const isSaving = savingMatchId === match.id
-    const isDirty = draft.trim() !== currentRoom.trim()
 
     return (
       <td className="px-6 py-3">
-        <div className="flex min-w-48 items-center gap-2">
+        <div className="min-w-48">
           <input
             type="text"
             value={draft}
             aria-label={`Room for match ${match.id}`}
             placeholder="Room"
-            disabled={isSaving}
             onChange={(event) => {
               const value = event.target.value
               setRoomDrafts((current) => ({ ...current, [match.id]: value }))
             }}
             className="h-10 w-full rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none transition focus:border-[#2B3F63] disabled:bg-[#F5F7FC]"
           />
-          <button
-            type="button"
-            aria-label={`Save room for match ${match.id}`}
-            disabled={!isDirty || isSaving}
-            onClick={() => onUpdateMatchRoom?.(match.id, draft)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0B1327] text-white transition hover:bg-[#050918] disabled:cursor-not-allowed disabled:bg-[#D5D9E7]"
-          >
-            <Save className="h-4 w-4" />
-          </button>
         </div>
       </td>
     )
@@ -930,21 +935,48 @@ export function PairingsSection({
         </div>
 
         <div className="flex flex-wrap gap-3">
+          {onSaveAllRooms ? (
+            <button
+              type="button"
+              disabled={!canUpdateRooms || dirtyRoomEntries.length === 0 || saveRoomsFeedback.status !== "idle"}
+              onClick={() => void saveRoomsFeedback.run()}
+              className={`inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                saveRoomsFeedback.isSuccess
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-[#D5D9E7] text-[#0B1327] hover:bg-[#F5F7FC]"
+              }`}
+            >
+              {saveRoomsFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+              {saveRoomsFeedback.isPending
+                ? "Saving all rooms..."
+                : saveRoomsFeedback.isSuccess
+                  ? "✓ Rooms saved"
+                  : `Save all rooms (${dirtyRoomEntries.length})`}
+            </button>
+          ) : null}
           <button
             type="button"
-            disabled={!canRandomizeSelectedRound}
-            onClick={onRandomizePairings}
-            className="rounded-2xl border border-[#D5D9E7] px-6 py-3 text-sm font-semibold text-[#0B1327] hover:bg-[#F5F7FC] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!canRandomizeSelectedRound || randomizeFeedback.status !== "idle"}
+            onClick={() => void randomizeFeedback.run()}
+            className={`inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              randomizeFeedback.isSuccess
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-[#D5D9E7] text-[#0B1327] hover:bg-[#F5F7FC]"
+            }`}
           >
-            Randomize
+            {randomizeFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+            {randomizeFeedback.isPending ? "Randomizing..." : randomizeFeedback.isSuccess ? "✓ Randomized" : "Randomize"}
           </button>
           <button
             type="button"
-            disabled={!canPublishSelectedRound}
-            onClick={onSubmitPairings}
-            className="rounded-2xl bg-[#0B1327] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#050918] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!canPublishSelectedRound || publishFeedback.status !== "idle"}
+            onClick={() => void publishFeedback.run()}
+            className={`inline-flex items-center gap-2 rounded-2xl px-8 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              publishFeedback.isSuccess ? "bg-emerald-600" : "bg-[#0B1327] hover:bg-[#050918]"
+            }`}
           >
-            Publish pairings
+            {publishFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+            {publishFeedback.isPending ? "Publishing..." : publishFeedback.isSuccess ? "✓ Published" : "Publish pairings"}
           </button>
         </div>
       </div>

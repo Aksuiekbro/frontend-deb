@@ -5,6 +5,7 @@ import "./globals.css"
 import StagewiseToolbarClient from '../components/StagewiseToolbarClient'
 import SWRProvider from '../components/providers/swr-provider'
 import HeaderWrapper from '../components/HeaderWrapper'
+import { Toaster } from '../components/ui/toaster'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -35,6 +36,7 @@ export default function RootLayout({
           <HeaderWrapper />
           {children}
         </SWRProvider>
+        <Toaster />
         {process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_INTEGRITY_LOCAL_ONLY !== '1' && (
           <StagewiseToolbarClient config={stagewiseConfig} />
         )}

@@ -850,7 +850,7 @@ export default function TournamentDetailPage() {
   }
 
   const handleRandomizePairings = async () => {
-    if (!isOrganizer) return
+    if (!isOrganizer) return false
 
     if (!tournament?.started) {
       toast({
@@ -858,11 +858,11 @@ export default function TournamentDetailPage() {
         description: 'Start the tournament before randomizing pairings.',
         variant: 'destructive',
       })
-      return
+      return false
     }
 
     const selectedIds = getSelectedRoundIds()
-    if (!selectedIds) return
+    if (!selectedIds) return false
 
     try {
       const response = await api.randomizeMatches(tournamentId, selectedIds.roundGroupId, selectedIds.roundId)
@@ -879,6 +879,7 @@ export default function TournamentDetailPage() {
         title: 'Pairings randomized',
         description: 'The selected round pairings have been regenerated.',
       })
+      return true
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Please try again later.'
       console.error('Failed to randomize pairings', error)
@@ -887,11 +888,12 @@ export default function TournamentDetailPage() {
         description: message,
         variant: 'destructive',
       })
+      return false
     }
   }
 
   const handleSubmitPairings = async () => {
-    if (!isOrganizer) return
+    if (!isOrganizer) return false
 
     if (!tournament?.started) {
       toast({
@@ -899,11 +901,11 @@ export default function TournamentDetailPage() {
         description: 'Start the tournament before publishing pairings.',
         variant: 'destructive',
       })
-      return
+      return false
     }
 
     const selectedIds = getSelectedRoundIds()
-    if (!selectedIds) return
+    if (!selectedIds) return false
 
     try {
       const response = await api.publishMatches(tournamentId, selectedIds.roundGroupId, selectedIds.roundId)
@@ -920,6 +922,7 @@ export default function TournamentDetailPage() {
         title: 'Pairings published',
         description: 'The selected round pairings are now visible.',
       })
+      return true
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Please try again later.'
       console.error('Failed to publish pairings', error)
@@ -928,11 +931,51 @@ export default function TournamentDetailPage() {
         description: message,
         variant: 'destructive',
       })
+      return false
     }
   }
 
-  const handleUpdateMatchRoom = async (matchId: number, location: string) => {
-    await handleUpdateMatch(matchId, { location: location.trim() || null }, 'Room updated', 'The match room has been saved.')
+  const handleSaveAllRooms = async (entries: { matchId: number; location: string }[]) => {
+    if (!isOrganizer || !entries.length) return false
+
+    const selectedIds = getSelectedRoundIds()
+    if (!selectedIds) return false
+
+    const normalizedEntries = entries.map(({ matchId, location }) => ({
+      matchId,
+      location: location.trim() || null,
+    }))
+
+    try {
+      const response = await api.updateMatchLocations(
+        tournamentId,
+        selectedIds.roundGroupId,
+        selectedIds.roundId,
+        normalizedEntries,
+      )
+      if (!response.ok) {
+        throw new Error(await readResponseError(response, {
+          fallback: 'Failed to save rooms',
+          unauthorized: 'You do not have permission to perform this action.',
+          serverError: 'Server error. Please try again later.',
+        }))
+      }
+
+      await mutateMatches?.()
+      toast({
+        title: `${entries.length} rooms saved`,
+      })
+      return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Please try again later.'
+      console.error('Failed to save match rooms', error)
+      toast({
+        title: 'Failed to save rooms',
+        description: message,
+        variant: 'destructive',
+      })
+      return false
+    }
   }
 
   const handleUpdateMatch = async (
@@ -1360,7 +1403,7 @@ export default function TournamentDetailPage() {
             onSubmitPairings={isOrganizer ? handleSubmitPairings : undefined}
             onClearMatches={isOrganizer ? handleClearMatches : undefined}
             availableStages={availablePairingStages}
-            onUpdateMatchRoom={isOrganizer ? handleUpdateMatchRoom : undefined}
+            onSaveAllRooms={isOrganizer ? handleSaveAllRooms : undefined}
             onUpdateMatch={isOrganizer ? handleUpdateMatch : undefined}
             savingMatchId={savingMatchId}
             resultStorageKey={resultStorageKey}

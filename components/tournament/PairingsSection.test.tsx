@@ -808,8 +808,8 @@ describe("PairingsSection", () => {
     })
   })
 
-  it("lets organizers edit and save a room for a match", () => {
-    const onUpdateMatchRoom = jest.fn()
+  it("lets organizers edit and bulk save rooms", async () => {
+    const onSaveAllRooms = jest.fn().mockResolvedValue(true)
 
     render(
       <PairingsSection
@@ -827,20 +827,22 @@ describe("PairingsSection", () => {
           totalElements: 1,
           totalPages: 1,
         } as never}
-        onUpdateMatchRoom={onUpdateMatchRoom}
+        onSaveAllRooms={onSaveAllRooms}
       />,
     )
 
     fireEvent.change(screen.getByLabelText("Room for match 301"), {
       target: { value: "Room B-12" },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Save room for match 301" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save all rooms (1)" }))
 
-    expect(onUpdateMatchRoom).toHaveBeenCalledWith(301, "Room B-12")
+    await waitFor(() => {
+      expect(onSaveAllRooms).toHaveBeenCalledWith([{ matchId: 301, location: "Room B-12" }])
+    })
   })
 
   it("resets room drafts from fresh backend match data after refetch", () => {
-    const onUpdateMatchRoom = jest.fn()
+    const onSaveAllRooms = jest.fn().mockResolvedValue(true)
     const { rerender } = render(
       <PairingsSection
         {...baseProps}
@@ -857,7 +859,7 @@ describe("PairingsSection", () => {
           totalElements: 1,
           totalPages: 1,
         } as never}
-        onUpdateMatchRoom={onUpdateMatchRoom}
+        onSaveAllRooms={onSaveAllRooms}
       />,
     )
 
@@ -879,7 +881,7 @@ describe("PairingsSection", () => {
           totalElements: 1,
           totalPages: 1,
         } as never}
-        onUpdateMatchRoom={onUpdateMatchRoom}
+        onSaveAllRooms={onSaveAllRooms}
       />,
     )
 
@@ -887,7 +889,7 @@ describe("PairingsSection", () => {
   })
 
   it("keeps unsaved room drafts when a refetch replaces match data", () => {
-    const onUpdateMatchRoom = jest.fn()
+    const onSaveAllRooms = jest.fn().mockResolvedValue(true)
     const buildMatches = (locations: Record<number, string | null>) => ({
       content: [301, 302].map((id) => ({
         id,
@@ -904,18 +906,18 @@ describe("PairingsSection", () => {
       <PairingsSection
         {...baseProps}
         matches={buildMatches({ 301: null, 302: null })}
-        onUpdateMatchRoom={onUpdateMatchRoom}
+        onSaveAllRooms={onSaveAllRooms}
       />,
     )
 
     fireEvent.change(screen.getByLabelText("Room for match 301"), { target: { value: "12" } })
 
-    // Saving match 302 triggers a refetch; the unsaved draft for 301 must survive.
+    // A refetch that updates another match must preserve the unsaved draft for 301.
     rerender(
       <PairingsSection
         {...baseProps}
         matches={buildMatches({ 301: null, 302: "34" })}
-        onUpdateMatchRoom={onUpdateMatchRoom}
+        onSaveAllRooms={onSaveAllRooms}
       />,
     )
 

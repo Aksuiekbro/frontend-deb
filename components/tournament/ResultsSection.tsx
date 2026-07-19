@@ -1,7 +1,7 @@
 "use client"
 
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react"
-import { Trash2 } from "lucide-react"
+import { Loader2, Trash2 } from "lucide-react"
 import type { PageResult } from "@/types/page"
 import type { MatchResponse, MatchResultRequest } from "@/types/tournament/match"
 import type { SimpleRoundResponse } from "@/types/tournament/round/round"
@@ -28,6 +28,7 @@ import {
   type DebaterSlotName,
   type TeamSlotName,
 } from "@/lib/match-result-slots"
+import { useActionFeedback } from "@/components/tournament/useActionFeedback"
 
 interface ResultsSectionProps {
   selectedResultsOption: string
@@ -500,9 +501,6 @@ export function ResultsSection({
     readyToSubmitCount > 0 &&
     !isSubmittingResults
   const shouldRenderMatchResults = matchesLoading || matchesError || Boolean(matches)
-  const matchSubmitButtonClass = `px-8 py-3 bg-[#3E5C76] text-white rounded-lg text-[16px] font-medium transition-colors ${
-    canSubmitMatchResults ? "hover:bg-[#2D3748]" : "cursor-not-allowed opacity-50"
-  }`
   const isRepairableParticipantScoreMatch = (match: MatchResponse) =>
     requiresSpeakerPoints && match.completed && match.participantScoresRepairable === true && match.participantScoresComplete !== true
 
@@ -790,16 +788,16 @@ export function ResultsSection({
   }
 
   const handleSubmitMatchResults = async () => {
-    if (!onSubmitResults || !canManageTeams) return
+    if (!onSubmitResults || !canManageTeams) return false
 
     if (!canEditSelectedRound && !canRepairSelectedRound) {
       setScoreError("Only the current round or incomplete past results can be submitted.")
-      return
+      return false
     }
 
     if (!hasEditableMatches) {
       setScoreError("There are no open matches to submit.")
-      return
+      return false
     }
 
     if (readyToSubmitCount === 0) {
@@ -810,7 +808,7 @@ export function ResultsSection({
             ? `${outcomeRequirementMessage} Every speaker also needs points.`
             : outcomeRequirementMessage
       )
-      return
+      return false
     }
 
     const payload = buildResultPayload()
@@ -857,7 +855,7 @@ export function ResultsSection({
     if (submitResult === false) {
       writePersistedResultDrafts(resultStorageKey, previousPersistedDrafts)
       restoreLocallyCompletedMatches()
-      return
+      return false
     }
 
     writePersistedResultDrafts(resultStorageKey, persistedDrafts)
@@ -884,7 +882,10 @@ export function ResultsSection({
       })
       return next
     })
+    return true
   }
+
+  const submitResultsFeedback = useActionFeedback(handleSubmitMatchResults)
 
   const getTeamResultUpdates = useCallback((match: MatchResponse, selectedSlot: TeamSlotName, value: ResultDraftValue) => {
     const teamSlots = getResultSlots(match).filter((slot): slot is TeamResultSlot => slot.kind === "team")
@@ -1409,11 +1410,22 @@ export function ResultsSection({
       <div className="flex justify-end mt-8 mb-8">
         <button
           type="button"
-          disabled={!canSubmitMatchResults}
-          onClick={handleSubmitMatchResults}
-          className={matchSubmitButtonClass}
+          disabled={!canSubmitMatchResults || submitResultsFeedback.status !== "idle"}
+          onClick={() => void submitResultsFeedback.run()}
+          className={`inline-flex items-center gap-2 rounded-lg px-8 py-3 text-[16px] font-medium text-white transition-colors disabled:cursor-not-allowed ${
+            submitResultsFeedback.isSuccess
+              ? "bg-emerald-600"
+              : canSubmitMatchResults
+                ? "bg-[#3E5C76] hover:bg-[#2D3748]"
+                : "bg-[#3E5C76] opacity-50"
+          }`}
         >
-          {isSubmittingResults ? "Submitting..." : "Submit results"}
+          {submitResultsFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+          {submitResultsFeedback.isPending
+            ? "Submitting..."
+            : submitResultsFeedback.isSuccess
+              ? "✓ Submitted"
+              : "Submit results"}
         </button>
       </div>
     </>

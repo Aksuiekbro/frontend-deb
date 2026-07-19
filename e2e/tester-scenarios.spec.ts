@@ -5,12 +5,17 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 //      already taken." (schedule was one-per-tournament in the DB).
 //   2. Announcements had no category; news had one instead.
 //   3. Uploaded announcement photos were cropped.
+// Added 2026-07-18:
+//   4. Room numbers had to be saved one match at a time, and nothing on the
+//      pairing/results buttons confirmed an action had worked (toasts were
+//      dispatched but no Toaster was mounted).
 // Runs against the local Luna backend stack (http://localhost:18080/api) via
 // the dev frontend the Playwright config boots:
 //   bash e2e/fixtures/luna-backend-v2/luna-stack.sh up
 //   npx playwright test e2e/tester-scenarios.spec.ts
 
 const RUN_ID = Date.now().toString(36)
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${process.env.PLAYWRIGHT_PORT ?? "3000"}`
 const ORGANIZER = {
   username: `tsorg${RUN_ID}`,
   password: "TesterScenarios1!",
@@ -42,11 +47,29 @@ async function registerOrganizer(request: APIRequestContext) {
   expect(response.ok(), `register organizer: ${response.status()}`).toBe(true)
 }
 
-async function createTournament(request: APIRequestContext): Promise<number> {
+async function registerParticipant(context: APIRequestContext, index: number): Promise<string> {
+  const participant = {
+    username: `tsp${index}${RUN_ID}`,
+    password: "TesterScenarios1!",
+    email: `tsp${index}${RUN_ID}@example.test`,
+    firstName: "Tester",
+    lastName: `P${index}`,
+    role: "PARTICIPANT",
+  }
+  const registered = await context.post("/api/auth/register", { data: participant })
+  expect(registered.ok(), `register participant ${index}: ${registered.status()}`).toBe(true)
+  const loggedIn = await context.post("/api/auth/login", {
+    data: { username: participant.username, password: participant.password },
+  })
+  expect(loggedIn.ok(), `login participant ${index}: ${loggedIn.status()}`).toBe(true)
+  return participant.username
+}
+
+async function createTournament(request: APIRequestContext, name = `Tester Scenarios ${RUN_ID}`): Promise<number> {
   const response = await request.post("/api/tournaments", {
     multipart: {
       data: jsonPart({
-        name: `Tester Scenarios ${RUN_ID}`,
+        name,
         description: "Local e2e regression tournament",
         startDate: "2027-03-10T09:00:00",
         endDate: "2027-03-12T18:00:00",
@@ -129,6 +152,74 @@ test.describe.serial("tester regression scenarios", () => {
     const newsModal = page.locator("form").filter({ has: page.getByPlaceholder("Enter post title") })
     await expect(newsModal.getByPlaceholder("Enter post title")).toBeVisible()
     await expect(newsModal.locator("select")).toHaveCount(0)
+  })
+
+  test("rooms save for every match at once and pairing buttons confirm success", async ({ page, playwright }) => {
+    await registerLogin(page)
+    const roomsTournamentId = await createTournament(page.request, `Tester Rooms ${RUN_ID}`)
+
+    // Four two-member APF teams: creator invites a partner, partner accepts.
+    for (let team = 0; team < 4; team++) {
+      const creator = await playwright.request.newContext({ baseURL: BASE_URL })
+      const partner = await playwright.request.newContext({ baseURL: BASE_URL })
+      const partnerName = await registerParticipant(partner, team * 2 + 1)
+      await registerParticipant(creator, team * 2)
+      const created = await creator.post(`/api/tournaments/${roomsTournamentId}/teams`, {
+        data: { name: `Rooms Team ${team + 1}`, club: "Rooms Club", invitedParticipants: [partnerName] },
+      })
+      expect(created.ok(), `create team ${team + 1}: ${created.status()}`).toBe(true)
+      const invitations = await (await partner.get("/api/participant-invitations/received?page=0&size=10")).json()
+      const accepted = await partner.post(`/api/participant-invitations/${invitations.content[0].id}/accept`)
+      expect(accepted.ok(), `accept invitation team ${team + 1}: ${accepted.status()}`).toBe(true)
+      await creator.dispose()
+      await partner.dispose()
+    }
+
+    const teams = await (await page.request.get(`/api/tournaments/${roomsTournamentId}/teams?page=0&size=20`)).json()
+    for (const team of teams.content) {
+      const checkedIn = await page.request.patch(`/api/tournaments/${roomsTournamentId}/teams/${team.id}/check-in`)
+      expect(checkedIn.ok(), `check in team ${team.id}: ${checkedIn.status()}`).toBe(true)
+    }
+    const judge = await page.request.post(`/api/tournaments/${roomsTournamentId}/judges`, {
+      data: { fullName: "Rooms Judge", email: `tsjudge${RUN_ID}@example.test`, phoneNumber: "+77010000001", checkedIn: true },
+    })
+    expect(judge.ok(), `add judge: ${judge.status()}`).toBe(true)
+    const started = await page.request.patch(`/api/tournaments/${roomsTournamentId}/start`)
+    expect(started.ok(), `start tournament: ${started.status()}`).toBe(true)
+
+    const roundGroups = await (await page.request.get(`/api/tournaments/${roomsTournamentId}/round-groups`)).json()
+    const roundGroupId = roundGroups.find((group: { type: string }) => group.type === "PRELIMINARY").id
+    const rounds = await (await page.request.get(`/api/tournaments/${roomsTournamentId}/round-groups/${roundGroupId}/rounds`)).json()
+    const roundId = rounds[0].id
+    const randomized = await page.request.patch(`/api/tournaments/${roomsTournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches/randomize`)
+    expect(randomized.ok(), `randomize: ${randomized.status()}`).toBe(true)
+    const matches = await (await page.request.get(`/api/tournaments/${roomsTournamentId}/round-groups/${roundGroupId}/rounds/${roundId}/matches?page=0&size=10`)).json()
+    const matchIds: number[] = matches.content.map((match: { id: number }) => match.id)
+    expect(matchIds).toHaveLength(2)
+
+    await page.goto(`/tournament/${roomsTournamentId}`)
+    await page.getByRole("tab", { name: "Pairing and Matches" }).click()
+
+    const saveAll = page.getByRole("button", { name: /Save all rooms/ })
+    await expect(saveAll).toBeDisabled()
+    await page.getByLabel(`Room for match ${matchIds[0]}`).fill("204")
+    await page.getByLabel(`Room for match ${matchIds[1]}`).fill("305")
+    await expect(saveAll).toHaveText("Save all rooms (2)")
+    await saveAll.click()
+
+    // One request saves every dirty row; the toast used to be dispatched into
+    // the void before the Toaster was mounted.
+    await expect(page.getByText("2 rooms saved", { exact: true })).toBeVisible()
+    await expect(saveAll).toHaveText(/✓ Rooms saved|Save all rooms \(0\)/)
+
+    await page.getByRole("button", { name: "Publish pairings" }).click()
+    await expect(page.getByText("Pairings published", { exact: true })).toBeVisible()
+
+    await page.reload()
+    await page.getByRole("tab", { name: "Pairing and Matches" }).click()
+    await expect(page.getByLabel(`Room for match ${matchIds[0]}`)).toHaveValue("204")
+    await expect(page.getByLabel(`Room for match ${matchIds[1]}`)).toHaveValue("305")
+    await expect(page.getByRole("button", { name: /Save all rooms/ })).toBeDisabled()
   })
 })
 
