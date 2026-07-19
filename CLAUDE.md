@@ -52,3 +52,17 @@ A change is done only when:
 
 - When committing, do not say it was co-authored by Claude or Codex.
 - Do not add AI agents as collaborators in the GitHub project.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked on GitHub (`Aksuiekbro/frontend-deb`) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
