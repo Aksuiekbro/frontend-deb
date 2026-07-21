@@ -32,7 +32,7 @@ export function JudgesSection({
   const columnCount = hasActions ? 5 : 4
 
   return (
-    <div className="relative">
+    <div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
           <thead>
@@ -126,18 +126,18 @@ export function JudgesSection({
         </table>
       </div>
 
-      {onAddJudge ? (
-      <div className="absolute bottom-6 right-6">
-        <button
-          type="button"
-          onClick={onAddJudge}
-          className="w-14 h-14 bg-[#3E5C76] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
-          aria-label="Add judge"
-        >
-          <Plus className="h-8 w-8" />
-        </button>
-      </div>
-      ) : null}
+      {onAddJudge && (
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onAddJudge}
+            className="w-12 h-12 bg-[#3E5C76] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="Add judge"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

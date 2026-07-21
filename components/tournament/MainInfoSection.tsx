@@ -251,15 +251,17 @@ export function MainInfoSection({
             )}
           </LoadingState>
 
-          {onOpenModal ? (
-            <button
-              onClick={() => onOpenModal("announcements")}
-              className="absolute bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
-              aria-label="Add announcement"
-            >
-              <Plus className="h-6 w-6" />
-            </button>
-          ) : null}
+          {onOpenModal && (
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => onOpenModal("announcements")}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
+                aria-label="Add announcement"
+              >
+                <Plus className="h-6 w-6" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -318,15 +320,17 @@ export function MainInfoSection({
             )}
           </LoadingState>
 
-          {onOpenModal ? (
-            <button
-              onClick={() => onOpenModal("schedule")}
-              className="absolute bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
-              aria-label="Add schedule"
-            >
-              <Plus className="h-6 w-6" />
-            </button>
-          ) : null}
+          {onOpenModal && (
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => onOpenModal("schedule")}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
+                aria-label="Add schedule"
+              >
+                <Plus className="h-6 w-6" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -355,7 +359,7 @@ export function MainInfoSection({
   return (
     <div className="bg-white rounded-lg border border-gray-300">
       {(!isSpecialOption(selectedOption)) && (
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           <div className="mb-8">
             <h2 className="text-[#0D1321] text-[24px] font-bold mb-4">Details</h2>
             <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-24 w-full" />}>
@@ -372,7 +376,7 @@ export function MainInfoSection({
               )}
             </LoadingState>
 
-            <div className="flex space-x-12 mb-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:gap-12 mb-8">
               <div>
                 <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Dates</h3>
                 <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-6 w-48" />}>
@@ -398,7 +402,7 @@ export function MainInfoSection({
 
           <hr className="border-gray-300 mb-8" />
 
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
             <div>
               <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Announcements</h2>
               <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-20 w-full" />}>

@@ -5,6 +5,7 @@ import { useMatches, useRoundGroups, useRounds } from "@/hooks/use-api"
 import type { Pageable } from "@/types/page"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
 import type { StageId } from "@/components/tournament/PairingsSection"
+import { displayRoundLabel } from "@/lib/round-label"
 
 const ROUND_GROUP_TYPE_BY_STAGE: Record<StageId, RoundGroupType> = {
   preliminary: RoundGroupType.PRELIMINARY,
@@ -40,7 +41,7 @@ export function useRoundSelection({ tournamentId, selectedStage, selectedRoundLa
   const selectedRound = useMemo(() => {
     if (!rounds || rounds.length === 0) return
 
-    let nextRound = rounds.find((round) => round.name === selectedRoundLabel)
+    let nextRound = rounds.find((round) => displayRoundLabel(round.name) === displayRoundLabel(selectedRoundLabel))
 
     if (!nextRound && selectedRoundLabel.startsWith("Round ")) {
       const roundNumber = parseInt(selectedRoundLabel.replace("Round ", ""), 10)

@@ -12,9 +12,9 @@ interface NewsSectionProps {
 
 export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSectionProps) {
   return (
-    <div className="p-8">
+    <div className="py-8">
       <div className="space-y-6">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <h2 className="text-[#0D1321] text-[32px] font-bold">Tournament News</h2>
           {onAddNews ? (
             <button
@@ -47,7 +47,7 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-[#0D1321] text-[24px] font-bold mb-2">{item.title}</h3>
-                      <div className="flex items-center text-[#9a8c98] text-[14px] space-x-4">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[#9a8c98] text-[14px]">
                         <span>Posted by {authorName}</span>
                         <span>•</span>
                         <span>{dateStr}</span>

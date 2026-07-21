@@ -88,18 +88,18 @@ export function FeedbackSection({
           const timestamp = new Date(item.timestamp).toLocaleString()
 
           return (
-            <article key={item.id} className="rounded-3xl border border-[#ECEFF6] bg-white p-6 shadow-sm">
+            <article key={item.id} className="rounded-3xl border border-[#ECEFF6] bg-white p-4 shadow-sm sm:p-6">
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 overflow-hidden rounded-full border border-[#E7EAF3] bg-[#F6F8FD]">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#E7EAF3] bg-[#F6F8FD]">
                   <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
                 </div>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-col gap-1">
-                    <p className="text-lg font-semibold text-[#0B1327]">{displayName}</p>
+                    <p className="break-words text-lg font-semibold text-[#0B1327]">{displayName}</p>
                     <p className="text-sm text-[#8B93AC]">{timestamp}{item.edited ? " · edited" : ""}</p>
                   </div>
-                  <p className="mt-3 text-[1.05rem] leading-relaxed text-[#101737]">{item.title}</p>
-                  <p className="mt-2 text-[#0F1423] text-[0.98rem] leading-relaxed">{item.content}</p>
+                  <p className="break-words text-[1.05rem] leading-relaxed text-[#101737]">{item.title}</p>
+                  <p className="break-words text-[#0F1423] text-[0.98rem] leading-relaxed">{item.content}</p>
                   {item.tags?.length ? (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#3E5C76]">
                       {item.tags.map((tag) => (
@@ -117,49 +117,51 @@ export function FeedbackSection({
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-4 py-10">
+    <section className="mx-auto max-w-3xl py-10">
       <div className="border-b border-[#E7EAF3] pb-4">
         <h2 className="text-3xl font-semibold text-[#0B1327]">Feedback</h2>
       </div>
 
       <div className="mt-8">{renderBody()}</div>
 
-      <div className="sticky bottom-6 mt-10 rounded-2xl border border-[#E7EAF3] bg-white p-4 shadow-lg">
-        <div className="flex flex-col gap-3">
+      <div className="sticky bottom-2 mt-10 rounded-2xl border border-[#E7EAF3] bg-white p-4 shadow-lg sm:bottom-6">
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem] gap-3">
+          <div />
           <input
             type="text"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Title"
-            className="w-full rounded-lg bg-[#F4F6FB] px-4 py-3 text-sm text-[#0F1423] outline-none focus:ring-1 focus:ring-[#CBD3EC]"
+            className="rounded-lg bg-[#F4F6FB] px-4 py-3 text-sm text-[#0F1423] outline-none focus:ring-1 focus:ring-[#CBD3EC]"
           />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded-full border border-[#E7EAF3]">
-              <img src="/placeholder-user.jpg" alt="" className="h-full w-full object-cover" />
-            </div>
-            <input
-              type="text"
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              placeholder="Add feedback..."
-              className="flex-1 rounded-full bg-[#F4F6FB] px-4 py-3 text-sm text-[#0F1423] outline-none focus:ring-1 focus:ring-[#CBD3EC]"
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2E456E] text-white transition hover:bg-[#1B2C4C] disabled:opacity-60"
-              aria-label="Submit feedback"
-            >
-              <ArrowUp className="h-5 w-5" />
-            </button>
+          <div />
+          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E7EAF3]">
+            <img src="/placeholder-user.jpg" alt="" className="h-full w-full object-cover" />
           </div>
-          <div className="flex items-center justify-between text-xs text-[#9a8c98]">
-            <div className="flex items-center gap-2 text-[#1D2640]">
-              <MessageSquare className="h-4 w-4" />
+          <input
+            type="text"
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            placeholder="Add feedback..."
+            className="min-w-0 rounded-full bg-[#F4F6FB] px-4 py-3 text-sm text-[#0F1423] outline-none focus:ring-1 focus:ring-[#CBD3EC]"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2E456E] text-white transition hover:bg-[#1B2C4C] disabled:opacity-60"
+            aria-label="Submit feedback"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </button>
+          <div />
+          <div className="col-start-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2 break-words text-xs text-[#1D2640]">
+              <MessageSquare className="h-4 w-4 shrink-0" />
               Share constructive suggestions with organizers
             </div>
-            {submitError && <span className="text-red-500">{submitError}</span>}
+            {submitError && <span className="break-words text-xs text-red-500">{submitError}</span>}
           </div>
+          <div />
         </div>
       </div>
     </section>

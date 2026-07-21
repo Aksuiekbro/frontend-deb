@@ -6,6 +6,7 @@ import "@testing-library/jest-dom"
 
 import { PairingsSection } from "./PairingsSection"
 import { RESULT_DRAFTS_CHANGED_EVENT } from "@/lib/tournament-result-drafts"
+import { displayRoundLabel } from "@/lib/round-label"
 import { Role } from "@/types/user/user"
 
 const participantProfile = {
@@ -790,13 +791,34 @@ describe("PairingsSection", () => {
         />,
       )
 
-      fireEvent.click(screen.getByRole("button", { name: roundLabel }))
+      fireEvent.click(screen.getByRole("button", { name: displayRoundLabel(roundLabel) }))
 
       expect(onSelectRound).toHaveBeenCalledWith(roundLabel)
       expect(onSelectStage).toHaveBeenCalledWith("preliminary")
       expect(onSelectStage).not.toHaveBeenCalledWith("team")
     },
   )
+
+  it("displays decimal-suffixed round chips without the .0 while preserving the raw name as the selection value", () => {
+    const onSelectRound = jest.fn()
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="team"
+        selectedRound="1/16.0"
+        rounds={[{ id: 801, name: "1/16.0", roundNumber: 1 } as never]}
+        onSelectRound={onSelectRound}
+      />,
+    )
+
+    const chip = screen.getByRole("button", { name: "1/16" })
+    expect(chip).toHaveAttribute("aria-pressed", "true")
+    expect(screen.queryByRole("button", { name: "1/16.0" })).not.toBeInTheDocument()
+
+    fireEvent.click(chip)
+    expect(onSelectRound).toHaveBeenCalledWith("1/16.0")
+  })
 
   it("exposes client hydration on the Pairings section", async () => {
     render(<PairingsSection {...baseProps} />)

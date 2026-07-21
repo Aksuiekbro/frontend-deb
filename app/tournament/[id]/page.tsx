@@ -1313,7 +1313,7 @@ export default function TournamentDetailPage() {
         startTournamentLoading={startingTournament}
       />
 
-      <section className="px-12">
+      <section className="px-4 sm:px-6 lg:px-12">
         <TournamentTabs
           activeTab={activeTab}
           onChangeTab={setActiveTab}
@@ -1331,7 +1331,7 @@ export default function TournamentDetailPage() {
         />
       </section>
 
-      <div className="px-12 pb-16">
+      <div className="px-4 pb-16 sm:px-6 lg:px-12">
         {activeTab === 'Main Info' && (
           <MainInfoSection
             selectedOption={selectedMainInfoOption}
@@ -1441,26 +1441,26 @@ export default function TournamentDetailPage() {
             preliminaryRoundMatchesError={preliminaryRoundMatchesError}
           />
         )}
+
+        {activeTab === 'News' && (
+          <NewsSection
+            news={news}
+            newsLoading={newsLoading}
+            newsError={newsError}
+            onAddNews={isOrganizer ? () => openContentModal('news') : undefined}
+          />
+        )}
+
+        {activeTab === 'Feedback' && (
+          <FeedbackSection
+            tournamentId={tournamentId}
+            feedbacks={feedbacks}
+            feedbacksLoading={feedbacksLoading}
+            feedbacksError={feedbacksError}
+            onFeedbackAdded={mutateFeedbacks}
+          />
+        )}
       </div>
-
-      {activeTab === 'News' && (
-        <NewsSection
-          news={news}
-          newsLoading={newsLoading}
-          newsError={newsError}
-          onAddNews={isOrganizer ? () => openContentModal('news') : undefined}
-        />
-      )}
-
-      {activeTab === 'Feedback' && (
-        <FeedbackSection
-          tournamentId={tournamentId}
-          feedbacks={feedbacks}
-          feedbacksLoading={feedbacksLoading}
-          feedbacksError={feedbacksError}
-          onFeedbackAdded={mutateFeedbacks}
-        />
-      )}
 
       <EditTeamModal
         isOpen={!!teamEditModalData}

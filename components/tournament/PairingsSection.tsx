@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useActionFeedback } from "@/components/tournament/useActionFeedback"
+import { displayRoundLabel } from "@/lib/round-label"
 
 interface PairingsSectionProps {
   matches?: PageResult<MatchResponse>
@@ -322,6 +323,7 @@ export function PairingsSection({
   const debaterSlotsToRender = ["debater1", "debater2"] as const
   const pairSlotCount = isSoloStage ? debaterSlotsToRender.length : teamSlotsToRender.length
   const tableColumnCount = pairSlotCount + 3 + (canEditMatches ? 1 : 0)
+  const tableMinWidthClass = isSoloStage ? "min-w-[760px]" : "min-w-[960px]"
   const roundLabels = rounds?.length
     ? rounds.map((round) => round.name)
     : selectedStage === "preliminary"
@@ -896,8 +898,8 @@ export function PairingsSection({
         </DialogContent>
       </Dialog>
 
-      <div className="overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className={`w-full ${tableMinWidthClass} text-left text-sm`}>
           <thead>
             <tr className="bg-[#0B1327] text-xs uppercase tracking-[0.08em] text-white/70">
               {isSoloStage
@@ -993,7 +995,7 @@ export function PairingsSection({
                 selectedRound === round ? "bg-white text-[#050A18]" : "text-white/70 hover:bg-white/10"
               }`}
             >
-              {round}
+              {displayRoundLabel(round)}
             </button>
           ))}
         </div>

@@ -6,6 +6,7 @@ import "@testing-library/jest-dom"
 
 import { ResultsSection } from "./ResultsSection"
 import { getResultInputDraftStorageKey } from "@/lib/tournament-result-drafts"
+import { displayRoundLabel } from "@/lib/round-label"
 import type { MatchResultRequest } from "@/types/tournament/match"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
 import { Role } from "@/types/user/user"
@@ -1321,6 +1322,35 @@ describe("ResultsSection", () => {
         },
       ])
     })
+  })
+
+  it("displays decimal-suffixed round chips without the .0 while preserving the raw name as the selection value", () => {
+    const onSelectedRoundChange = jest.fn()
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+        selectedRound="1/16.0"
+        canManageTeams
+        rounds={[
+          { id: 801, name: "1/16.0", roundNumber: 1, customFormat: "APF" as never },
+          { id: 802, name: "1/8.0", roundNumber: 2, customFormat: "APF" as never },
+        ]}
+        onSelectedRoundChange={onSelectedRoundChange}
+      />,
+    )
+
+    const roundSelector = screen.getByLabelText("Select results round")
+    const activeChip = within(roundSelector).getByRole("button", { name: "1/16" })
+    expect(activeChip).toHaveClass("bg-[#0D1321]")
+    expect(within(roundSelector).queryByRole("button", { name: "1/16.0" })).not.toBeInTheDocument()
+
+    fireEvent.click(within(roundSelector).getByRole("button", { name: "1/8" }))
+    expect(onSelectedRoundChange).toHaveBeenCalledWith("1/8.0")
+
+    expect(screen.getByRole("heading", { name: new RegExp(`^${displayRoundLabel("1/16.0")} results`) })).toBeInTheDocument()
   })
 
   it("switches between backend-provided rounds from the results screen", () => {

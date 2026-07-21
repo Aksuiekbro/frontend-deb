@@ -29,16 +29,16 @@ export function TournamentHeader({
   startTournamentLoading = false,
 }: TournamentHeaderProps) {
   return (
-    <section className="px-12 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <section className="px-4 py-6 sm:px-6 lg:px-12 lg:py-8">
+      <div className="flex flex-col items-start gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between">
         {tournamentLoading ? (
           <Skeleton className="h-12 w-96" />
         ) : tournamentError ? (
-          <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: Error loading data</h1>
+          <h1 className="text-[#0D1321] text-3xl sm:text-4xl lg:text-[48px] font-bold break-words">Tournament: Error loading data</h1>
         ) : (
-          <h1 className="text-[#0D1321] text-[48px] font-bold">Tournament: {tournamentName || "Unknown Tournament"}</h1>
+          <h1 className="text-[#0D1321] text-3xl sm:text-4xl lg:text-[48px] font-bold break-words">Tournament: {tournamentName || "Unknown Tournament"}</h1>
         )}
-        <div className="flex items-center gap-4">
+        <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:gap-4">
           {isOrganizer && onStartTournament && (
             <button
               type="button"

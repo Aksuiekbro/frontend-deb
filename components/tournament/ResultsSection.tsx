@@ -29,6 +29,7 @@ import {
   type TeamSlotName,
 } from "@/lib/match-result-slots"
 import { useActionFeedback } from "@/components/tournament/useActionFeedback"
+import { displayRoundLabel } from "@/lib/round-label"
 
 interface ResultsSectionProps {
   selectedResultsOption: string
@@ -61,7 +62,6 @@ interface ResultsSectionProps {
 }
 
 const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2", "Final"] as const
-const displayRoundLabel = (round: string) => round.replace(/\.0$/, "")
 type ScoreSlotName = string
 type OutcomeSlotName = TeamSlotName | DebaterSlotName
 
@@ -1362,7 +1362,7 @@ export function ResultsSection({
                     : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
                 }`}
               >
-                {round}
+                {displayRoundLabel(round)}
               </button>
             ))}
           </div>
@@ -1407,12 +1407,12 @@ export function ResultsSection({
               : outcomeRequirementMessage}
         </p>
       ) : null}
-      <div className="flex justify-end mt-8 mb-8">
+      <div className="mt-6 flex">
         <button
           type="button"
           disabled={!canSubmitMatchResults || submitResultsFeedback.status !== "idle"}
           onClick={() => void submitResultsFeedback.run()}
-          className={`inline-flex items-center gap-2 rounded-lg px-8 py-3 text-[16px] font-medium text-white transition-colors disabled:cursor-not-allowed ${
+          className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-8 py-3 text-[16px] font-medium text-white transition-colors disabled:cursor-not-allowed sm:ml-auto sm:w-auto ${
             submitResultsFeedback.isSuccess
               ? "bg-emerald-600"
               : canSubmitMatchResults
@@ -1719,11 +1719,11 @@ export function ResultsSection({
         )}
 
         <div className="bg-[#0D1321] rounded-lg p-4">
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-start gap-2 overflow-x-auto sm:justify-center">
               {selectedResultsOption !== "LD" && (
                 <>
                   <button
-                    className={`px-4 py-2 ${
+                    className={`shrink-0 whitespace-nowrap px-4 py-2 ${
                       activeResultsSection === `${selectedResultsOption} Results`
                         ? "bg-white text-[#0D1321]"
                         : "text-white hover:bg-[#3E5C76]"
@@ -1736,7 +1736,7 @@ export function ResultsSection({
                     {selectedResultsOption} Results
                   </button>
                   <button
-                    className={`px-4 py-2 ${
+                    className={`shrink-0 whitespace-nowrap px-4 py-2 ${
                       activeResultsSection === `${selectedResultsOption} Speaker Score`
                         ? "bg-white text-[#0D1321]"
                         : "text-white hover:bg-[#3E5C76]"
@@ -1748,14 +1748,14 @@ export function ResultsSection({
                   >
                     {selectedResultsOption} Speaker Score
                   </button>
-                  <span className="text-white mx-2">|</span>
+                  <span className="shrink-0 text-white mx-2">|</span>
                 </>
               )}
 
               {ELIMINATION_ROUNDS.map((round) => (
                 <button
                   key={round}
-                  className={`px-3 py-2 ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-2 ${
                     activeResultsSection === round ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"
                   } rounded text-[14px] font-medium transition-colors`}
                   onClick={() => {

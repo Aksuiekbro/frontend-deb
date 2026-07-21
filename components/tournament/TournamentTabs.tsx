@@ -45,9 +45,9 @@ export function TournamentTabs({
     <div
       role="tablist"
       data-tournament-tabs-hydrated={isHydrated ? "true" : "false"}
-      className="flex border-b border-gray-300 mb-8"
+      className="flex overflow-x-auto border-b border-gray-300 mb-8"
     >
-      <div className="relative" ref={mainInfoDropdownRef}>
+      <div className="relative shrink-0" ref={mainInfoDropdownRef}>
         <button
           role="tab"
           aria-selected={activeTab === "Main Info"}
@@ -57,7 +57,7 @@ export function TournamentTabs({
             onChangeTab("Main Info")
             onToggleMainInfoDropdown()
           }}
-          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "Main Info"
               ? "text-[#0D1321] border-[#0D1321]"
               : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
@@ -65,17 +65,18 @@ export function TournamentTabs({
         >
           {selectedMainInfoOption}
           <svg
-            className={`w-4 h-4 transition-transform ${isMainInfoDropdownOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform shrink-0 ${isMainInfoDropdownOpen ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         {isMainInfoDropdownOpen && (
-          <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[160px]">
+          <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[160px]">
             {(["Announcements", "Schedule", "Map"] as const).map((option) => (
               <button
                 key={option}
@@ -97,7 +98,7 @@ export function TournamentTabs({
           aria-controls={`${tab.toLowerCase().replace(/\s+/g, "-")}-panel`}
           tabIndex={activeTab === tab ? 0 : -1}
           onClick={() => onChangeTab(tab)}
-          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors ${
+          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors shrink-0 whitespace-nowrap ${
             activeTab === tab ? "text-[#0D1321] border-[#0D1321]" : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
           }`}
         >
@@ -105,7 +106,7 @@ export function TournamentTabs({
         </button>
       ))}
 
-      <div className="relative" ref={resultsDropdownRef}>
+      <div className="relative shrink-0" ref={resultsDropdownRef}>
         <button
           role="tab"
           aria-selected={activeTab === "Results and Statistics"}
@@ -116,7 +117,7 @@ export function TournamentTabs({
             onChangeTab("Results and Statistics")
             onToggleResultsDropdown()
           }}
-          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "Results and Statistics"
               ? "text-[#0D1321] border-[#0D1321]"
               : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
@@ -124,17 +125,18 @@ export function TournamentTabs({
         >
           Results and Statistics
           <svg
-            className={`w-4 h-4 transition-transform ${isResultsDropdownOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform shrink-0 ${isResultsDropdownOpen ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         {isResultsDropdownOpen && (
-          <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[120px]">
+          <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[120px]">
             {resultsOptions.map((option) => (
               <button
                 key={option}
@@ -156,7 +158,7 @@ export function TournamentTabs({
           aria-controls={`${tab.toLowerCase()}-panel`}
           tabIndex={activeTab === tab ? 0 : -1}
           onClick={() => onChangeTab(tab)}
-          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors ${
+          className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors shrink-0 whitespace-nowrap ${
             activeTab === tab ? "text-[#0D1321] border-[#0D1321]" : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
           }`}
         >

@@ -21,7 +21,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
+    <div className="min-h-screen bg-white font-hikasami">
 
       {/* Hero Section with User Welcome */}
       <section className="text-center py-8">
@@ -30,25 +30,25 @@ export default function Dashboard() {
           fallback={<div className="h-16 bg-gray-200 animate-pulse mx-8 rounded"></div>}
         >
           {userError ? (
-            <h1 className="text-[#0D1321] text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
+            <h1 className="text-[#0D1321] text-3xl sm:text-4xl lg:text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
           ) : (
-            <h1 className="text-[#0D1321] text-[56px] font-bold mb-8">
+            <h1 className="text-[#0D1321] text-3xl sm:text-4xl lg:text-[56px] font-bold mb-8">
               Welcome back, {currentUser?.firstName || 'User'}!
             </h1>
           )}
         </LoadingState>
 
         <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
-          <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8">
-            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
-            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
+          <h2 className="text-[#FFFFFF] text-2xl sm:text-3xl lg:text-[46px] font-semibold mb-8">
+            <span className="text-[#748CAB] font-hikasami text-inherit font-semibold">DeBetter</span> - website for{" "}
+            <span className="text-[#748CAB] font-hikasami text-inherit font-semibold">debates</span> organisation
           </h2>
 
-          <div className="flex justify-center space-x-4 mb-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4 mb-8">
             <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
               Join Debates
             </Link>
-            <Link href="/create-tournament" className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
+            <Link href="/create-tournament" className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal text-center">
               Host Debate
             </Link>
           </div>
@@ -64,17 +64,7 @@ export default function Dashboard() {
 
       {/* User Welcome Back Section */}
       <section className="px-8 py-8">
-        <div className="bg-[#0D1321] rounded-[16px] p-8 relative overflow-hidden">
-          {/* Background illustration */}
-          <div className="absolute inset-0 overflow-hidden rounded-[16px]">
-            <img
-              src="/images/image 57.png"
-              alt="Debate background illustration"
-              className="w-full h-full object-cover opacity-80"
-            />
-            <div className="absolute inset-0 bg-[#0D1321] bg-opacity-60"></div>
-          </div>
-
+        <div className="bg-gradient-to-r from-[#0D1321] to-[#3E5C76] rounded-[16px] p-8 relative overflow-hidden">
           <div className="relative z-10">
             <LoadingState
               isLoading={userLoading}
@@ -184,7 +174,7 @@ export default function Dashboard() {
         <LoadingState
           isLoading={upcomingLoading}
           fallback={
-            <div className="flex space-x-6 overflow-hidden">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {[1, 2].map(i => (
                 <CardSkeleton key={i} />
               ))}
@@ -199,12 +189,12 @@ export default function Dashboard() {
             />
           ) : upcomingTournaments && upcomingTournaments.content.length > 0 ? (
             <div className="relative">
-              <div className="flex space-x-6 overflow-hidden">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {upcomingTournaments.content.slice(0, 2).map((tournament) => {
                   const formattedDate = new Date(tournament.startDate).toLocaleDateString('en-GB')
 
                   return (
-                    <div key={tournament.id} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
+                    <div key={tournament.id} className="bg-[#0D1321] rounded-[12px] p-6 min-w-0">
                       <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">{tournament.name}</h4>
                       <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">{tournament.location}</p>
                       <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">{formattedDate}</p>
