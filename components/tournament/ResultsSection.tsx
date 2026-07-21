@@ -1357,7 +1357,9 @@ export function ResultsSection({
                 type="button"
                 onClick={() => onSelectedRoundChange(round)}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  selectedRound === round
+                  // Compare normalized labels: selection state may hold a clean
+                  // "1/16" while the round option is a raw backend "1/16.0".
+                  displayRoundLabel(selectedRound) === displayRoundLabel(round)
                     ? "bg-[#0D1321] text-white"
                     : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
                 }`}

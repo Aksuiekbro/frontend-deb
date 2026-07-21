@@ -1,6 +1,45 @@
 "use client"
 
-import { RefObject, useEffect, useState } from "react"
+import { RefObject, useEffect, useLayoutEffect, useRef, useState } from "react"
+
+type MenuCoords = { top: number; left: number }
+
+// The tablist scrolls horizontally (overflow-x-auto), which clips any
+// absolutely-positioned descendant. A `position: fixed` menu escapes that clip
+// while remaining a DOM child of the trigger wrapper, so the parent's
+// ref-based click-outside detection still treats menu clicks as "inside".
+// We measure the trigger and recompute on open, scroll, and resize.
+function useMenuCoords(
+  open: boolean,
+  triggerRef: RefObject<HTMLElement | null>,
+  menuWidth: number,
+): MenuCoords | null {
+  const [coords, setCoords] = useState<MenuCoords | null>(null)
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setCoords(null)
+      return
+    }
+    const update = () => {
+      const el = triggerRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      // Keep the menu within the viewport with an 8px gutter on the right edge.
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8))
+      setCoords({ top: rect.bottom, left })
+    }
+    update()
+    window.addEventListener("resize", update)
+    window.addEventListener("scroll", update, true) // capture: catches tablist scroll too
+    return () => {
+      window.removeEventListener("resize", update)
+      window.removeEventListener("scroll", update, true)
+    }
+  }, [open, triggerRef, menuWidth])
+
+  return coords
+}
 
 interface TournamentTabsProps {
   activeTab: string
@@ -36,6 +75,10 @@ export function TournamentTabs({
   resultsOptions = ["APF", "BPF", "LD"],
 }: TournamentTabsProps) {
   const [isHydrated, setIsHydrated] = useState(false)
+  const mainInfoTriggerRef = useRef<HTMLButtonElement>(null)
+  const resultsTriggerRef = useRef<HTMLButtonElement>(null)
+  const mainInfoCoords = useMenuCoords(isMainInfoDropdownOpen, mainInfoTriggerRef, 160)
+  const resultsCoords = useMenuCoords(isResultsDropdownOpen, resultsTriggerRef, 120)
 
   useEffect(() => {
     setIsHydrated(true)
@@ -49,6 +92,7 @@ export function TournamentTabs({
     >
       <div className="relative shrink-0" ref={mainInfoDropdownRef}>
         <button
+          ref={mainInfoTriggerRef}
           role="tab"
           aria-selected={activeTab === "Main Info"}
           aria-controls="main-info-panel"
@@ -75,8 +119,11 @@ export function TournamentTabs({
           </svg>
         </button>
 
-        {isMainInfoDropdownOpen && (
-          <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[160px]">
+        {isMainInfoDropdownOpen && mainInfoCoords && (
+          <div
+            className="fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[160px]"
+            style={{ top: mainInfoCoords.top, left: mainInfoCoords.left }}
+          >
             {(["Announcements", "Schedule", "Map"] as const).map((option) => (
               <button
                 key={option}
@@ -108,6 +155,7 @@ export function TournamentTabs({
 
       <div className="relative shrink-0" ref={resultsDropdownRef}>
         <button
+          ref={resultsTriggerRef}
           role="tab"
           aria-selected={activeTab === "Results and Statistics"}
           aria-expanded={isResultsDropdownOpen}
@@ -135,8 +183,11 @@ export function TournamentTabs({
           </svg>
         </button>
 
-        {isResultsDropdownOpen && (
-          <div className="absolute top-full left-0 bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[120px]">
+        {isResultsDropdownOpen && resultsCoords && (
+          <div
+            className="fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[120px]"
+            style={{ top: resultsCoords.top, left: resultsCoords.left }}
+          >
             {resultsOptions.map((option) => (
               <button
                 key={option}

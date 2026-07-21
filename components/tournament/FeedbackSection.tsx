@@ -98,8 +98,8 @@ export function FeedbackSection({
                     <p className="break-words text-lg font-semibold text-[#0B1327]">{displayName}</p>
                     <p className="text-sm text-[#8B93AC]">{timestamp}{item.edited ? " · edited" : ""}</p>
                   </div>
-                  <p className="break-words text-[1.05rem] leading-relaxed text-[#101737]">{item.title}</p>
-                  <p className="break-words text-[#0F1423] text-[0.98rem] leading-relaxed">{item.content}</p>
+                  <p className="mt-3 break-words text-[1.05rem] leading-relaxed text-[#101737]">{item.title}</p>
+                  <p className="mt-2 break-words text-[#0F1423] text-[0.98rem] leading-relaxed">{item.content}</p>
                   {item.tags?.length ? (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#3E5C76]">
                       {item.tags.map((tag) => (
@@ -159,7 +159,7 @@ export function FeedbackSection({
               <MessageSquare className="h-4 w-4 shrink-0" />
               Share constructive suggestions with organizers
             </div>
-            {submitError && <span className="break-words text-xs text-red-500">{submitError}</span>}
+            {submitError && <span className="min-w-0 break-words text-xs text-red-500">{submitError}</span>}
           </div>
           <div />
         </div>
