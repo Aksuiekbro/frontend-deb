@@ -17,11 +17,11 @@ export default function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between px-12 py-4">
+    <header className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-4 sm:px-8 lg:px-12">
       {/* ... The rest of your header JSX remains the same ... */}
-      <div className="flex items-center space-x-16">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-2 lg:gap-x-16">
         <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</Link>
-        <nav className="flex space-x-12">
+        <nav className="flex flex-wrap gap-x-6 gap-y-1 lg:gap-x-12">
           {/* Nav Links */}
           <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Join Debates</Link>
           <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Host Debate</Link>
@@ -29,7 +29,7 @@ export default function Header() {
           <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">News</Link>
         </nav>
       </div>
-      <div className="flex items-center space-x-6">
+      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         {/* Language Selector */}
         <div className="relative">
           <select
