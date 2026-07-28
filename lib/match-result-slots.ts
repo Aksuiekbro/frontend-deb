@@ -8,6 +8,8 @@ export type DebaterSlotName = "debater1" | "debater2"
 export const participantScoreSlot = (teamSlot: TeamSlotName, participantId: number) =>
   `${teamSlot}:participant:${participantId}`
 
+const TEAM_SLOT_NAMES: TeamSlotName[] = ["team1", "team2", "team3", "team4"]
+
 export const getParticipantName = (participant: SimpleTournamentParticipantResponse, fallback: string) => {
   const fullName = `${participant.user?.firstName ?? ""} ${participant.user?.lastName ?? ""}`.trim()
   return fullName || participant.user?.username || fallback
@@ -76,6 +78,73 @@ const getWonFromRecord = (record: Record<string, unknown>) => {
   )
 }
 
+const getTeamSlotWonFromRecord = (record: Record<string, unknown>, teamSlot: TeamSlotName) => {
+  const booleanKeys = [`${teamSlot}Won`, `${teamSlot}Win`, `${teamSlot}Victory`, `${teamSlot}Winner`, `${teamSlot}IsWinner`]
+
+  for (const key of booleanKeys) {
+    if (typeof record[key] === "boolean") return record[key] as boolean
+  }
+
+  const resultKeys = [`${teamSlot}Result`, `${teamSlot}Outcome`, `${teamSlot}Status`]
+  for (const key of resultKeys) {
+    const normalized = normalizeResultString(record[key])
+    if (typeof normalized === "boolean") return normalized
+  }
+
+  return null
+}
+
+const getTeamIdForSlot = (record: Record<string, unknown>, teamSlot: TeamSlotName) => {
+  const team = record[teamSlot]
+  if (!team || typeof team !== "object") return null
+  return getNumber((team as Record<string, unknown>).id)
+}
+
+const getTeamScoreForSlot = (record: Record<string, unknown>, teamSlot: TeamSlotName) =>
+  getNumber(record[`${teamSlot}Score`])
+
+const getRequiredWinnerCount = (teamCount: number) => {
+  if (teamCount >= 4) return 2
+  if (teamCount === 2) return 1
+  return null
+}
+
+const hasValidExplicitTeamResults = (results: (boolean | null)[], requiredWinnerCount: number | null) => {
+  if (requiredWinnerCount === null) return false
+  return results.every((result): result is boolean => typeof result === "boolean") &&
+    results.filter(Boolean).length === requiredWinnerCount
+}
+
+const inferCompletedTeamWonFromScores = (
+  record: Record<string, unknown>,
+  teamSlot: TeamSlotName,
+  teamId: number,
+) => {
+  if (record.completed !== true) return null
+
+  const teamSlots = TEAM_SLOT_NAMES
+    .map((slot) => ({
+      slot,
+      teamId: getTeamIdForSlot(record, slot),
+      score: getTeamScoreForSlot(record, slot),
+    }))
+    .filter((slot): slot is { slot: TeamSlotName; teamId: number; score: number } =>
+      typeof slot.teamId === "number"
+    )
+  const requiredWinnerCount = getRequiredWinnerCount(teamSlots.length)
+  if (requiredWinnerCount === null || teamSlots.some((slot) => typeof slot.score !== "number")) return null
+
+  const rankedSlots = [...teamSlots].sort((a, b) => b.score - a.score)
+  const cutoffScore = rankedSlots[requiredWinnerCount - 1]?.score
+  const nextScore = rankedSlots[requiredWinnerCount]?.score
+  if (cutoffScore === undefined || cutoffScore === nextScore) return null
+
+  const winningTeamIds = new Set(
+    rankedSlots.slice(0, requiredWinnerCount).map((slot) => slot.teamId)
+  )
+  return winningTeamIds.has(teamId)
+}
+
 const findParticipantScore = (value: unknown, participantId: number) => {
   if (!Array.isArray(value)) return null
 
@@ -131,16 +200,13 @@ export const resolveParticipantCurrentScore = (
 
 export const resolveTeamCurrentWon = (match: MatchResponse, teamSlot: TeamSlotName, teamId: number) => {
   const record = match as MatchResponse & Record<string, unknown>
-  const booleanKeys = [`${teamSlot}Won`, `${teamSlot}Win`, `${teamSlot}Victory`, `${teamSlot}Winner`, `${teamSlot}IsWinner`]
+  const presentTeamSlots = TEAM_SLOT_NAMES.filter((slot) => typeof getTeamIdForSlot(record, slot) === "number")
+  const explicitResults = presentTeamSlots.map((slot) => getTeamSlotWonFromRecord(record, slot))
+  const requiredWinnerCount = getRequiredWinnerCount(presentTeamSlots.length)
+  const explicitWon = getTeamSlotWonFromRecord(record, teamSlot)
 
-  for (const key of booleanKeys) {
-    if (typeof record[key] === "boolean") return record[key] as boolean
-  }
-
-  const resultKeys = [`${teamSlot}Result`, `${teamSlot}Outcome`, `${teamSlot}Status`]
-  for (const key of resultKeys) {
-    const normalized = normalizeResultString(record[key])
-    if (typeof normalized === "boolean") return normalized
+  if (hasValidExplicitTeamResults(explicitResults, requiredWinnerCount)) {
+    return explicitWon
   }
 
   if (typeof record.winnerTeamId === "number") return record.winnerTeamId === teamId
@@ -165,6 +231,11 @@ export const resolveTeamCurrentWon = (match: MatchResponse, teamSlot: TeamSlotNa
     const won = getWonFromRecord(teamResult)
     if (typeof won === "boolean") return won
   }
+
+  const inferredWon = inferCompletedTeamWonFromScores(record, teamSlot, teamId)
+  if (typeof inferredWon === "boolean") return inferredWon
+
+  if (typeof explicitWon === "boolean") return explicitWon
 
   return null
 }
