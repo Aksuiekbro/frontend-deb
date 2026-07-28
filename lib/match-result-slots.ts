@@ -232,8 +232,11 @@ export const resolveTeamCurrentWon = (match: MatchResponse, teamSlot: TeamSlotNa
     if (typeof won === "boolean") return won
   }
 
-  const inferredWon = inferCompletedTeamWonFromScores(record, teamSlot, teamId)
-  if (typeof inferredWon === "boolean") return inferredWon
+  const hasExplicitWinner = explicitResults.some((result) => result === true)
+  if (!hasExplicitWinner) {
+    const inferredWon = inferCompletedTeamWonFromScores(record, teamSlot, teamId)
+    if (typeof inferredWon === "boolean") return inferredWon
+  }
 
   if (typeof explicitWon === "boolean") return explicitWon
 

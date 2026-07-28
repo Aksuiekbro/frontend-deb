@@ -344,38 +344,6 @@ describe("PairingsSection", () => {
     expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeDisabled()
   })
 
-  it("advances from a backend-completed match when invalid win/loss flags can be inferred from scores", () => {
-    const onProceedToNextRound = jest.fn()
-
-    render(
-      <PairingsSection
-        {...baseProps}
-        matches={{
-          content: [
-            {
-              id: 301,
-              team1: { id: 1, name: "Team 1" },
-              team2: { id: 2, name: "Team 2" },
-              team1Score: 43,
-              team2Score: 48,
-              team1Won: false,
-              team2Won: false,
-              completed: true,
-            },
-          ],
-          totalElements: 1,
-          totalPages: 1,
-        } as never}
-        selectedRoundNumber={1}
-        currentRoundNumber={1}
-        onProceedToNextRound={onProceedToNextRound}
-      />,
-    )
-
-    expect(screen.getByText("All matches in this round are completed. You can proceed to the next round.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
-  })
-
   it("allows advancing from persisted submitted results when the refreshed match list omits scores", async () => {
     const onProceedToNextRound = jest.fn()
     const resultStorageKey = "tournament:53:round-group:101:round:201:match-results"
@@ -530,7 +498,7 @@ describe("PairingsSection", () => {
     expect(onProceedToNextRound).toHaveBeenCalledTimes(1)
   })
 
-  it("does not advance a completed team match with no winner", () => {
+  it("advances a completed team match when winner flags can be inferred from scores", () => {
     const onProceedToNextRound = jest.fn()
 
     render(
@@ -558,8 +526,8 @@ describe("PairingsSection", () => {
       />,
     )
 
-    expect(screen.getByText("Enter results for all matches before proceeding. Completed 0 of 1 matches.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeDisabled()
+    expect(screen.getByText("All matches in this round are completed. You can proceed to the next round.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Proceed to next round" })).toBeEnabled()
   })
 
   it("blocks advancing BPF matches unless exactly two of four teams win", () => {
