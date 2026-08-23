@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "env": {
+    "BACKEND_URL": "https://ellen-bills-conditioning-utc.trycloudflare.com/api",
+    "NEXT_PUBLIC_API_URL": "/api"
+  }
+}
