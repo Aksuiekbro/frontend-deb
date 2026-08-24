@@ -3,8 +3,8 @@ import { SocialProfileResponse } from "../util/socials/social-profile";
 export interface JudgeResponse {
     id: number;
     fullName: string;
-    phoneNumber: string;
-    email: string;
+    phoneNumber?: string;
+    email?: string;
     socialProfiles: SocialProfileResponse[];
     checkedIn: boolean;
 }

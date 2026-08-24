@@ -7,15 +7,19 @@ import "@testing-library/jest-dom"
 import { SWRConfig } from "swr"
 import { api } from "@/lib/api"
 import type { UserResponse } from "@/types/user/user"
-import { useCurrentUser } from "./use-api"
+import { useCurrentUser, useMyTournaments, useTournamentMainOrganizer } from "./use-api"
 
 jest.mock("@/lib/api", () => ({
   api: {
     getMe: jest.fn(),
+    getMyTournaments: jest.fn(),
+    getMainOrganizer: jest.fn(),
   },
 }))
 
 const getMeMock = api.getMe as jest.MockedFunction<typeof api.getMe>
+const getMyTournamentsMock = api.getMyTournaments as jest.MockedFunction<typeof api.getMyTournaments>
+const getMainOrganizerMock = api.getMainOrganizer as jest.MockedFunction<typeof api.getMainOrganizer>
 
 function response(body: unknown, status = 200) {
   return {
@@ -43,6 +47,29 @@ function renderConsumers() {
         <CurrentUserConsumer name="second" />
       </StrictMode>
     </SWRConfig>,
+  )
+}
+
+function MyTournamentsConsumer() {
+  const { tournaments, isLoading } = useMyTournaments(
+    { startDateFrom: "2026-06-19T00:00:00" },
+    { page: 0, size: 20, sort: ["startDate,asc"] },
+  )
+
+  return (
+    <output data-testid="my-tournaments">
+      {isLoading ? "loading" : tournaments?.content.map((tournament) => tournament.name).join(",")}
+    </output>
+  )
+}
+
+function MainOrganizerConsumer({ tournamentId }: { tournamentId: number }) {
+  const { mainOrganizer, isLoading } = useTournamentMainOrganizer(tournamentId)
+
+  return (
+    <output data-testid="main-organizer">
+      {isLoading ? "loading" : mainOrganizer?.username}
+    </output>
   )
 }
 
@@ -110,5 +137,48 @@ describe("useCurrentUser", () => {
     view.unmount()
 
     expect(notMountedWarnings(consoleError)).toHaveLength(0)
+  })
+})
+
+describe("principal-scoped tournament hooks", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("loads My Tournaments through the principal-scoped API method", async () => {
+    getMyTournamentsMock.mockResolvedValue(response({
+      content: [{ id: 42, name: "Member Cup" }],
+      totalElements: 1,
+      totalPages: 1,
+    }))
+
+    render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <MyTournamentsConsumer />
+      </SWRConfig>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("my-tournaments")).toHaveTextContent("Member Cup")
+    })
+    expect(getMyTournamentsMock).toHaveBeenCalledWith(
+      { startDateFrom: "2026-06-19T00:00:00" },
+      { page: 0, size: 20, sort: ["startDate,asc"] },
+    )
+  })
+
+  it("loads the main organizer with an isolated SWR key", async () => {
+    getMainOrganizerMock.mockResolvedValue(response(authenticatedUser))
+
+    render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <MainOrganizerConsumer tournamentId={42} />
+      </SWRConfig>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("main-organizer")).toHaveTextContent("authenticated-user")
+    })
+    expect(getMainOrganizerMock).toHaveBeenCalledWith(42)
   })
 })

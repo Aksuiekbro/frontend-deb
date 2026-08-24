@@ -25,6 +25,10 @@ jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
 })
 
+jest.mock("@/components/dashboard/ParticipantInvitationInbox", () => ({
+  ParticipantInvitationInbox: () => <div data-testid="participant-invitation-inbox" />,
+}))
+
 jest.mock("../../hooks/use-api", () => ({
   useCurrentUser: () => mockUseCurrentUser(),
   useUpcomingTournaments: (...args: unknown[]) => mockUseUpcomingTournaments(...args),
@@ -65,6 +69,7 @@ describe("Dashboard", () => {
         id: 1,
         firstName: "Dauren",
         lastName: "Zhunussov",
+        role: "PARTICIPANT",
         imageUrl: undefined,
         tournamentsParticipated: 4,
         rating: 1200,
@@ -118,5 +123,26 @@ describe("Dashboard", () => {
     for (const link of screen.getAllByRole("link", { name: "Join Debates" })) {
       expect(link).toHaveAttribute("data-prefetch", "default")
     }
+  })
+
+  it("shows the participant invitation inbox only to participant accounts", () => {
+    const participantDashboard = renderDashboard()
+
+    expect(screen.getByTestId("participant-invitation-inbox")).toBeInTheDocument()
+
+    participantDashboard.unmount()
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    renderDashboard()
+
+    expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
   })
 })

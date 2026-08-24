@@ -103,6 +103,24 @@ describe('api client configuration', () => {
     expect(data.type).toBe('application/json')
   })
 
+  it('loads the signed-in user tournaments with filters and pageable parameters', async () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
+    jest.resetModules()
+    const fetchMock = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    global.fetch = fetchMock as unknown as typeof fetch
+
+    const { api } = await import('./api')
+    await api.getMyTournaments(
+      { searchName: 'Open', league: TournamentLeague.SCHOOL },
+      { page: 1, size: 20, sort: ['startDate,asc', 'name,asc'] },
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/tournaments/mine?searchName=Open&league=SCHOOL&page=1&size=20&sort=startDate%2Casc&sort=name%2Casc',
+      expect.objectContaining({ credentials: 'include' }),
+    )
+  })
+
   it('uploads my profile picture as POST multipart image data', async () => {
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
     jest.resetModules()

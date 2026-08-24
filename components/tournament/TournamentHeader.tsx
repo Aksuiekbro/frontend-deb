@@ -15,6 +15,7 @@ interface TournamentHeaderProps {
   tournamentLoading: boolean
   tournamentError?: Error
   isOrganizer: boolean
+  canControlVisibility: boolean
   isTournamentEnabled: boolean
   toggleTournamentLoading: boolean
   onToggleTournament: (checked: boolean) => void
@@ -28,6 +29,7 @@ export function TournamentHeader({
   tournamentLoading,
   tournamentError,
   isOrganizer,
+  canControlVisibility,
   isTournamentEnabled,
   toggleTournamentLoading,
   onToggleTournament,
@@ -57,7 +59,7 @@ export function TournamentHeader({
               {startTournamentLoading ? t("starting") : t("start")}
             </button>
           )}
-          {isOrganizer && (
+          {canControlVisibility && (
             <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
               <span className="text-sm font-medium text-[#0D1321]">
                 {isTournamentEnabled ? t("visible") : t("hidden")}

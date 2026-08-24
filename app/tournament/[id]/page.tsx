@@ -30,6 +30,7 @@ import {
   useTournamentSchedules,
   useTournamentJudges,
   useTournamentOrganizers,
+  useTournamentMainOrganizer,
   useTournamentFeedbacks,
   useNews,
   useCurrentUser,
@@ -229,6 +230,7 @@ export default function TournamentDetailPage() {
     TOURNAMENT_ROSTER_PAGEABLE
   )
   const { organizers } = useTournamentOrganizers(tournamentId)
+  const { mainOrganizer } = useTournamentMainOrganizer(tournamentId)
   const { feedbacks, isLoading: feedbacksLoading, error: feedbacksError, mutate: mutateFeedbacks } = useTournamentFeedbacks(
     tournamentId,
     undefined,
@@ -657,6 +659,9 @@ export default function TournamentDetailPage() {
   const isOrganizer = Boolean(
     currentUser &&
     organizers?.some((organizer) => organizer?.id === currentUser.id)
+  )
+  const canControlVisibility = Boolean(
+    currentUser && mainOrganizer?.id === currentUser.id
   )
   const canManageTeams = isOrganizer
 
@@ -1422,6 +1427,7 @@ export default function TournamentDetailPage() {
         tournamentLoading={tournamentLoading}
         tournamentError={tournamentError}
         isOrganizer={isOrganizer}
+        canControlVisibility={canControlVisibility}
         isTournamentEnabled={isTournamentEnabled}
         toggleTournamentLoading={toggleTournamentLoading}
         onToggleTournament={handleTournamentToggle}
@@ -1491,6 +1497,7 @@ export default function TournamentDetailPage() {
             judges={judges}
             judgesLoading={judgesLoading}
             judgesError={judgesError}
+            showContactDetails={isOrganizer}
             onAddJudge={isOrganizer ? openAddJudgeModal : undefined}
             onToggleJudgeCheckIn={isOrganizer ? handleToggleJudgeCheckIn : undefined}
             onEditJudge={isOrganizer ? openEditJudgeModal : undefined}

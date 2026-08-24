@@ -20,8 +20,15 @@ jest.mock("@/components/Header", () => function Header() {
 })
 
 jest.mock("@/components/tournament/TournamentHeader", () => ({
-  TournamentHeader: ({ onStartTournament }: { onStartTournament?: () => void }) => (
+  TournamentHeader: ({
+    canControlVisibility,
+    onStartTournament,
+  }: {
+    canControlVisibility: boolean
+    onStartTournament?: () => void
+  }) => (
     <div data-testid="tournament-header">
+      <output data-testid="can-control-visibility">{String(canControlVisibility)}</output>
       {onStartTournament ? <button type="button" onClick={onStartTournament}>Start Tournament</button> : null}
     </div>
   ),
@@ -117,18 +124,21 @@ jest.mock("@/components/tournament/NewsSection", () => ({
 jest.mock("@/components/tournament/JudgesSection", () => ({
   JudgesSection: ({
     judges,
+    showContactDetails,
     onAddJudge,
     onToggleJudgeCheckIn,
     onEditJudge,
     onDeleteJudge,
   }: {
     judges?: { content: Array<{ id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }> }
+    showContactDetails?: boolean
     onAddJudge?: () => void
     onToggleJudgeCheckIn?: (judge: { id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }) => void
     onEditJudge?: (judge: { id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }) => void
     onDeleteJudge?: (judge: { id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }) => void
   }) => (
     <div>
+      <output data-testid="show-judge-contacts">{String(showContactDetails)}</output>
       {onAddJudge ? <button type="button" onClick={onAddJudge}>Open Judge</button> : null}
       {judges?.content.map((judge) => (
         <div key={judge.id}>
@@ -398,6 +408,7 @@ let mockCurrentRole: Role = Role.ORGANIZER
 let mockCurrentUserPresent = true
 let mockTournamentStarted = true
 let mockTournamentOrganizerIds: Array<number | null> = [1]
+let mockMainOrganizerId: number | null = 1
 let mockTeamsContent: Array<{ id: number; name: string; club: { id: number; name: string }; checkedIn: boolean }> = []
 
 jest.mock("@/hooks/use-toast", () => ({
@@ -471,6 +482,18 @@ jest.mock("@/hooks/use-api", () => ({
       lastName: "User",
       role: Role.ORGANIZER,
     })),
+    isLoading: false,
+    error: undefined,
+    mutate: jest.fn(),
+  }),
+  useTournamentMainOrganizer: () => ({
+    mainOrganizer: mockMainOrganizerId === null ? undefined : {
+      id: mockMainOrganizerId,
+      username: `organizer${mockMainOrganizerId}`,
+      firstName: "Org",
+      lastName: "User",
+      role: Role.ORGANIZER,
+    },
     isLoading: false,
     error: undefined,
     mutate: jest.fn(),
@@ -604,6 +627,7 @@ beforeEach(() => {
   mockCurrentUserPresent = true
   mockTournamentStarted = true
   mockTournamentOrganizerIds = [1]
+  mockMainOrganizerId = 1
   mockTeamsContent = [{ id: 7, name: "Old Team", club: { id: 3, name: "Old Club" }, checkedIn: false }]
   mockUseTournamentTeams.mockImplementation(() => ({
     teams: {
@@ -677,6 +701,42 @@ describe("TournamentDetailPage mutations", () => {
     mockTournamentOrganizerIds = [null, 1]
 
     expect(() => render(<TournamentDetailPage />)).not.toThrow()
+  })
+
+  it("lets only the main organizer control tournament visibility", () => {
+    const { rerender } = render(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("true")
+
+    // Assigned co-organizers may edit the tournament, but FULL ownership stays
+    // with the main organizer.
+    mockMainOrganizerId = 99
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("false")
+
+    mockTournamentOrganizerIds = [99]
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("false")
+
+    mockCurrentUserPresent = false
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("false")
+  })
+
+  it("shows judge contacts to assigned organizers but not unrelated users", () => {
+    mockMainOrganizerId = 99
+    const { rerender } = render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Judges"))
+
+    expect(screen.getByTestId("show-judge-contacts")).toHaveTextContent("true")
+
+    mockTournamentOrganizerIds = [99]
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("show-judge-contacts")).toHaveTextContent("false")
   })
 
   it("requests enough teams to render a full tournament roster", () => {

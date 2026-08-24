@@ -236,6 +236,7 @@ export const api = {
 
     //TOURNAMENTS
     getTournaments: (params?: TournamentGetParams, pageable?: Pageable) => getPageable<SimpleTournamentResponse>("/tournaments", params, pageable),
+    getMyTournaments: (params?: TournamentGetParams, pageable?: Pageable) => getPageable<SimpleTournamentResponse>("/tournaments/mine", params, pageable),
     getTournament: (id: number) => get<TournamentResponse>(`/tournaments/${id}`),
 
     createTournament: (body: TournamentRequest, image: File) => postMultipart<TournamentResponse>("/tournaments", body, {image}),

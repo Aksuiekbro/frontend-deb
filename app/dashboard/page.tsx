@@ -6,6 +6,8 @@ import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/
 import { ErrorState, EmptyState } from "../../components/ui/error"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations } from "@/lib/i18n"
+import { ParticipantInvitationInbox } from "@/components/dashboard/ParticipantInvitationInbox"
+import { Role } from "@/types/user/user"
 
 const translations = {
   en: {
@@ -297,6 +299,8 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      {currentUser?.role === Role.PARTICIPANT && <ParticipantInvitationInbox />}
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">

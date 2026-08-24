@@ -154,25 +154,30 @@ test.describe.serial("tester regression scenarios", () => {
     await expect(newsModal.locator("select")).toHaveCount(0)
   })
 
-  test("rooms save for every match at once and pairing buttons confirm success", async ({ page, playwright }) => {
+  test("rooms save for every match at once and pairing buttons confirm success", async ({ page, playwright, browser }) => {
     await registerLogin(page)
     const roomsTournamentId = await createTournament(page.request, `Tester Rooms ${RUN_ID}`)
 
     // Four two-member APF teams: creator invites a partner, partner accepts.
     for (let team = 0; team < 4; team++) {
       const creator = await playwright.request.newContext({ baseURL: BASE_URL })
-      const partner = await playwright.request.newContext({ baseURL: BASE_URL })
-      const partnerName = await registerParticipant(partner, team * 2 + 1)
+      const partnerContext = await browser.newContext({ baseURL: BASE_URL })
+      const partnerPage = await partnerContext.newPage()
+      const partnerName = await registerParticipant(partnerPage.request, team * 2 + 1)
       await registerParticipant(creator, team * 2)
       const created = await creator.post(`/api/tournaments/${roomsTournamentId}/teams`, {
         data: { name: `Rooms Team ${team + 1}`, club: "Rooms Club", invitedParticipants: [partnerName] },
       })
       expect(created.ok(), `create team ${team + 1}: ${created.status()}`).toBe(true)
-      const invitations = await (await partner.get("/api/participant-invitations/received?page=0&size=10")).json()
-      const accepted = await partner.post(`/api/participant-invitations/${invitations.content[0].id}/accept`)
-      expect(accepted.ok(), `accept invitation team ${team + 1}: ${accepted.status()}`).toBe(true)
+
+      await partnerPage.goto("/dashboard")
+      await expect(partnerPage.getByRole("heading", { name: "Team invitations" })).toBeVisible()
+      await expect(partnerPage.getByText(`Team: Rooms Team ${team + 1}`)).toBeVisible()
+      await partnerPage.getByRole("button", { name: `Accept invitation to Rooms Team ${team + 1}` }).click()
+      await expect(partnerPage.getByText(`You joined Rooms Team ${team + 1}.`)).toBeVisible()
+
       await creator.dispose()
-      await partner.dispose()
+      await partnerContext.close()
     }
 
     const teams = await (await page.request.get(`/api/tournaments/${roomsTournamentId}/teams?page=0&size=20`)).json()

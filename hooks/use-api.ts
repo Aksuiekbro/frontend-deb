@@ -340,6 +340,24 @@ export function useTournaments(params?: TournamentGetParams, pageable?: Pageable
   }
 }
 
+export function useMyTournaments(params?: TournamentGetParams, pageable?: Pageable) {
+  const { data, error, isLoading, mutate } = useSWR(
+    ['my-tournaments', params, pageable],
+    () => fetcher<PageResult<SimpleTournamentResponse>>(() => api.getMyTournaments(params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    tournaments: data,
+    isLoading,
+    error,
+    mutate
+  }
+}
+
 export function useTournament(id: number) {
   const previewTournament = { ...PREVIEW_TOURNAMENT, id }
   const { data, error, isLoading, mutate } = useSWR(
@@ -646,6 +664,33 @@ export function useTournamentOrganizers(tournamentId: number) {
 
   return {
     organizers: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export function useTournamentMainOrganizer(tournamentId: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-main-organizer', tournamentId],
+    () => fetcher<UserResponse>(() => api.getMainOrganizer(tournamentId)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      mainOrganizer: PREVIEW_ORGANIZER_ACCOUNT,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_ORGANIZER_ACCOUNT,
+    }
+  }
+
+  return {
+    mainOrganizer: data,
     isLoading,
     error,
     mutate,
