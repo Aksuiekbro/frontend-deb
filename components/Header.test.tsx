@@ -7,6 +7,7 @@ import "@testing-library/jest-dom"
 
 import Header from "./Header"
 import { LocaleProvider } from "@/lib/i18n"
+import { Role } from "@/types/user/user"
 
 type MockLinkProps = ComponentPropsWithoutRef<"a"> & { prefetch?: boolean }
 
@@ -60,5 +61,56 @@ describe("Header auth links", () => {
     expect(screen.getByRole("link", { name: "Участвовать в дебатах" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Войти" })).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Язык" })).toHaveValue("ru")
+  })
+
+  it("gives authenticated organizers persistent access to My Tournaments", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 17,
+        username: "organizer",
+        firstName: "Tour",
+        lastName: "Director",
+        role: Role.ORGANIZER,
+      },
+      isLoading: false,
+    })
+
+    render(<Header />)
+
+    expect(screen.getByRole("link", { name: "My Tournaments" })).toHaveAttribute(
+      "href",
+      "/my-tournaments",
+    )
+  })
+
+  it.each([
+    ["ru", "Мои турниры"],
+    ["kk", "Менің турнирлерім"],
+  ] as const)("localizes the organizer route in %s", (locale, label) => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 17,
+        username: "organizer",
+        firstName: "Tour",
+        lastName: "Director",
+        role: Role.ORGANIZER,
+      },
+      isLoading: false,
+    })
+
+    render(
+      <LocaleProvider>
+        <Header />
+      </LocaleProvider>,
+    )
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+      target: { value: locale },
+    })
+
+    expect(screen.getByRole("link", { name: label })).toHaveAttribute(
+      "href",
+      "/my-tournaments",
+    )
   })
 })

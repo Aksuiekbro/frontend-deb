@@ -18,6 +18,7 @@ const headerMessages = {
     rating: "Rating",
     news: "News",
     language: "Language",
+    myTournaments: "My Tournaments",
     profile: "Your profile",
     logIn: "Log In",
     register: "Register",
@@ -28,6 +29,7 @@ const headerMessages = {
     rating: "Рейтинг",
     news: "Новости",
     language: "Язык",
+    myTournaments: "Мои турниры",
     profile: "Ваш профиль",
     logIn: "Войти",
     register: "Регистрация",
@@ -38,6 +40,7 @@ const headerMessages = {
     rating: "Рейтинг",
     news: "Жаңалықтар",
     language: "Тіл",
+    myTournaments: "Менің турнирлерім",
     profile: "Профиліңіз",
     logIn: "Кіру",
     register: "Тіркелу",
@@ -95,26 +98,34 @@ export default function Header() {
               <div className="h-4 bg-gray-300 rounded w-24"></div>
             </div>
           ) : isLoggedIn ? (
-            <Link
-              href="/profile"
-              aria-label={t("profile")}
-              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
-            >
-              {user.imageUrl?.url ? (
-                // If image URL exists, render the img tag
-                <img
-                  src={resolveMediaUrl(user.imageUrl.url)}
-                  alt={user.username}
-                  className="w-10 h-10 rounded-full object-cover bg-[#9a8c98]"
-                />
-              ) : (
-                // Otherwise, render the fallback div with initials
-                <div className="w-10 h-10 bg-[#9a8c98] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {getInitials(user.firstName, user.lastName)}
-                </div>
-              )}
-              <span className="text-[#0D1321] text-[16px] font-normal">{user.username}</span>
-            </Link>
+            <>
+              <Link
+                href="/my-tournaments"
+                className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium"
+              >
+                {t("myTournaments")}
+              </Link>
+              <Link
+                href="/profile"
+                aria-label={t("profile")}
+                className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+              >
+                {user.imageUrl?.url ? (
+                  // If image URL exists, render the img tag
+                  <img
+                    src={resolveMediaUrl(user.imageUrl.url)}
+                    alt={user.username}
+                    className="w-10 h-10 rounded-full object-cover bg-[#9a8c98]"
+                  />
+                ) : (
+                  // Otherwise, render the fallback div with initials
+                  <div className="w-10 h-10 bg-[#9a8c98] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {getInitials(user.firstName, user.lastName)}
+                  </div>
+                )}
+                <span className="text-[#0D1321] text-[16px] font-normal">{user.username}</span>
+              </Link>
+            </>
           ) : (
             <div className="flex items-center space-x-4">
               <Link href="/auth?mode=login" prefetch={false} className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium">{t("logIn")}</Link>
