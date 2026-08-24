@@ -97,7 +97,7 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-const renderInbox = () => render(<ParticipantInvitationInbox userId={22} />)
+const renderInbox = () => render(<ParticipantInvitationInbox key={22} userId={22} />)
 
 describe("ParticipantInvitationInbox", () => {
   beforeEach(() => {
@@ -131,6 +131,61 @@ describe("ParticipantInvitationInbox", () => {
       size: 50,
       sort: "timestamp,desc",
     })
+  })
+
+  it("isolates the new participant from old invitations and pending actions", async () => {
+    const acceptRequest = deferred<Response>()
+    const nextInbox = deferred<Response>()
+    const nextInvitation = invitation({
+      id: 12,
+      invitee: {
+        ...invitation().invitee,
+        id: 23,
+        username: "next-invitee",
+        firstName: "Nora",
+        lastName: "Next",
+      },
+      team: { id: 42, name: "Owls", club: { id: 52, name: "City Club" } },
+    })
+    apiMock.getReceivedParticipantInvitations
+      .mockResolvedValueOnce(invitationPage([invitation()]))
+      .mockReturnValueOnce(nextInbox.promise)
+    apiMock.acceptParticipantInvitation.mockReturnValueOnce(acceptRequest.promise)
+
+    const view = renderInbox()
+    expect(await screen.findByText("Team: Falcons")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Accept invitation to Falcons" }))
+    await waitFor(() => expect(apiMock.acceptParticipantInvitation).toHaveBeenCalledWith(11))
+
+    view.rerender(<ParticipantInvitationInbox key={23} userId={23} />)
+    await waitFor(() => expect(apiMock.getReceivedParticipantInvitations).toHaveBeenCalledTimes(2))
+
+    expect(screen.queryByText("Team: Falcons")).not.toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Loading team invitations")
+
+    await act(async () => {
+      nextInbox.resolve(invitationPage([nextInvitation]))
+      await nextInbox.promise
+    })
+
+    expect(await screen.findByText("Team: Owls")).toBeInTheDocument()
+    expect(screen.queryByText("Team: Falcons")).not.toBeInTheDocument()
+
+    await act(async () => {
+      acceptRequest.resolve(response({}, 204))
+      await acceptRequest.promise
+    })
+
+    expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
+    const matchesOldMembership = mutateCacheMock.mock.calls[0][0] as (key: unknown) => boolean
+    expect(matchesOldMembership(["my-tournaments", 22])).toBe(true)
+    expect(matchesOldMembership(["my-tournaments", 23])).toBe(false)
+    expect(screen.getByText("Team: Owls")).toBeInTheDocument()
+    expect(screen.queryByText("You joined Falcons.")).not.toBeInTheDocument()
   })
 
   it("accepts an invitation and refreshes the inbox", async () => {

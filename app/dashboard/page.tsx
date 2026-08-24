@@ -301,7 +301,7 @@ export default function Dashboard() {
       </section>
 
       {currentUser?.role === Role.PARTICIPANT && (
-        <ParticipantInvitationInbox userId={currentUser.id} />
+        <ParticipantInvitationInbox key={currentUser.id} userId={currentUser.id} />
       )}
 
       {/* Upcoming Debates */}
