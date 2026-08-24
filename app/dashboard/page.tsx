@@ -300,7 +300,9 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {currentUser?.role === Role.PARTICIPANT && <ParticipantInvitationInbox />}
+      {currentUser?.role === Role.PARTICIPANT && (
+        <ParticipantInvitationInbox userId={currentUser.id} />
+      )}
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">

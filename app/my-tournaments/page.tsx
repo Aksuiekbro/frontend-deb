@@ -4,7 +4,7 @@ import { AlertCircle, Calendar, MapPin, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useMyTournaments } from "../../hooks/use-api"
+import { useCurrentUser, useMyTournaments } from "../../hooks/use-api"
 import { toBackendDateTime } from "@/lib/datetime"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
@@ -36,6 +36,10 @@ const translations: TranslationCatalog = {
     tryAgain: "Try again",
     somethingWentWrong: "Oops! Something went wrong",
     loading: "Loading tournaments",
+    signInTitle: "Sign in to view My Tournaments",
+    signInDescription: "Your tournament memberships are available after you sign in.",
+    sessionError: "We couldn't verify your session. Please try again.",
+    logIn: "Log In",
     unknown: "Unknown",
     statusActive: "Active",
     statusUpcoming: "Upcoming",
@@ -65,6 +69,10 @@ const translations: TranslationCatalog = {
     tryAgain: "Повторить",
     somethingWentWrong: "Ой! Что-то пошло не так",
     loading: "Загрузка турниров",
+    signInTitle: "Войдите, чтобы открыть «Мои турниры»",
+    signInDescription: "Ваши турниры станут доступны после входа в аккаунт.",
+    sessionError: "Не удалось проверить сеанс. Попробуйте снова.",
+    logIn: "Войти",
     unknown: "Неизвестно",
     statusActive: "Идёт",
     statusUpcoming: "Предстоящий",
@@ -94,6 +102,10 @@ const translations: TranslationCatalog = {
     tryAgain: "Қайталап көру",
     somethingWentWrong: "Ой! Бірдеңе дұрыс болмады",
     loading: "Турнирлер жүктелуде",
+    signInTitle: "Менің турнирлерімді көру үшін жүйеге кіріңіз",
+    signInDescription: "Турнир мүшеліктеріңіз жүйеге кіргеннен кейін қолжетімді болады.",
+    sessionError: "Сеансты тексеру мүмкін болмады. Қайталап көріңіз.",
+    logIn: "Кіру",
     unknown: "Белгісіз",
     statusActive: "Өтіп жатыр",
     statusUpcoming: "Алда болатын",
@@ -143,6 +155,11 @@ function LocalizedErrorState({
 export default function MyTournamentsPage() {
   const { locale } = useLocale()
   const t = useTranslations(translations)
+  const {
+    user: currentUser,
+    isLoading: currentUserLoading,
+    error: currentUserError,
+  } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<TabValue>('Past')
   const [imageErrors, setImageErrors] = useState<{ [key: number]: boolean }>({})
 
@@ -242,7 +259,7 @@ export default function MyTournamentsPage() {
       <div className="px-12 pb-16">
         {/* Tournament Cards */}
         <LoadingState
-          isLoading={isLoading}
+          isLoading={currentUserLoading || isLoading}
           fallback={
             <div className="space-y-6" role="status" aria-label={t("loading")}>
               {[1, 2, 3].map(i => (
@@ -251,7 +268,22 @@ export default function MyTournamentsPage() {
             </div>
           }
         >
-          {error ? (
+          {currentUserError ? (
+            <LocalizedErrorState
+              error={currentUserError}
+              onRetry={() => window.location.reload()}
+              message={t("sessionError")}
+              t={t}
+            />
+          ) : !currentUser ? (
+            <EmptyState
+              title={t("signInTitle")}
+              description={t("signInDescription")}
+              actionText={t("logIn")}
+              actionHref="/auth?mode=login"
+              prefetch={false}
+            />
+          ) : error ? (
             <LocalizedErrorState
               error={error}
               onRetry={() => window.location.reload()}

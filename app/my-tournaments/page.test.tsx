@@ -8,6 +8,7 @@ import MyTournamentsPage from "./page"
 import { LocaleProvider } from "../../lib/i18n"
 
 const mockUseMyTournaments = jest.fn()
+const mockUseCurrentUser = jest.fn()
 
 jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
@@ -19,6 +20,7 @@ jest.mock("next/image", () => function Image() {
 
 jest.mock("../../hooks/use-api", () => ({
   useMyTournaments: (...args: unknown[]) => mockUseMyTournaments(...args),
+  useCurrentUser: () => mockUseCurrentUser(),
 }))
 
 const tournament = (overrides: Record<string, unknown>) => ({
@@ -51,6 +53,10 @@ describe("MyTournamentsPage", () => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date("2026-06-19T12:00:00.000Z"))
     window.localStorage.setItem("debetter-locale", "en")
+    mockUseCurrentUser.mockReturnValue({
+      user: { id: 7, username: "member" },
+      isLoading: false,
+    })
     mockUseMyTournaments.mockImplementation((params?: { startDateTo?: string; startDateFrom?: string }) => {
       if (params?.startDateTo) {
         return {
@@ -115,6 +121,30 @@ describe("MyTournamentsPage", () => {
       undefined,
       { page: 0, size: 50, sort: ["startDate,desc"] },
     )
+  })
+
+  it("asks guests to sign in instead of showing an empty membership history", () => {
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isLoading: false })
+
+    renderPage()
+
+    expect(screen.getByRole("heading", { name: "Sign in to view My Tournaments" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Log In" })).toHaveAttribute("href", "/auth?mode=login")
+    expect(screen.queryByText("You haven't participated in any tournaments yet.")).not.toBeInTheDocument()
+  })
+
+  it("shows a retryable error when the current session cannot be verified", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isLoading: false,
+      error: new Error("Session lookup failed"),
+    })
+
+    renderPage()
+
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn't verify your session. Please try again.")
+    expect(screen.queryByRole("link", { name: "Log In" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument()
   })
 
   it.each([

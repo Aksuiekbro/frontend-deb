@@ -4,10 +4,15 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import type { ComponentPropsWithoutRef } from "react"
+import { useSWRConfig } from "swr"
 
 import { api } from "@/lib/api"
 import type { ParticipantInvitationResponse } from "@/types/util/request/invitation"
 import { ParticipantInvitationInbox } from "./ParticipantInvitationInbox"
+
+jest.mock("swr", () => ({
+  useSWRConfig: jest.fn(),
+}))
 
 type MockLinkProps = Omit<ComponentPropsWithoutRef<"a">, "href"> & { href: string }
 
@@ -25,6 +30,8 @@ jest.mock("@/lib/api", () => ({
 }))
 
 const apiMock = api as jest.Mocked<typeof api>
+const useSWRConfigMock = useSWRConfig as jest.MockedFunction<typeof useSWRConfig>
+const mutateCacheMock = jest.fn()
 
 function response(body: unknown, status = 200) {
   return {
@@ -90,9 +97,13 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
+const renderInbox = () => render(<ParticipantInvitationInbox userId={22} />)
+
 describe("ParticipantInvitationInbox", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mutateCacheMock.mockResolvedValue(undefined)
+    useSWRConfigMock.mockReturnValue({ mutate: mutateCacheMock } as unknown as ReturnType<typeof useSWRConfig>)
     apiMock.getReceivedParticipantInvitations.mockResolvedValue(invitationPage([]))
     apiMock.acceptParticipantInvitation.mockResolvedValue(response({}, 204))
     apiMock.rejectParticipantInvitation.mockResolvedValue(response({}, 204))
@@ -105,7 +116,7 @@ describe("ParticipantInvitationInbox", () => {
       .mockResolvedValueOnce(invitationPage([handledInvitation], 2))
       .mockResolvedValueOnce(invitationPage([pendingInvitation], 2))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading team invitations")
     expect(await screen.findByText("Team: Owls")).toBeInTheDocument()
@@ -127,7 +138,7 @@ describe("ParticipantInvitationInbox", () => {
       .mockResolvedValueOnce(invitationPage([invitation()]))
       .mockResolvedValueOnce(invitationPage([]))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Falcons" }))
 
@@ -135,6 +146,37 @@ describe("ParticipantInvitationInbox", () => {
     expect(await screen.findByText("You joined Falcons.")).toBeInTheDocument()
     expect(screen.getByText("No pending team invitations")).toBeInTheDocument()
     expect(apiMock.getReceivedParticipantInvitations).toHaveBeenCalledTimes(2)
+    expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
+    const matchesCurrentMembership = mutateCacheMock.mock.calls[0][0] as (key: unknown) => boolean
+    expect(matchesCurrentMembership(["my-tournaments", 22, undefined, { page: 0 }])).toBe(true)
+    expect(matchesCurrentMembership(["my-tournaments", 23, undefined, { page: 0 }])).toBe(false)
+    expect(matchesCurrentMembership(["tournaments", 22])).toBe(false)
+  })
+
+  it("invalidates tournament memberships when acceptance finishes after unmount", async () => {
+    const acceptRequest = deferred<Response>()
+    apiMock.getReceivedParticipantInvitations.mockResolvedValueOnce(invitationPage([invitation()]))
+    apiMock.acceptParticipantInvitation.mockReturnValueOnce(acceptRequest.promise)
+
+    const view = renderInbox()
+    fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Falcons" }))
+    await waitFor(() => expect(apiMock.acceptParticipantInvitation).toHaveBeenCalledWith(11))
+
+    view.unmount()
+    await act(async () => {
+      acceptRequest.resolve(response({}, 204))
+      await acceptRequest.promise
+    })
+
+    expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
   })
 
   it("declines an invitation and refreshes the inbox", async () => {
@@ -142,7 +184,7 @@ describe("ParticipantInvitationInbox", () => {
       .mockResolvedValueOnce(invitationPage([invitation()]))
       .mockResolvedValueOnce(invitationPage([]))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     fireEvent.click(await screen.findByRole("button", { name: "Decline invitation to Falcons" }))
 
@@ -156,7 +198,7 @@ describe("ParticipantInvitationInbox", () => {
     apiMock.getReceivedParticipantInvitations.mockResolvedValueOnce(invitationPage([invitation()]))
     apiMock.acceptParticipantInvitation.mockResolvedValueOnce(response({ message: "Team is full" }, 400))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Falcons" }))
 
@@ -172,7 +214,7 @@ describe("ParticipantInvitationInbox", () => {
       .mockResolvedValueOnce(invitationPage([invitation()]))
     apiMock.acceptParticipantInvitation.mockResolvedValueOnce(response({ message: "Invitation not found" }, 404))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Falcons" }))
 
@@ -187,7 +229,7 @@ describe("ParticipantInvitationInbox", () => {
       .mockResolvedValueOnce(response({ message: "Inbox unavailable" }, 503))
       .mockResolvedValueOnce(invitationPage([]))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     expect(await screen.findByText("Inbox unavailable")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Try again" }))
@@ -200,7 +242,7 @@ describe("ParticipantInvitationInbox", () => {
     apiMock.getReceivedParticipantInvitations.mockResolvedValueOnce(invitationPage([invitation()]))
     apiMock.rejectParticipantInvitation.mockResolvedValueOnce(response({ message: "Temporary service error" }, 503))
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     fireEvent.click(await screen.findByRole("button", { name: "Decline invitation to Falcons" }))
 
@@ -217,7 +259,7 @@ describe("ParticipantInvitationInbox", () => {
       .mockReturnValueOnce(olderRefresh.promise)
       .mockReturnValueOnce(actionRefresh.promise)
 
-    render(<ParticipantInvitationInbox />)
+    renderInbox()
 
     const acceptButton = await screen.findByRole("button", { name: "Accept invitation to Falcons" })
     fireEvent.click(screen.getByRole("button", { name: "Refresh team invitations" }))

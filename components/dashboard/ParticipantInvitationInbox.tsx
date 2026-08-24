@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Check, LoaderCircle, Mail, RefreshCw, Users, X } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useSWRConfig } from "swr"
 
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
@@ -121,9 +122,10 @@ function inviterLabel(invitation: ParticipantInvitationResponse, fallback: strin
   return fallback
 }
 
-export function ParticipantInvitationInbox() {
+export function ParticipantInvitationInbox({ userId }: { userId: number }) {
   const { locale } = useLocale()
   const t = useTranslations(translations)
+  const { mutate: mutateCache } = useSWRConfig()
   const [invitations, setInvitations] = useState<ParticipantInvitationResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -237,6 +239,16 @@ export function ParticipantInvitationInbox() {
 
         if (stale) await loadInvitations()
         return
+      }
+
+      if (action === "accept") {
+        await mutateCache(
+          (key) => Array.isArray(key)
+            && key[0] === "my-tournaments"
+            && key[1] === userId,
+          undefined,
+          { revalidate: true },
+        ).catch(() => undefined)
       }
 
       if (!mountedRef.current) return

@@ -7,18 +7,20 @@ import "@testing-library/jest-dom"
 import { SWRConfig, useSWRConfig } from "swr"
 import { api } from "@/lib/api"
 import type { UserResponse } from "@/types/user/user"
-import { useCurrentUser, useMyTournaments, useTournamentMainOrganizer } from "./use-api"
+import { useCurrentUser, useMyTournaments, useTournamentJudges, useTournamentMainOrganizer } from "./use-api"
 
 jest.mock("@/lib/api", () => ({
   api: {
     getMe: jest.fn(),
     getMyTournaments: jest.fn(),
+    getJudges: jest.fn(),
     getMainOrganizer: jest.fn(),
   },
 }))
 
 const getMeMock = api.getMe as jest.MockedFunction<typeof api.getMe>
 const getMyTournamentsMock = api.getMyTournaments as jest.MockedFunction<typeof api.getMyTournaments>
+const getJudgesMock = api.getJudges as jest.MockedFunction<typeof api.getJudges>
 const getMainOrganizerMock = api.getMainOrganizer as jest.MockedFunction<typeof api.getMainOrganizer>
 
 function response(body: unknown, status = 200) {
@@ -82,6 +84,17 @@ function MainOrganizerConsumer({ tournamentId }: { tournamentId: number }) {
   return (
     <output data-testid="main-organizer">
       {isLoading ? "loading" : mainOrganizer?.username}
+    </output>
+  )
+}
+
+function JudgesConsumer({ tournamentId }: { tournamentId: number }) {
+  const { judges, isLoading } = useTournamentJudges(tournamentId)
+  const judge = judges?.content[0]
+
+  return (
+    <output data-testid="judge-contact">
+      {isLoading ? "loading" : judge?.email ?? "redacted"}
     </output>
   )
 }
@@ -212,6 +225,39 @@ describe("principal-scoped tournament hooks", () => {
     expect(await screen.findByText("Second Member Cup")).toBeInTheDocument()
     expect(screen.queryByText("First Member Cup")).not.toBeInTheDocument()
     expect(getMyTournamentsMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("does not reuse role-sensitive judge data after the viewer changes", async () => {
+    const participant = {
+      ...authenticatedUser,
+      id: 8,
+      username: "participant-user",
+    }
+    getJudgesMock
+      .mockResolvedValueOnce(response({
+        content: [{ id: 91, fullName: "Private Judge", email: "judge@example.com" }],
+        totalElements: 1,
+        totalPages: 1,
+      }))
+      .mockResolvedValueOnce(response({
+        content: [{ id: 91, fullName: "Private Judge" }],
+        totalElements: 1,
+        totalPages: 1,
+      }))
+
+    render(
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 5 * 60 * 1000 }}>
+        <JudgesConsumer tournamentId={42} />
+        <AccountSwitcher user={participant} />
+      </SWRConfig>,
+    )
+
+    expect(await screen.findByText("judge@example.com")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Switch account" }))
+
+    expect(await screen.findByText("redacted")).toBeInTheDocument()
+    expect(screen.queryByText("judge@example.com")).not.toBeInTheDocument()
+    expect(getJudgesMock).toHaveBeenCalledTimes(2)
   })
 
   it("loads the main organizer with an isolated SWR key", async () => {

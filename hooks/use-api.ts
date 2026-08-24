@@ -618,8 +618,12 @@ export function useTournamentTeam(tournamentId: number, teamId: number) {
 }
 
 export function useTournamentJudges(tournamentId: number, params?: JudgeGetParams, pageable?: Pageable) {
+  const { user, isLoading: isCurrentUserLoading } = useCurrentUser()
+  const viewerScope = isCurrentUserLoading ? null : (user?.id ?? 'guest')
   const { data, error, isLoading, mutate } = useSWR(
-    IS_PREVIEW ? null : ['tournament-judges', tournamentId, params, pageable],
+    IS_PREVIEW || viewerScope === null
+      ? null
+      : ['tournament-judges', tournamentId, viewerScope, params, pageable],
     () => fetcher<PageResult<JudgeResponse>>(() => api.getJudges(tournamentId, params, pageable)),
     {
       revalidateOnFocus: false,
@@ -638,7 +642,7 @@ export function useTournamentJudges(tournamentId: number, params?: JudgeGetParam
 
   return {
     judges: data,
-    isLoading,
+    isLoading: isCurrentUserLoading || isLoading,
     error,
     mutate,
   }
