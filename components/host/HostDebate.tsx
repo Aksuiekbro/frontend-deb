@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
 import {
   DebateFormat,
   TournamentLeague,
@@ -29,6 +30,165 @@ const TITLE_MAX_LENGTH = 50
 const DESCRIPTION_MAX_LENGTH = 200
 const LOCATION_MAX_LENGTH = 50
 const TEAM_FORMATS = new Set<DebateFormat>([DebateFormat.APF, DebateFormat.BPF])
+
+const translations: TranslationCatalog = {
+  en: {
+    startDebate: "Start the Debate",
+    createDebateAnd: "Create a Debate and",
+    letDiscussionBegin: "Let the Discussion Begin",
+    debateTitle: "Debate Title:",
+    titlePlaceholder: "Enter a clear and engaging title for your debate",
+    debateDescription: "Debate Description:",
+    descriptionPlaceholder: "Provide context and key points to help participants understand the topic",
+    tournamentImage: "Tournament Image:",
+    uploadTournamentImage: "Upload a tournament image",
+    startDate: "Start Date",
+    endDate: "End Date",
+    registrationDeadline: "Registration Deadline",
+    location: "Location:",
+    locationPlaceholder: "Enter the city or venue name",
+    league: "League:",
+    selectLeague: "Select the league",
+    school: "School",
+    university: "University",
+    teamLimit: "Team Limit",
+    teamLimitPlaceholder: "Maximum number of teams allowed",
+    eliminationRoundFormat: "Elimination Round Format",
+    eliminationFormatPlaceholder: "Choose a format for knock-out rounds",
+    preliminaryDebateFormat: "Preliminary Debate Format",
+    formatPlaceholder: "Choose a format",
+    preliminaryRounds: "Number of Preliminary Rounds",
+    preliminaryRoundsPlaceholder: "Enter total preliminary rounds",
+    eliminationRounds: "Number of Elimination Rounds",
+    eliminationRoundsPlaceholder: "Enter total elimination rounds",
+    includeLd: "Include LD (solo speaker) bracket",
+    ldHelper: "Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.",
+    ldBracketSize: "LD bracket size",
+    top16Speakers: "Top 16 speakers",
+    top32Speakers: "Top 32 speakers",
+    cancel: "Cancel",
+    creating: "Creating...",
+    submit: "Submit",
+    allDetailsAndImage: "Please fill in all tournament details and upload an image.",
+    teamFormatOnly: "Team stages support APF or BPF only. Use the LD option below to add a solo bracket.",
+    minimumRounds: "A tournament must have at least one preliminary round and one elimination round.",
+    titleLength: "Title must be {max} characters or fewer.",
+    descriptionLength: "Description must be {max} characters or fewer.",
+    locationLength: "Location must be {max} characters or fewer.",
+    validDates: "Please enter valid dates.",
+    deadlineBeforeStart: "Registration deadline must be before the tournament starts.",
+    endAfterStart: "End date must be after the start date.",
+    createFailed: "Failed to create tournament. Please try again.",
+    organizerSignIn: "Please sign in as an organizer before creating a tournament.",
+    detailsInvalid: "Please check the tournament details and try again.",
+    imageTooLarge: "The selected image is too large.",
+    serverError: "Server error. Please try again later.",
+  },
+  ru: {
+    startDebate: "Начните дебаты",
+    createDebateAnd: "Создайте дебаты и",
+    letDiscussionBegin: "начните обсуждение",
+    debateTitle: "Название дебатов:",
+    titlePlaceholder: "Введите понятное и интересное название дебатов",
+    debateDescription: "Описание дебатов:",
+    descriptionPlaceholder: "Добавьте контекст и ключевые моменты, чтобы участники поняли тему",
+    tournamentImage: "Изображение турнира:",
+    uploadTournamentImage: "Загрузите изображение турнира",
+    startDate: "Дата начала",
+    endDate: "Дата окончания",
+    registrationDeadline: "Крайний срок регистрации",
+    location: "Место проведения:",
+    locationPlaceholder: "Введите город или название площадки",
+    league: "Лига:",
+    selectLeague: "Выберите лигу",
+    school: "Школьная",
+    university: "Университетская",
+    teamLimit: "Лимит команд",
+    teamLimitPlaceholder: "Максимальное количество команд",
+    eliminationRoundFormat: "Формат раундов на выбывание",
+    eliminationFormatPlaceholder: "Выберите формат раундов на выбывание",
+    preliminaryDebateFormat: "Формат отборочных дебатов",
+    formatPlaceholder: "Выберите формат",
+    preliminaryRounds: "Количество отборочных раундов",
+    preliminaryRoundsPlaceholder: "Введите общее количество отборочных раундов",
+    eliminationRounds: "Количество раундов на выбывание",
+    eliminationRoundsPlaceholder: "Введите общее количество раундов на выбывание",
+    includeLd: "Включить сетку LD (индивидуальные выступления)",
+    ldHelper: "Лучшие спикеры отборочных раундов получат отдельный плей-офф 1 на 1 вместе с командной сеткой.",
+    ldBracketSize: "Размер сетки LD",
+    top16Speakers: "Топ-16 спикеров",
+    top32Speakers: "Топ-32 спикера",
+    cancel: "Отмена",
+    creating: "Создание...",
+    submit: "Отправить",
+    allDetailsAndImage: "Заполните все данные турнира и загрузите изображение.",
+    teamFormatOnly: "На командных этапах доступны только APF или BPF. Используйте опцию LD ниже, чтобы добавить индивидуальную сетку.",
+    minimumRounds: "В турнире должен быть хотя бы один отборочный раунд и один раунд на выбывание.",
+    titleLength: "Название должно содержать не более {max} символов.",
+    descriptionLength: "Описание должно содержать не более {max} символов.",
+    locationLength: "Место проведения должно содержать не более {max} символов.",
+    validDates: "Введите корректные даты.",
+    deadlineBeforeStart: "Крайний срок регистрации должен быть раньше начала турнира.",
+    endAfterStart: "Дата окончания должна быть позже даты начала.",
+    createFailed: "Не удалось создать турнир. Попробуйте ещё раз.",
+    organizerSignIn: "Войдите как организатор, прежде чем создавать турнир.",
+    detailsInvalid: "Проверьте данные турнира и попробуйте ещё раз.",
+    imageTooLarge: "Выбранное изображение слишком большое.",
+    serverError: "Ошибка сервера. Попробуйте ещё раз позже.",
+  },
+  kk: {
+    startDebate: "Пікірсайысты бастаңыз",
+    createDebateAnd: "Пікірсайыс құрып,",
+    letDiscussionBegin: "талқылауды бастаңыз",
+    debateTitle: "Пікірсайыс атауы:",
+    titlePlaceholder: "Пікірсайысыңызға түсінікті әрі қызықты атау енгізіңіз",
+    debateDescription: "Пікірсайыс сипаттамасы:",
+    descriptionPlaceholder: "Қатысушылар тақырыпты түсінуі үшін контекст пен негізгі ойларды қосыңыз",
+    tournamentImage: "Турнир суреті:",
+    uploadTournamentImage: "Турнир суретін жүктеңіз",
+    startDate: "Басталу күні",
+    endDate: "Аяқталу күні",
+    registrationDeadline: "Тіркелудің соңғы мерзімі",
+    location: "Өтетін орны:",
+    locationPlaceholder: "Қала немесе өтетін орын атауын енгізіңіз",
+    league: "Лига:",
+    selectLeague: "Лиганы таңдаңыз",
+    school: "Мектеп",
+    university: "Университет",
+    teamLimit: "Командалар шегі",
+    teamLimitPlaceholder: "Рұқсат етілген командалардың ең көп саны",
+    eliminationRoundFormat: "Шығу раундтарының форматы",
+    eliminationFormatPlaceholder: "Шығу раундтарының форматын таңдаңыз",
+    preliminaryDebateFormat: "Іріктеу пікірсайыстарының форматы",
+    formatPlaceholder: "Форматты таңдаңыз",
+    preliminaryRounds: "Іріктеу раундтарының саны",
+    preliminaryRoundsPlaceholder: "Іріктеу раундтарының жалпы санын енгізіңіз",
+    eliminationRounds: "Шығу раундтарының саны",
+    eliminationRoundsPlaceholder: "Шығу раундтарының жалпы санын енгізіңіз",
+    includeLd: "LD (жеке спикер) кестесін қосу",
+    ldHelper: "Іріктеу раундтарындағы үздік спикерлер командалық кестемен қатар жеке 1-ге-1 плей-оффқа өтеді.",
+    ldBracketSize: "LD кестесінің өлшемі",
+    top16Speakers: "Үздік 16 спикер",
+    top32Speakers: "Үздік 32 спикер",
+    cancel: "Бас тарту",
+    creating: "Құрылуда...",
+    submit: "Жіберу",
+    allDetailsAndImage: "Турнирдің барлық деректерін толтырып, сурет жүктеңіз.",
+    teamFormatOnly: "Командалық кезеңдерде тек APF немесе BPF қолжетімді. Жеке кесте қосу үшін төмендегі LD опциясын пайдаланыңыз.",
+    minimumRounds: "Турнирде кемінде бір іріктеу раунды және бір шығу раунды болуы керек.",
+    titleLength: "Атауда {max} таңбадан артық болмауы керек.",
+    descriptionLength: "Сипаттамада {max} таңбадан артық болмауы керек.",
+    locationLength: "Өтетін орын атауында {max} таңбадан артық болмауы керек.",
+    validDates: "Жарамды күндерді енгізіңіз.",
+    deadlineBeforeStart: "Тіркелудің соңғы мерзімі турнир басталғанға дейін болуы керек.",
+    endAfterStart: "Аяқталу күні басталу күнінен кейін болуы керек.",
+    createFailed: "Турнирді жасау мүмкін болмады. Қайталап көріңіз.",
+    organizerSignIn: "Турнир жасау үшін ұйымдастырушы ретінде жүйеге кіріңіз.",
+    detailsInvalid: "Турнир деректерін тексеріп, қайталап көріңіз.",
+    imageTooLarge: "Таңдалған сурет тым үлкен.",
+    serverError: "Сервер қатесі. Кейінірек қайталап көріңіз.",
+  },
+}
 
 function createInitialForm(): HostFormState {
   return {
@@ -51,6 +211,8 @@ function createInitialForm(): HostFormState {
 
 export default function HostDebate() {
   const router = useRouter()
+  const { locale } = useLocale()
+  const t = useTranslations(translations)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<HostFormState>(createInitialForm)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -58,9 +220,9 @@ export default function HostDebate() {
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const leagueOptions = useMemo(() => [
-    { value: TournamentLeague.SCHOOL, label: "School" },
-    { value: TournamentLeague.UNIVERSITY, label: "University" },
-  ], [])
+    { value: TournamentLeague.SCHOOL, label: t("school") },
+    { value: TournamentLeague.UNIVERSITY, label: t("university") },
+  ], [t])
 
   const teamFormatOptions = useMemo(() => [
     { value: DebateFormat.APF, label: "APF" },
@@ -94,7 +256,7 @@ export default function HostDebate() {
     ]
 
     if (requiredFields.some((value) => value === undefined || value === "" || value === 0) || !imageFile) {
-      setSubmitError("Please fill in all tournament details and upload an image.")
+      setSubmitError(t("allDetailsAndImage"))
       return
     }
 
@@ -102,7 +264,7 @@ export default function HostDebate() {
       !TEAM_FORMATS.has(form.preliminaryFormat as DebateFormat) ||
       !TEAM_FORMATS.has(form.teamEliminationFormat as DebateFormat)
     ) {
-      setSubmitError("Team stages support APF or BPF only. Use the LD option below to add a solo bracket.")
+      setSubmitError(t("teamFormatOnly"))
       return
     }
 
@@ -110,19 +272,19 @@ export default function HostDebate() {
       Number(form.preliminaryRoundCount) < 1 ||
       Number(form.eliminationRoundCount) < 1
     ) {
-      setSubmitError("A tournament must have at least one preliminary round and one elimination round.")
+      setSubmitError(t("minimumRounds"))
       return
     }
 
     const lengthErrors = []
     if (name.length > TITLE_MAX_LENGTH) {
-      lengthErrors.push(`Title must be ${TITLE_MAX_LENGTH} characters or fewer.`)
+      lengthErrors.push(t("titleLength", { max: TITLE_MAX_LENGTH }))
     }
     if (description.length > DESCRIPTION_MAX_LENGTH) {
-      lengthErrors.push(`Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`)
+      lengthErrors.push(t("descriptionLength", { max: DESCRIPTION_MAX_LENGTH }))
     }
     if (location.length > LOCATION_MAX_LENGTH) {
-      lengthErrors.push(`Location must be ${LOCATION_MAX_LENGTH} characters or fewer.`)
+      lengthErrors.push(t("locationLength", { max: LOCATION_MAX_LENGTH }))
     }
     if (lengthErrors.length > 0) {
       setSubmitError(lengthErrors.join(" "))
@@ -134,17 +296,17 @@ export default function HostDebate() {
     const registrationDeadline = toBackendDateTime(form.registrationDeadline)
 
     if (!startDate || !endDate || !registrationDeadline) {
-      setSubmitError("Please enter valid dates.")
+      setSubmitError(t("validDates"))
       return
     }
 
     if (new Date(registrationDeadline) > new Date(startDate)) {
-      setSubmitError("Registration deadline must be before the tournament starts.")
+      setSubmitError(t("deadlineBeforeStart"))
       return
     }
 
     if (new Date(endDate) < new Date(startDate)) {
-      setSubmitError("End date must be after the start date.")
+      setSubmitError(t("endAfterStart"))
       return
     }
 
@@ -172,11 +334,11 @@ export default function HostDebate() {
       const response = await api.createTournament(payload, imageFile)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: "Failed to create tournament. Please try again.",
-          unauthorized: "Please sign in as an organizer before creating a tournament.",
-          badRequest: "Please check the tournament details and try again.",
-          payloadTooLarge: "The selected image is too large.",
-          serverError: "Server error. Please try again later.",
+          fallback: t("createFailed"),
+          unauthorized: t("organizerSignIn"),
+          badRequest: t("detailsInvalid"),
+          payloadTooLarge: t("imageTooLarge"),
+          serverError: t("serverError"),
         }))
       }
 
@@ -188,7 +350,7 @@ export default function HostDebate() {
 
       router.push("/my-tournaments")
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Failed to create tournament. Please try again.")
+      setSubmitError(error instanceof Error ? error.message : t("createFailed"))
     } finally {
       setIsSubmitting(false)
     }
@@ -202,13 +364,13 @@ export default function HostDebate() {
   }
 
   return (
-    <section aria-labelledby="host-debate-heading" className="bg-white rounded-[10px] p-6 md:p-8 shadow-sm">
+    <section aria-labelledby="host-debate-heading" lang={localeTags[locale]} className="bg-white rounded-[10px] p-6 md:p-8 shadow-sm">
       <div className="mb-6">
-        <p className="text-[#0D1321] text-[20px]">Start the Debate</p>
+        <p className="text-[#0D1321] text-[20px]">{t("startDebate")}</p>
         <h1 id="host-debate-heading" className="text-[#0D1321] text-[32px] md:text-[40px] font-semibold leading-tight">
-          Create a Debate and
+          {t("createDebateAnd")}
           <br />
-          Let the Discussion Begin
+          {t("letDiscussionBegin")}
         </h1>
         <div className="h-px bg-[#0D1321]/20 mt-4" />
       </div>
@@ -216,9 +378,9 @@ export default function HostDebate() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Debate Title:</label>
+            <label className="text-[#0D1321] text-[16px]">{t("debateTitle")}</label>
             <Input
-              placeholder="Enter a clear and engaging title for your debate"
+              placeholder={t("titlePlaceholder")}
               value={form.name ?? ""}
               onChange={e => update("name", e.target.value)}
               maxLength={TITLE_MAX_LENGTH}
@@ -227,9 +389,9 @@ export default function HostDebate() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Debate Description:</label>
+            <label className="text-[#0D1321] text-[16px]">{t("debateDescription")}</label>
             <Textarea
-              placeholder="Provide context and key points to help participants understand the topic"
+              placeholder={t("descriptionPlaceholder")}
               value={form.description ?? ""}
               onChange={e => update("description", e.target.value)}
               className="min-h-[96px]"
@@ -239,11 +401,12 @@ export default function HostDebate() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Tournament Image:</label>
+            <label className="text-[#0D1321] text-[16px]">{t("tournamentImage")}</label>
             <Input
               ref={imageInputRef}
               type="file"
               accept="image/*"
+              aria-label={t("uploadTournamentImage")}
               required
               onChange={e => {
                 setImageFile(e.target.files?.[0] ?? null)
@@ -253,22 +416,22 @@ export default function HostDebate() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Start Date</label>
+            <label className="text-[#0D1321] text-[16px]">{t("startDate")}</label>
             <Input required type="date" value={form.startDate ?? ""} onChange={e => update("startDate", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">End Date</label>
+            <label className="text-[#0D1321] text-[16px]">{t("endDate")}</label>
             <Input required type="date" value={form.endDate ?? ""} onChange={e => update("endDate", e.target.value)} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Registration Deadline</label>
+            <label className="text-[#0D1321] text-[16px]">{t("registrationDeadline")}</label>
             <div className="max-w-[320px]"><Input required type="date" value={form.registrationDeadline ?? ""} onChange={e => update("registrationDeadline", e.target.value)} /></div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Location:</label>
+            <label className="text-[#0D1321] text-[16px]">{t("location")}</label>
             <Input
-              placeholder="Enter the city or venue name"
+              placeholder={t("locationPlaceholder")}
               value={form.location ?? ""}
               onChange={e => update("location", e.target.value)}
               maxLength={LOCATION_MAX_LENGTH}
@@ -276,10 +439,10 @@ export default function HostDebate() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">League:</label>
+            <label className="text-[#0D1321] text-[16px]">{t("league")}</label>
             <Select value={form.league} onValueChange={(v) => update("league", v as TournamentLeague)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select the league" />
+                <SelectValue placeholder={t("selectLeague")} />
               </SelectTrigger>
               <SelectContent>
                 {leagueOptions.map(opt => (
@@ -290,21 +453,21 @@ export default function HostDebate() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Team Limit</label>
+            <label className="text-[#0D1321] text-[16px]">{t("teamLimit")}</label>
             <Input
               type="number"
               min={2}
-              placeholder="Maximum number of teams allowed"
+              placeholder={t("teamLimitPlaceholder")}
               value={form.teamLimit ?? ""}
               onChange={e => update("teamLimit", e.target.value === "" ? undefined : Number(e.target.value))}
               required
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Elimination Round Format</label>
+            <label className="text-[#0D1321] text-[16px]">{t("eliminationRoundFormat")}</label>
             <Select value={form.teamEliminationFormat} onValueChange={v => update("teamEliminationFormat", v as DebateFormat)}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a format for knock-out rounds" />
+                <SelectValue placeholder={t("eliminationFormatPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {teamFormatOptions.map(opt => (
@@ -315,10 +478,10 @@ export default function HostDebate() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Preliminary Debate Format</label>
+            <label className="text-[#0D1321] text-[16px]">{t("preliminaryDebateFormat")}</label>
             <Select value={form.preliminaryFormat} onValueChange={v => update("preliminaryFormat", v as DebateFormat)}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a format" />
+                <SelectValue placeholder={t("formatPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {teamFormatOptions.map(opt => (
@@ -328,22 +491,22 @@ export default function HostDebate() {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Number of Preliminary Rounds</label>
+            <label className="text-[#0D1321] text-[16px]">{t("preliminaryRounds")}</label>
             <Input
               type="number"
               min={1}
-              placeholder="Enter total preliminary rounds"
+              placeholder={t("preliminaryRoundsPlaceholder")}
               value={form.preliminaryRoundCount ?? ""}
               onChange={e => update("preliminaryRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
               required
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Number of Elimination Rounds</label>
+            <label className="text-[#0D1321] text-[16px]">{t("eliminationRounds")}</label>
             <Input
               type="number"
               min={1}
-              placeholder="Enter total elimination rounds"
+              placeholder={t("eliminationRoundsPlaceholder")}
               value={form.eliminationRoundCount ?? ""}
               onChange={e => update("eliminationRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
               required
@@ -357,22 +520,22 @@ export default function HostDebate() {
                 onChange={e => update("ldEnabled", e.target.checked)}
                 className="h-4 w-4 accent-[#0D1321]"
               />
-              Include LD (solo speaker) bracket
+              {t("includeLd")}
             </label>
             <p className="text-[14px] text-[#9a8c98]">
-              Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.
+              {t("ldHelper")}
             </p>
             {(form.ldEnabled ?? true) && (
               <div className="space-y-2">
-                <label className="text-[#0D1321] text-[16px]" htmlFor="ld-bracket-size">LD bracket size</label>
+                <label className="text-[#0D1321] text-[16px]" htmlFor="ld-bracket-size">{t("ldBracketSize")}</label>
                 <select
                   id="ld-bracket-size"
                   value={form.ldRoundCount ?? 4}
                   onChange={e => update("ldRoundCount", Number(e.target.value))}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value={4}>Top 16 speakers</option>
-                  <option value={5}>Top 32 speakers</option>
+                  <option value={4}>{t("top16Speakers")}</option>
+                  <option value={5}>{t("top32Speakers")}</option>
                 </select>
               </div>
             )}
@@ -383,9 +546,9 @@ export default function HostDebate() {
           {submitError ? (
             <p className="text-sm text-red-600 sm:mr-auto" role="alert">{submitError}</p>
           ) : null}
-          <Button type="button" variant="outline" className="px-[40px] py-[18px]" onClick={handleCancel} disabled={isSubmitting}>Cancel</Button>
+          <Button type="button" variant="outline" className="px-[40px] py-[18px]" onClick={handleCancel} disabled={isSubmitting}>{t("cancel")}</Button>
           <Button type="submit" className="bg-[#0D1321] hover:bg-[#0D1321]/90 px-[40px] py-[18px]" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Submit"}
+            {isSubmitting ? t("creating") : t("submit")}
           </Button>
         </div>
       </form>

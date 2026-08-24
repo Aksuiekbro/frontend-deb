@@ -7,6 +7,7 @@ import "@testing-library/jest-dom"
 import ProfileIndexPage from "./page"
 import { useCurrentUser } from "@/hooks/use-api"
 import { Role } from "@/types/user/user"
+import { LocaleProvider } from "@/lib/i18n"
 
 const replace = jest.fn()
 
@@ -61,5 +62,27 @@ describe("ProfileIndexPage", () => {
     render(<ProfileIndexPage />)
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/auth?mode=login"))
+  })
+
+  it.each([
+    ["ru", "Загрузка профиля..."],
+    ["kk", "Профиль жүктелуде..."],
+  ] as const)("renders the profile loading state in %s", async (locale, loadingText) => {
+    window.localStorage.setItem("debetter-locale", locale)
+    useCurrentUserMock.mockReturnValue({
+      user: undefined,
+      isLoading: true,
+      error: undefined,
+      mutate: jest.fn(),
+    } as CurrentUserHookResult)
+
+    render(
+      <LocaleProvider>
+        <ProfileIndexPage />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(loadingText))
+    expect(replace).not.toHaveBeenCalled()
   })
 })

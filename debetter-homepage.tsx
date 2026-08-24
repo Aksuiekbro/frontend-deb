@@ -1,16 +1,137 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, Crown } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Link from "next/link"
 import { useUpcomingTournaments } from "@/hooks/use-api"
 import { LoadingState, CardSkeleton } from "@/components/ui/loading"
 import { ErrorState } from "@/components/ui/error"
+import { localeTags, useLocale, useTranslations } from "@/lib/i18n"
+
+const homepageTranslations = {
+  en: {
+    welcomeTitle: "Welcome to DeBetter",
+    heroDescription: "website for debate organisation",
+    joinDebate: "Join Debate",
+    createTournament: "Create Tournament",
+    slide1: "Slide 1",
+    slide2: "Slide 2",
+    previousTournaments: "Previous tournaments",
+    nextTournaments: "Next tournaments",
+    telegram: "Telegram",
+    youtube: "YouTube",
+    instagram: "Instagram",
+    upcomingDebates: "Upcoming Debates",
+    failedToLoadTournaments: "Failed to load upcoming tournaments",
+    locationTba: "Location TBA",
+    dateTba: "Date TBA",
+    tournamentDetails: "Tournament Details",
+    description: "Description",
+    noDescription: "No description available",
+    registrationDeadline: "Registration deadline",
+    tba: "TBA",
+    teamLimit: "Team limit",
+    teams: "teams",
+    noLimit: "No limit",
+    schoolLeague: "School league",
+    universityLeague: "University league",
+    less: "Less...",
+    more: "More...",
+    viewDetails: "View Details",
+    joinTournament: "Join Tournament",
+    noUpcomingTournaments: "No upcoming tournaments available",
+    communityVoices: "Community Voices",
+    testimonialsEmpty: "Community testimonials will appear as more users join tournaments",
+    joinATournament: "Join a Tournament",
+    leaderboardDisabled: "Leaderboard is disabled until ratings are supported.",
+    contactUs: "Contact us: debetter@gmail.com",
+    copyright: "© 2025 all rights reserved",
+    privacyPolicy: "Privacy Policy",
+  },
+  ru: {
+    welcomeTitle: "Добро пожаловать в DeBetter",
+    heroDescription: "платформа для организации дебатов",
+    joinDebate: "Присоединиться к дебатам",
+    createTournament: "Создать турнир",
+    slide1: "Слайд 1",
+    slide2: "Слайд 2",
+    previousTournaments: "Предыдущие турниры",
+    nextTournaments: "Следующие турниры",
+    telegram: "Telegram",
+    youtube: "YouTube",
+    instagram: "Instagram",
+    upcomingDebates: "Предстоящие дебаты",
+    failedToLoadTournaments: "Не удалось загрузить предстоящие турниры",
+    locationTba: "Место уточняется",
+    dateTba: "Дата уточняется",
+    tournamentDetails: "Детали турнира",
+    description: "Описание",
+    noDescription: "Описание отсутствует",
+    registrationDeadline: "Срок регистрации",
+    tba: "Уточняется",
+    teamLimit: "Лимит команд",
+    teams: "команд",
+    noLimit: "Без ограничений",
+    schoolLeague: "Школьная лига",
+    universityLeague: "Университетская лига",
+    less: "Свернуть...",
+    more: "Подробнее...",
+    viewDetails: "Подробнее о турнире",
+    joinTournament: "Присоединиться к турниру",
+    noUpcomingTournaments: "Предстоящих турниров нет",
+    communityVoices: "Голоса сообщества",
+    testimonialsEmpty: "Отзывы участников появятся, когда к турнирам присоединится больше пользователей",
+    joinATournament: "Присоединиться к турниру",
+    leaderboardDisabled: "Таблица лидеров отключена, пока не поддерживаются рейтинги.",
+    contactUs: "Связаться с нами: debetter@gmail.com",
+    copyright: "© 2025 все права защищены",
+    privacyPolicy: "Политика конфиденциальности",
+  },
+  kk: {
+    welcomeTitle: "DeBetter-ге қош келдіңіз",
+    heroDescription: "пікірсайыстарды ұйымдастыруға арналған платформа",
+    joinDebate: "Пікірсайысқа қосылу",
+    createTournament: "Турнир құру",
+    slide1: "1-слайд",
+    slide2: "2-слайд",
+    previousTournaments: "Алдыңғы турнирлер",
+    nextTournaments: "Келесі турнирлер",
+    telegram: "Telegram",
+    youtube: "YouTube",
+    instagram: "Instagram",
+    upcomingDebates: "Алдағы пікірсайыстар",
+    failedToLoadTournaments: "Алдағы турнирлерді жүктеу мүмкін болмады",
+    locationTba: "Өтетін орны нақтылануда",
+    dateTba: "Күні нақтылануда",
+    tournamentDetails: "Турнир туралы ақпарат",
+    description: "Сипаттама",
+    noDescription: "Сипаттама қолжетімсіз",
+    registrationDeadline: "Тіркелу мерзімі",
+    tba: "Нақтылануда",
+    teamLimit: "Командалар шегі",
+    teams: "команда",
+    noLimit: "Шектеу жоқ",
+    schoolLeague: "Мектеп лигасы",
+    universityLeague: "Университет лигасы",
+    less: "Жасыру...",
+    more: "Толығырақ...",
+    viewDetails: "Турнир мәліметін көру",
+    joinTournament: "Турнирге қосылу",
+    noUpcomingTournaments: "Алдағы турнирлер жоқ",
+    communityVoices: "Қауымдастық пікірлері",
+    testimonialsEmpty: "Қатысушылар саны артқан сайын қауымдастық пікірлері осында көрсетіледі",
+    joinATournament: "Турнирге қосылу",
+    leaderboardDisabled: "Рейтингтерге қолдау көрсетілгенге дейін көшбасшылар тақтасы өшірулі.",
+    contactUs: "Бізбен байланысу: debetter@gmail.com",
+    copyright: "© 2025 барлық құқықтар қорғалған",
+    privacyPolicy: "Құпиялылық саясаты",
+  },
+} as const
 
 export default function Component() {
-  const router = useRouter()
+  const t = useTranslations(homepageTranslations)
+  const { locale } = useLocale()
   const [visibleGradients, setVisibleGradients] = useState<{[key: string]: boolean}>({})
   const [expandedDebates, setExpandedDebates] = useState<{[key: number]: boolean}>({})
   const gradientRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
@@ -20,6 +141,13 @@ export default function Component() {
 
   // API hooks
   const { upcomingTournaments, isLoading: tournamentsLoading, error: tournamentsError } = useUpcomingTournaments(6)
+
+  const formatDate = (value: string) => new Date(value).toLocaleDateString(localeTags[locale])
+  const formatLeague = (league: string) => {
+    if (league === "SCHOOL") return t("schoolLeague")
+    if (league === "UNIVERSITY") return t("universityLeague")
+    return league
+  }
 
   const toggleDebateDetails = (debateId: number) => {
     setExpandedDebates(prev => ({
@@ -72,7 +200,7 @@ export default function Component() {
 
       {/* Hero Section */}
       <section className="text-center py-8">
-        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8 font-hikasami">Welcome to DeBetter</h1>
+        <h1 className="text-[#0D1321] text-[56px] font-bold mb-8 font-hikasami">{t("welcomeTitle")}</h1>
 
         <div className="relative mx-8">
           <div ref={emblaRef} className="overflow-hidden rounded-[16px]">
@@ -97,15 +225,14 @@ export default function Component() {
                         <div className="absolute inset-0 rounded-[16px] bg-gradient-to-r from-[#0D1321] to-[#2B3F6C] z-10" />
                         <div className="relative z-20 h-full flex flex-col justify-center">
                           <h2 className="text-[#FFFFFF] text-[46px] font-semibold mb-8 font-hikasami">
-                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - website for{" "}
-                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">debates</span> organisation
+                            <span className="text-[#748CAB] font-hikasami text-[46px] font-semibold">DeBetter</span> - {t("heroDescription")}
                           </h2>
                           <div className="flex justify-center space-x-4 mb-8">
                             <Link href="/join" className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center">
-                              Join Debate
+                              {t("joinDebate")}
                             </Link>
                             <button className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami">
-                              Create Tournament
+                              {t("createTournament")}
                             </button>
                           </div>
                         </div>
@@ -120,13 +247,13 @@ export default function Component() {
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-2 z-20">
             <button
               type="button"
-              aria-label="Slide 1"
+              aria-label={t("slide1")}
               onClick={() => emblaApi && emblaApi.scrollTo(0)}
               className={`h-[4px] rounded transition-all duration-200 ${activeSlide === 0 ? 'w-[28px] bg-white' : 'w-[24px] bg-[#3E5C76]'}`}
             />
             <button
               type="button"
-              aria-label="Slide 2"
+              aria-label={t("slide2")}
               onClick={() => emblaApi && emblaApi.scrollTo(1)}
               className={`h-[4px] rounded transition-all duration-200 ${activeSlide === 1 ? 'w-[28px] bg-white' : 'w-[24px] bg-[#3E5C76]'}`}
             />
@@ -136,7 +263,7 @@ export default function Component() {
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Upcoming Debates</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">{t("upcomingDebates")}</h3>
 
         <LoadingState
           isLoading={tournamentsLoading}
@@ -151,11 +278,11 @@ export default function Component() {
             <ErrorState
               error={tournamentsError}
               onRetry={() => window.location.reload()}
-              message="Failed to load upcoming tournaments"
+              message={t("failedToLoadTournaments")}
             />
           ) : upcomingTournaments && upcomingTournaments.content.length > 0 ? (
             <div className="relative">
-              <button className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
+              <button aria-label={t("previousTournaments")} className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
                 <ChevronLeft className="w-[24px] h-[24px] text-[#4a4e69]" />
               </button>
 
@@ -163,9 +290,9 @@ export default function Component() {
                 {upcomingTournaments.content.slice(0, 2).map((tournament) => (
                   <div key={tournament.id} className="bg-[#0D1321] rounded-[12px] p-6 flex-1 min-w-0">
                     <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2 font-hikasami">{tournament.name}</h4>
-                    <p className="text-[#9a8c98] mb-1 text-[16px] font-normal font-hikasami">{tournament.location || "Location TBA"}</p>
+                    <p className="text-[#9a8c98] mb-1 text-[16px] font-normal font-hikasami">{tournament.location || t("locationTba")}</p>
                     <p className="text-[#9a8c98] mb-4 text-[16px] font-normal font-hikasami">
-                      {tournament.startDate ? new Date(tournament.startDate).toLocaleDateString() : "Date TBA"}
+                      {tournament.startDate ? formatDate(tournament.startDate) : t("dateTba")}
                     </p>
 
                     <div className="flex space-x-2 mb-6">
@@ -176,22 +303,22 @@ export default function Component() {
                         {tournament.teamEliminationFormat}
                       </span>
                       <span className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal font-hikasami cursor-default">
-                        {tournament.league}
+                        {formatLeague(tournament.league)}
                       </span>
                     </div>
 
                     {/* Expandable content */}
                     {expandedDebates[tournament.id] && (
                       <div className="mb-4 p-4 bg-[#0D1321] rounded-lg">
-                        <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2 font-hikasami">Tournament Details</h5>
+                        <h5 className="text-[#FFFFFF] text-[18px] font-medium mb-2 font-hikasami">{t("tournamentDetails")}</h5>
                         <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
-                          Description: {tournament.description || "No description available"}
+                          {t("description")}: {tournament.description || t("noDescription")}
                         </p>
                         <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
-                          Registration deadline: {tournament.registrationDeadline ? new Date(tournament.registrationDeadline).toLocaleDateString() : "TBA"}
+                          {t("registrationDeadline")}: {tournament.registrationDeadline ? formatDate(tournament.registrationDeadline) : t("tba")}
                         </p>
                         <p className="text-[#FFFFFF] text-[14px] font-normal mb-2 font-hikasami">
-                          Team limit: {tournament.teamLimit ? `${tournament.teamLimit} teams` : "No limit"}
+                          {t("teamLimit")}: {tournament.teamLimit ? `${tournament.teamLimit} ${t("teams")}` : t("noLimit")}
                         </p>
                       </div>
                     )}
@@ -202,7 +329,7 @@ export default function Component() {
                           onClick={() => toggleDebateDetails(tournament.id)}
                           className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal font-hikasami"
                         >
-                          {expandedDebates[tournament.id] ? 'Less...' : 'More...'}
+                          {expandedDebates[tournament.id] ? t("less") : t("more")}
                         </button>
                       </div>
                       <div className="flex justify-start space-x-2">
@@ -210,13 +337,13 @@ export default function Component() {
                           href={`/tournament/${tournament.id}`}
                           className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center"
                         >
-                          View Details
+                          {t("viewDetails")}
                         </Link>
                         <Link
                           href="/join"
                           className="inline-block border border-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#3E5C76] text-[14px] font-normal font-hikasami text-center"
                         >
-                          Join Tournament
+                          {t("joinTournament")}
                         </Link>
                       </div>
                     </div>
@@ -224,18 +351,18 @@ export default function Component() {
                 ))}
               </div>
 
-              <button className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
+              <button aria-label={t("nextTournaments")} className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
                 <ChevronRight className="w-[24px] h-[24px] text-[#4a4e69]" />
               </button>
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-[#4a4e69] text-[18px] font-hikasami">No upcoming tournaments available</p>
+              <p className="text-[#4a4e69] text-[18px] font-hikasami">{t("noUpcomingTournaments")}</p>
               <Link
                 href="/tournament/create"
                 className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
               >
-                Create Tournament
+                {t("createTournament")}
               </Link>
             </div>
           )}
@@ -244,14 +371,14 @@ export default function Component() {
 
       {/* Testimonials (leaderboard disabled) */}
       <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">Community Voices</h3>
+        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8 font-hikasami">{t("communityVoices")}</h3>
         <div className="text-center py-12">
-          <p className="text-[#4a4e69] text-[18px] font-hikasami">Community testimonials will appear as more users join tournaments</p>
+          <p className="text-[#4a4e69] text-[18px] font-hikasami">{t("testimonialsEmpty")}</p>
           <Link
             href="/tournaments"
             className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
           >
-            Join a Tournament
+            {t("joinATournament")}
           </Link>
         </div>
       </section>
@@ -259,7 +386,7 @@ export default function Component() {
       {/* Leader Board (disabled) */}
       <section className="px-8 py-12">
         <div className="text-center py-12">
-          <p className="text-[#4a4e69] text-[18px] font-hikasami">Leaderboard is disabled until ratings are supported.</p>
+          <p className="text-[#4a4e69] text-[18px] font-hikasami">{t("leaderboardDisabled")}</p>
         </div>
       </section>
 
@@ -271,6 +398,7 @@ export default function Component() {
             <div className="flex justify-center space-x-4 mb-8">
               <a
                 href="#"
+                aria-label={t("telegram")}
                 className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
               >
                 <svg className="w-[36px] h-[36px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
@@ -279,6 +407,7 @@ export default function Component() {
               </a>
               <a
                 href="#"
+                aria-label={t("youtube")}
                 className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
               >
                 <svg className="w-[24px] h-[24px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
@@ -287,6 +416,7 @@ export default function Component() {
               </a>
               <a
                 href="#"
+                aria-label={t("instagram")}
                 className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
               >
                 <svg className="w-[24px] h-[24px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
@@ -297,9 +427,9 @@ export default function Component() {
           </div>
 
           <div className="flex justify-between items-center text-[14px] font-normal font-hikasami">
-            <div>Contact us: debetter@gmail.com</div>
-            <div>© 2025 all rights reserved</div>
-            <div>Privacy Policy</div>
+            <div>{t("contactUs")}</div>
+            <div>{t("copyright")}</div>
+            <div>{t("privacyPolicy")}</div>
           </div>
         </div>
       </footer>

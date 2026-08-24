@@ -30,6 +30,7 @@ import {
 } from "@/lib/match-result-slots"
 import { useActionFeedback } from "@/components/tournament/useActionFeedback"
 import { displayRoundLabel } from "@/lib/round-label"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 interface ResultsSectionProps {
   selectedResultsOption: string
@@ -100,12 +101,48 @@ type PreliminaryRoundMatches = {
 }
 type ResultsView = "entry" | "standings" | "speaker-details" | "win-count"
 
-const RESULTS_VIEW_OPTIONS: ReadonlyArray<{ id: ResultsView; label: string }> = [
-  { id: "entry", label: "Round entry" },
-  { id: "standings", label: "Preliminary standings" },
-  { id: "speaker-details", label: "Speaker details" },
-  { id: "win-count", label: "Win count by round" },
+const RESULTS_VIEW_OPTIONS: ReadonlyArray<{ id: ResultsView; key: string }> = [
+  { id: "entry", key: "viewEntry" },
+  { id: "standings", key: "viewStandings" },
+  { id: "speaker-details", key: "viewSpeakerDetails" },
+  { id: "win-count", key: "viewWinCount" },
 ]
+
+const catalog: TranslationCatalog = {
+  en: {
+    viewEntry: "Round entry", viewStandings: "Preliminary standings", viewSpeakerDetails: "Speaker details", viewWinCount: "Win count by round",
+    round: "Round {number}", round16: "1/16", round8: "1/8", round4: "1/4", round2: "1/2", finalRound: "Final", resultsWord: "results", andSpeakerPoints: " and speaker points", selectResultsRound: "Select results round", selectResultsView: "Select results view",
+    match: "Match", side: "Side", result: "Result", speakerPoints: "Speaker points", room: "Room", judge: "Judge", status: "Status",
+    loadingTeams: "Loading teams...", failedTeams: "Failed to load teams", noTeams: "No teams found", loadingMatches: "Loading matches...", failedMatches: "Failed to load matches", noMatches: "No matches for this round", noSides: "No sides assigned", noParticipants: "No participants assigned", noMatchesScheduled: "No matches scheduled for this round",
+    preliminaryStandings: "Preliminary standings", speakerDetails: "Speaker details", winCountByRound: "Win count by round", noPreliminaryRounds: "No preliminary rounds loaded yet.", noPreliminaryTeamResults: "No preliminary team results yet.", noPreliminarySpeakerPoints: "No preliminary speaker points yet.",
+    fractionName: "Fraction Name", speaker: "Speaker", overall: "Overall", selectionResult: "Selection result", overallSelectionResult: "Overall selection result", number: "№", winCount: "Win count", judgeName: "Judge Name", actions: "Actions", fraction1: "Fraction 1", fraction2: "Fraction 2", winner: "Winner", submit: "Submit", deleteTeam: "Delete team {name}", resultsTab: "{format} Results", speakerScoreTab: "{format} Speaker Score",
+    winnerMark: "winner", notWinnerMark: "not winner", markWinner: "Mark {name} as winner in match {id}", markNotWinner: "Mark {name} as not winner in match {id}", win: "Win", lose: "Lose", open: "Open", completed: "Completed", needsCorrection: "Needs correction", needsCorrectionNotRepairable: "Needs correction (not repairable)", speakerLabel: "Speaker {number}", debaterLabel: "Debater {id}", matchLabel: "Match {id}", roundLabel: "Round {number}",
+    resultForMatch: "Result for {name} in match {id}", speakerPointsForMatch: "Speaker points for {name} in match {id}", submitted: "✓ Submitted", submitting: "Submitting...", submitResults: "Submit results", noOpenMatches: "There are no open matches to submit.", currentRoundOnly: "Only the current round or incomplete past results can be submitted.", addParticipants: "Add participants to every team before submitting speaker points.", ldRequirement: "LD matches need one winner and one loser.", apfBpfRequirement: "APF matches need one winner; BPF matches need two winners.", everySpeakerPoints: "Every speaker also needs points.",
+    correctionParticipant: "{count} completed matches have nonrepairable participant scores and cannot be submitted.", correctionParticipantSingle: "This completed match has nonrepairable participant scores and cannot be submitted.", correctionOutcome: "{count} completed matches have an invalid outcome and cannot be submitted.", correctionOutcomeSingle: "This completed match has an invalid outcome and cannot be submitted.", readyMatches: "{ready} of {total} {matchWord} ready to submit", pendingMatches: ". {count} still need {requirement}.", requirementResultPoints: "a result and speaker points", requirementWinLose: "a Win/Lose result", period: ".",
+  },
+  ru: {
+    viewEntry: "Ввод результатов", viewStandings: "Предварительный рейтинг", viewSpeakerDetails: "Данные спикеров", viewWinCount: "Количество побед по раундам",
+    round: "Раунд {number}", round16: "1/16", round8: "1/8", round4: "1/4", round2: "1/2", finalRound: "Финал", resultsWord: "результаты", andSpeakerPoints: " и баллы спикеров", selectResultsRound: "Выбор раунда результатов", selectResultsView: "Выбор представления результатов",
+    match: "Матч", side: "Сторона", result: "Результат", speakerPoints: "Баллы спикеров", room: "Аудитория", judge: "Судья", status: "Статус",
+    loadingTeams: "Загрузка команд...", failedTeams: "Не удалось загрузить команды", noTeams: "Команды не найдены", loadingMatches: "Загрузка матчей...", failedMatches: "Не удалось загрузить матчи", noMatches: "В этом раунде нет матчей", noSides: "Стороны не назначены", noParticipants: "Участники не назначены", noMatchesScheduled: "На этот раунд матчи не запланированы",
+    preliminaryStandings: "Предварительный рейтинг", speakerDetails: "Данные спикеров", winCountByRound: "Количество побед по раундам", noPreliminaryRounds: "Предварительные раунды ещё не загружены.", noPreliminaryTeamResults: "Результатов предварительных раундов ещё нет.", noPreliminarySpeakerPoints: "Баллы спикеров за предварительные раунды ещё не внесены.",
+    fractionName: "Название фракции", speaker: "Спикер", overall: "Итого", selectionResult: "Результат отбора", overallSelectionResult: "Общий результат отбора", number: "№", winCount: "Количество побед", judgeName: "Имя судьи", actions: "Действия", fraction1: "Фракция 1", fraction2: "Фракция 2", winner: "Победитель", submit: "Отправить", deleteTeam: "Удалить команду {name}", resultsTab: "Результаты {format}", speakerScoreTab: "Баллы спикеров {format}",
+    winnerMark: "победителем", notWinnerMark: "не победителем", markWinner: "Отметить {name} победителем в матче {id}", markNotWinner: "Отметить {name} не победителем в матче {id}", win: "Победа", lose: "Поражение", open: "Открыт", completed: "Завершён", needsCorrection: "Требует исправления", needsCorrectionNotRepairable: "Требует исправления (восстановление невозможно)", speakerLabel: "Спикер {number}", debaterLabel: "Дебатёр {id}", matchLabel: "Матч {id}", roundLabel: "Раунд {number}",
+    resultForMatch: "Результат {name} в матче {id}", speakerPointsForMatch: "Баллы спикера {name} в матче {id}", submitted: "✓ Отправлено", submitting: "Отправка...", submitResults: "Отправить результаты", noOpenMatches: "Нет открытых матчей для отправки.", currentRoundOnly: "Можно отправлять только результаты текущего раунда или незавершённых прошлых результатов.", addParticipants: "Добавьте участников во все команды перед отправкой баллов спикеров.", ldRequirement: "В матчах LD нужен один победитель и один проигравший.", apfBpfRequirement: "В матчах APF нужен один победитель, а в BPF — два.", everySpeakerPoints: "Каждому спикеру также нужны баллы.",
+    correctionParticipant: "У {count} завершённых матчей невосстанавливаемые баллы участников, поэтому их нельзя отправить.", correctionParticipantSingle: "У этого завершённого матча невосстанавливаемые баллы участников, поэтому его нельзя отправить.", correctionOutcome: "У {count} завершённых матчей некорректный исход, поэтому их нельзя отправить.", correctionOutcomeSingle: "У этого завершённого матча некорректный исход, поэтому его нельзя отправить.", readyMatches: "Готово к отправке: {ready} из {total} {matchWord}", pendingMatches: ". Ещё {count} требуют: {requirement}.", requirementResultPoints: "результат и баллы спикеров", requirementWinLose: "результат «Победа/Поражение»", period: ".",
+  },
+  kk: {
+    viewEntry: "Раунд нәтижелерін енгізу", viewStandings: "Алдын ала рейтинг", viewSpeakerDetails: "Спикерлер деректері", viewWinCount: "Раундтар бойынша жеңіс саны",
+    round: "{number}-раунд", round16: "1/16", round8: "1/8", round4: "1/4", round2: "1/2", finalRound: "Финал", resultsWord: "нәтижелері", andSpeakerPoints: " және спикер ұпайлары", selectResultsRound: "Нәтиже раундын таңдау", selectResultsView: "Нәтиже көрінісін таңдау",
+    match: "Матч", side: "Тарап", result: "Нәтиже", speakerPoints: "Спикер ұпайлары", room: "Аудитория", judge: "Төреші", status: "Мәртебе",
+    loadingTeams: "Командалар жүктелуде...", failedTeams: "Командаларды жүктеу мүмкін болмады", noTeams: "Командалар табылмады", loadingMatches: "Матчтар жүктелуде...", failedMatches: "Матчтарды жүктеу мүмкін болмады", noMatches: "Бұл раундта матчтар жоқ", noSides: "Тараптар тағайындалмаған", noParticipants: "Қатысушылар тағайындалмаған", noMatchesScheduled: "Бұл раундқа матчтар жоспарланбаған",
+    preliminaryStandings: "Алдын ала рейтинг", speakerDetails: "Спикерлер деректері", winCountByRound: "Раундтар бойынша жеңіс саны", noPreliminaryRounds: "Алдын ала раундтар әлі жүктелмеген.", noPreliminaryTeamResults: "Алдын ала командалық нәтижелер әлі жоқ.", noPreliminarySpeakerPoints: "Алдын ала спикер ұпайлары әлі жоқ.",
+    fractionName: "Фракция атауы", speaker: "Спикер", overall: "Жалпы", selectionResult: "Іріктеу нәтижесі", overallSelectionResult: "Жалпы іріктеу нәтижесі", number: "№", winCount: "Жеңіс саны", judgeName: "Төрешінің аты", actions: "Әрекеттер", fraction1: "1-фракция", fraction2: "2-фракция", winner: "Жеңімпаз", submit: "Жіберу", deleteTeam: "{name} командасын жою", resultsTab: "{format} нәтижелері", speakerScoreTab: "{format} спикер ұпайлары",
+    winnerMark: "жеңімпаз", notWinnerMark: "жеңімпаз емес", markWinner: "{id}-матчта {name} жеңімпаз деп белгілеу", markNotWinner: "{id}-матчта {name} жеңімпаз емес деп белгілеу", win: "Жеңіс", lose: "Жеңіліс", open: "Ашық", completed: "Аяқталды", needsCorrection: "Түзету қажет", needsCorrectionNotRepairable: "Түзету қажет (қалпына келмейді)", speakerLabel: "{number}-спикер", debaterLabel: "{id}-дебатёр", matchLabel: "{id}-матч", roundLabel: "{number}-раунд",
+    resultForMatch: "{id}-матчтағы {name} нәтижесі", speakerPointsForMatch: "{id}-матчтағы {name} спикер ұпайлары", submitted: "✓ Жіберілді", submitting: "Жіберілуде...", submitResults: "Нәтижелерді жіберу", noOpenMatches: "Жіберуге ашық матчтар жоқ.", currentRoundOnly: "Тек ағымдағы раундтың немесе аяқталмаған өткен нәтижелерді жіберуге болады.", addParticipants: "Спикер ұпайларын жібермес бұрын әр командаға қатысушыларды қосыңыз.", ldRequirement: "LD матчында бір жеңімпаз және бір жеңілген болуы керек.", apfBpfRequirement: "APF матчында бір, BPF матчында екі жеңімпаз болуы керек.", everySpeakerPoints: "Әр спикерге ұпай қажет.",
+    correctionParticipant: "{count} аяқталған матчта қалпына келмейтін қатысушы ұпайлары бар, сондықтан жіберу мүмкін емес.", correctionParticipantSingle: "Бұл аяқталған матчта қалпына келмейтін қатысушы ұпайлары бар, сондықтан жіберу мүмкін емес.", correctionOutcome: "{count} аяқталған матчта қате нәтиже бар, сондықтан жіберу мүмкін емес.", correctionOutcomeSingle: "Бұл аяқталған матчта қате нәтиже бар, сондықтан жіберу мүмкін емес.", readyMatches: "Жіберуге дайын: {ready}/{total} {matchWord}", pendingMatches: ". Тағы {count} матчқа {requirement} қажет.", requirementResultPoints: "нәтиже және спикер ұпайлары", requirementWinLose: "«Жеңіс/Жеңіліс» нәтижесі", period: ".",
+  },
+}
 
 const isValidScoreValue = (value: unknown) => {
   if (typeof value === "number") return Number.isFinite(value) && value >= 0
@@ -150,6 +187,13 @@ export function ResultsSection({
   preliminaryRoundMatchesLoading = false,
   preliminaryRoundMatchesError,
 }: ResultsSectionProps) {
+  const { locale } = useLocale()
+  const t = useTranslations(catalog)
+  const getLocalizedRoundLabel = (round: string) => {
+    const normalized = displayRoundLabel(round)
+    const key = normalized === "1/16" ? "round16" : normalized === "1/8" ? "round8" : normalized === "1/4" ? "round4" : normalized === "1/2" ? "round2" : normalized === "Final" ? "finalRound" : null
+    return key ? t(key) : normalized
+  }
   const isOutcomeOnlyStage =
     roundGroupType === RoundGroupType.TEAM_ELIMINATION ||
     roundGroupType === RoundGroupType.SOLO_ELIMINATION
@@ -209,7 +253,7 @@ export function ResultsSection({
           slot: participantScoreSlot(slot, member.id),
           fallbackSlot: slot,
           entityId: member.id,
-          name: getParticipantName(member, `Speaker ${index + 1}`),
+          name: getParticipantName(member, t("speakerLabel", { number: index + 1 })),
           currentScore: resolveParticipantCurrentScore(match, slot, team.id, member.id, index),
         })),
       })
@@ -226,14 +270,14 @@ export function ResultsSection({
         kind: "debater",
         slot,
         entityId: debater.id,
-        name: getParticipantName(debater, `Debater ${debater.id}`),
+        name: getParticipantName(debater, t("debaterLabel", { id: debater.id })),
         currentScore: score,
         currentWon: resolveDebaterCurrentWon(match, slot, debater.id),
       })
     })
 
     return slots
-  }, [teamsById])
+  }, [t, teamsById])
 
   const scoreKey = useCallback(
     (matchId: number, slot: ScoreSlotName) => `${matchId}:${slot}`,
@@ -259,7 +303,7 @@ export function ResultsSection({
     const currentScore = resolveScore(currentSlot)
     const opponentScore = resolveScore(opponentSlot)
     if (typeof currentScore !== "number" || typeof opponentScore !== "number" || currentScore === opponentScore) return null
-    return currentScore > opponentScore ? "Win" : "Loss"
+    return currentScore > opponentScore ? t("win") : t("lose")
   }
 
   const hasDraftScore = useCallback((matchId: number, slot: ScoreSlot) => {
@@ -489,8 +533,8 @@ export function ResultsSection({
   const readyToSubmitCount = completedDraftMatches.length
   const pendingMatchCount = editableMatches.length - readyToSubmitCount
   const outcomeRequirementMessage = isSoloElimination
-    ? "LD matches need one winner and one loser."
-    : "APF matches need one winner; BPF matches need two winners."
+    ? t("ldRequirement")
+    : t("apfBpfRequirement")
   const hasTeamsWithoutSpeakers = editableMatches.some((match) =>
     requiresSpeakerPoints && getResultSlots(match).some((slot) => slot.kind === "team" && slot.speakers.length === 0)
   )
@@ -508,10 +552,10 @@ export function ResultsSection({
     match.completed && !isRepairableParticipantScoreMatch(match) && !isMatchBackendComplete(match)
 
   const getMatchStatusLabel = (match: MatchResponse) => {
-    if (isRepairableParticipantScoreMatch(match)) return "Needs correction"
-    if (isNonrepairableCorrection(match)) return "Needs correction (not repairable)"
-    if (match.completed || isMatchReadOnly(match)) return "Completed"
-    return "Open"
+    if (isRepairableParticipantScoreMatch(match)) return t("needsCorrection")
+    if (isNonrepairableCorrection(match)) return t("needsCorrectionNotRepairable")
+    if (match.completed || isMatchReadOnly(match)) return t("completed")
+    return t("open")
   }
   const nonrepairableCorrectionCount = matchRows.filter(isNonrepairableCorrection).length
   const summaryRoundMatches = useMemo(() => {
@@ -694,7 +738,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69]">
-            Loading teams...
+            {t("loadingTeams")}
           </td>
         </tr>
       )
@@ -704,7 +748,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-red-500">
-            Failed to load teams
+            {t("failedTeams")}
           </td>
         </tr>
       )
@@ -714,7 +758,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69]">
-            No teams found
+            {t("noTeams")}
           </td>
         </tr>
       )
@@ -791,21 +835,21 @@ export function ResultsSection({
     if (!onSubmitResults || !canManageTeams) return false
 
     if (!canEditSelectedRound && !canRepairSelectedRound) {
-      setScoreError("Only the current round or incomplete past results can be submitted.")
+      setScoreError(t("currentRoundOnly"))
       return false
     }
 
     if (!hasEditableMatches) {
-      setScoreError("There are no open matches to submit.")
+      setScoreError(t("noOpenMatches"))
       return false
     }
 
     if (readyToSubmitCount === 0) {
       setScoreError(
         requiresSpeakerPoints && hasTeamsWithoutSpeakers
-          ? "Add participants to every team before submitting speaker points."
+          ? t("addParticipants")
           : requiresSpeakerPoints
-            ? `${outcomeRequirementMessage} Every speaker also needs points.`
+            ? `${outcomeRequirementMessage} ${t("everySpeakerPoints")}`
             : outcomeRequirementMessage
       )
       return false
@@ -984,7 +1028,7 @@ export function ResultsSection({
           inputMode="numeric"
           value={scoreDrafts[key] ?? ""}
           disabled={!canEditResult || isSubmittingResults}
-          aria-label={`Speaker points for ${slot.name} in match ${match.id}`}
+          aria-label={t("speakerPointsForMatch", { name: slot.name, id: match.id })}
           onChange={(event) => {
             const value = event.target.value
             setScoreDrafts((current) => ({ ...current, [key]: value }))
@@ -1005,7 +1049,7 @@ export function ResultsSection({
     return (
       <div
         role="group"
-        aria-label={`Result for ${slot.name} in match ${match.id}`}
+        aria-label={t("resultForMatch", { name: slot.name, id: match.id })}
         className="inline-flex h-10 overflow-hidden rounded-lg border border-[#D5D9E7] bg-white"
       >
         {(["won", "lost"] as const).map((value) => {
@@ -1016,7 +1060,7 @@ export function ResultsSection({
               type="button"
               disabled={!canEditResult || isSubmittingResults}
               aria-pressed={isSelected}
-              aria-label={`Mark ${slot.name} as ${value === "won" ? "winner" : "not winner"} in match ${match.id}`}
+              aria-label={t(value === "won" ? "markWinner" : "markNotWinner", { name: slot.name, id: match.id })}
               onClick={() => {
                 if (slot.kind === "team") {
                   updateTeamResultDraft(match, slot.slot, value)
@@ -1030,7 +1074,7 @@ export function ResultsSection({
                   : "text-[#0B1327] hover:bg-[#F5F7FC]"
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
-              {value === "won" ? "Win" : "Lose"}
+              {value === "won" ? t("win") : t("lose")}
             </button>
           )
         })}
@@ -1045,7 +1089,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
-            Loading matches...
+            {t("loadingMatches")}
           </td>
         </tr>
       )
@@ -1055,7 +1099,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-red-500">
-            Failed to load matches
+            {t("failedMatches")}
           </td>
         </tr>
       )
@@ -1065,7 +1109,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
-            No matches for this round
+            {t("noMatches")}
           </td>
         </tr>
       )
@@ -1076,8 +1120,8 @@ export function ResultsSection({
       if (!slots.length) {
         return (
           <tr key={match.id} className="hover:bg-gray-50">
-            <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">Match {match.id}</td>
-            <td colSpan={resultTableColumnCount - 1} className="border border-gray-300 px-6 py-4 text-[#4a4e69]">No sides assigned</td>
+            <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{t("matchLabel", { id: match.id })}</td>
+            <td colSpan={resultTableColumnCount - 1} className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{t("noSides")}</td>
           </tr>
         )
       }
@@ -1108,11 +1152,11 @@ export function ResultsSection({
                   slot.speakers.length > 0 ? (
                     <div className="grid min-w-64 gap-2">
                       {slot.speakers.map((speaker, speakerIndex) =>
-                        renderScoreInput(match, speaker, canEditResult, `Speaker ${speakerIndex + 1}`)
+                        renderScoreInput(match, speaker, canEditResult, t("speakerLabel", { number: speakerIndex + 1 }))
                       )}
                     </div>
                   ) : (
-                    <span className="text-sm text-red-500">No participants assigned</span>
+                        <span className="text-sm text-red-500">{t("noParticipants")}</span>
                   )
                 ) : (
                   renderScoreInput(match, slot, canEditResult)
@@ -1138,8 +1182,10 @@ export function ResultsSection({
     })
   }
 
-  const formatScore = (score: number) => Number.isInteger(score) ? String(score) : score.toFixed(1)
-  const getRoundHeader = (round: SimpleRoundResponse) => `${round.roundNumber} раунд`
+  const formatScore = (score: number) => Number.isInteger(score)
+    ? new Intl.NumberFormat(localeTags[locale], { maximumFractionDigits: 0 }).format(score)
+    : new Intl.NumberFormat(localeTags[locale], { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(score)
+  const getRoundHeader = (round: SimpleRoundResponse) => t("round", { number: round.roundNumber })
   const getRoundResultValue = (result: string) => {
     if (result === "W") return "1"
     if (result === "L") return "0"
@@ -1150,7 +1196,7 @@ export function ResultsSection({
     if (preliminaryRoundMatchesLoading) {
       return (
         <div className="rounded-lg border border-[#D5D9E7] bg-white px-6 py-5 text-sm text-[#4A5168]">
-          Loading preliminary standings...
+          {t("loadingMatches")}
         </div>
       )
     }
@@ -1158,7 +1204,7 @@ export function ResultsSection({
     if (preliminaryRoundMatchesError) {
       return (
         <div className="rounded-lg border border-red-200 bg-red-50 px-6 py-5 text-sm text-red-600">
-          Failed to load preliminary standings.
+          {t("failedMatches")}
         </div>
       )
     }
@@ -1166,7 +1212,7 @@ export function ResultsSection({
     if (!summaryRoundMatches.length) {
       return (
         <div className="rounded-lg border border-[#D5D9E7] bg-white px-6 py-5 text-sm text-[#4A5168]">
-          No preliminary rounds loaded yet.
+          {t("noPreliminaryRounds")}
         </div>
       )
     }
@@ -1181,14 +1227,14 @@ export function ResultsSection({
 
     return (
       <section>
-        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Preliminary standings</h3>
+        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">{t("preliminaryStandings")}</h3>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
             <thead>
               <tr className="bg-gray-100">
                 <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Жеңіс саны</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("winCount")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1201,7 +1247,7 @@ export function ResultsSection({
               )) : (
                 <tr>
                   <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
-                    No preliminary team results yet.
+                    {t("noPreliminaryTeamResults")}
                   </td>
                 </tr>
               )}
@@ -1219,21 +1265,21 @@ export function ResultsSection({
 
     return (
       <section>
-        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Speaker details</h3>
+        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">{t("speakerDetails")}</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] border-collapse border border-gray-300 rounded-2xl overflow-hidden">
             <thead>
               <tr className="bg-gray-100">
                 <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Спикер</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("speaker")}</th>
                 {summaryRounds.map((round) => (
                   <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">
                     {getRoundHeader(round)}
                   </th>
                 ))}
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Іріктеу нәтижесі</th>
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Жалпы іріктеу нәтижесі</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("selectionResult")}</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("overallSelectionResult")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1279,7 +1325,7 @@ export function ResultsSection({
               }) : (
                 <tr>
                   <td colSpan={summaryRounds.length + 5} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
-                    No preliminary speaker points yet.
+                    {t("noPreliminarySpeakerPoints")}
                   </td>
                 </tr>
               )}
@@ -1297,19 +1343,19 @@ export function ResultsSection({
 
     return (
       <section>
-        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Win count by round</h3>
+        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">{t("winCountByRound")}</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse border border-gray-300 rounded-2xl overflow-hidden">
             <thead>
               <tr className="bg-gray-100">
                 <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
                 {summaryRounds.map((round) => (
                   <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">
                     {getRoundHeader(round)}
                   </th>
                 ))}
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Іріктеу нәтижесі</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("selectionResult")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1330,7 +1376,7 @@ export function ResultsSection({
               )) : (
                 <tr>
                   <td colSpan={summaryRounds.length + 3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
-                    No preliminary team results yet.
+                    {t("noPreliminaryTeamResults")}
                   </td>
                 </tr>
               )}
@@ -1346,11 +1392,11 @@ export function ResultsSection({
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h3 className="text-xl font-semibold text-[#0D1321]">
-            {displayRoundLabel(selectedRound)} results{requiresSpeakerPoints ? " and speaker points" : ""}
+            {getLocalizedRoundLabel(selectedRound)} {t("resultsWord")}{requiresSpeakerPoints ? t("andSpeakerPoints") : ""}
           </h3>
         </div>
         {roundOptions.length > 1 ? (
-          <div className="flex flex-wrap gap-2" aria-label="Select results round">
+          <div className="flex flex-wrap gap-2" aria-label={t("selectResultsRound")}>
             {roundOptions.map((round) => (
               <button
                 key={round}
@@ -1364,7 +1410,7 @@ export function ResultsSection({
                     : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
                 }`}
               >
-                {displayRoundLabel(round)}
+                {getLocalizedRoundLabel(round)}
               </button>
             ))}
           </div>
@@ -1374,15 +1420,15 @@ export function ResultsSection({
         <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Match</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Side</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Result</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("match")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("side")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("result")}</th>
               {requiresSpeakerPoints ? (
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Speaker points</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("speakerPoints")}</th>
               ) : null}
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Room</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Status</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("room")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("judge")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("status")}</th>
             </tr>
           </thead>
           <tbody>{renderMatchResultRows()}</tbody>
@@ -1392,20 +1438,20 @@ export function ResultsSection({
       {nonrepairableCorrectionCount > 0 ? (
         <p className="mt-4 text-sm text-amber-700" role="status">
           {requiresSpeakerPoints
-            ? `${nonrepairableCorrectionCount === 1 ? "This completed match has" : `${nonrepairableCorrectionCount} completed matches have`} nonrepairable participant scores and cannot be submitted.`
-            : `${nonrepairableCorrectionCount === 1 ? "This completed match has" : `${nonrepairableCorrectionCount} completed matches have`} an invalid outcome and cannot be submitted.`}
+            ? t(nonrepairableCorrectionCount === 1 ? "correctionParticipantSingle" : "correctionParticipant", { count: nonrepairableCorrectionCount })
+            : t(nonrepairableCorrectionCount === 1 ? "correctionOutcomeSingle" : "correctionOutcome", { count: nonrepairableCorrectionCount })}
         </p>
       ) : null}
       {hasEditableMatches ? (
         <p className="mt-4 text-sm text-[#4A5168]">
           {readyToSubmitCount > 0
-            ? `${readyToSubmitCount} of ${editableMatches.length} ${editableMatches.length === 1 ? "match" : "matches"} ready to submit${
+            ? `${t("readyMatches", { ready: readyToSubmitCount, total: editableMatches.length, matchWord: editableMatches.length === 1 ? t("match") : locale === "ru" ? "матчей" : locale === "kk" ? "матч" : "matches" })}${
                 pendingMatchCount > 0
-                  ? `. ${pendingMatchCount} still need${pendingMatchCount === 1 ? "s" : ""} ${requiresSpeakerPoints ? "a result and speaker points" : "a Win/Lose result"}.`
-                  : "."
+                  ? t("pendingMatches", { count: pendingMatchCount, requirement: requiresSpeakerPoints ? t("requirementResultPoints") : t("requirementWinLose") })
+                  : t("period")
               }`
             : requiresSpeakerPoints
-              ? `${outcomeRequirementMessage} Every speaker also needs points.`
+              ? `${outcomeRequirementMessage} ${t("everySpeakerPoints")}`
               : outcomeRequirementMessage}
         </p>
       ) : null}
@@ -1424,10 +1470,10 @@ export function ResultsSection({
         >
           {submitResultsFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
           {submitResultsFeedback.isPending
-            ? "Submitting..."
+            ? t("submitting")
             : submitResultsFeedback.isSuccess
-              ? "✓ Submitted"
-              : "Submit results"}
+              ? t("submitted")
+              : t("submitResults")}
         </button>
       </div>
     </>
@@ -1436,7 +1482,7 @@ export function ResultsSection({
   const renderResultsWorkspace = () => (
     <>
       {availableResultsViewOptions.length > 1 ? (
-        <div className="mb-6 flex flex-wrap gap-2" aria-label="Select results view">
+        <div className="mb-6 flex flex-wrap gap-2" aria-label={t("selectResultsView")}>
           {availableResultsViewOptions.map((option) => (
             <button
               key={option.id}
@@ -1449,7 +1495,7 @@ export function ResultsSection({
                   : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
               }`}
             >
-              {option.label}
+              {t(option.key)}
             </button>
           ))}
         </div>
@@ -1464,7 +1510,7 @@ export function ResultsSection({
   const renderDeleteButton = (team: SimpleTeamResponse) => (
     <td className="border border-gray-300 px-6 py-4 text-center">
       <button
-        aria-label={`Delete team ${team.name}`}
+        aria-label={t("deleteTeam", { name: team.name })}
         className="inline-flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition"
         onClick={() => onDeleteTeam(team.id, team.name)}
         disabled={deletingTeamId === team.id}
@@ -1549,7 +1595,7 @@ export function ResultsSection({
       return (
         <tr>
           <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
-            No matches scheduled for this round
+            {t("noMatchesScheduled")}
           </td>
         </tr>
       )
@@ -1579,9 +1625,9 @@ export function ResultsSection({
               <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
                 <thead>
                   <tr className="bg-white text-[14px] uppercase tracking-[0.08em] text-[#4A5168]">
-                    <th className="border border-gray-300 px-6 py-4 text-left">Fraction 1</th>
-                    <th className="border border-gray-300 px-6 py-4 text-left">Fraction 2</th>
-                    {hasWinnerData && <th className="border border-gray-300 px-6 py-4 text-left">Winner</th>}
+                    <th className="border border-gray-300 px-6 py-4 text-left">{t("fraction1")}</th>
+                    <th className="border border-gray-300 px-6 py-4 text-left">{t("fraction2")}</th>
+                    {hasWinnerData && <th className="border border-gray-300 px-6 py-4 text-left">{t("winner")}</th>}
                   </tr>
                 </thead>
                 <tbody>{renderEliminationTable()}</tbody>
@@ -1589,7 +1635,7 @@ export function ResultsSection({
             </div>
             <div className="flex justify-end mt-8 mb-8">
               <button type="button" disabled={submitDisabled} className={submitButtonClass}>
-                Submit
+                {t("submit")}
               </button>
             </div>
           </>
@@ -1600,14 +1646,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Speaker</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("speaker")}</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("roundLabel", { number: index + 1 })}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Overall</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("overall")}</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
                   )}
                 </tr>
               </thead>
@@ -1633,14 +1679,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("roundLabel", { number: index + 1 })}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("winCount")}</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("judgeName")}</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
                   )}
                 </tr>
               </thead>
@@ -1654,14 +1700,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Speaker</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("speaker")}</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("roundLabel", { number: index + 1 })}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Overall</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("overall")}</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
                   )}
                 </tr>
               </thead>
@@ -1675,14 +1721,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("roundLabel", { number: index + 1 })}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("winCount")}</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("judgeName")}</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
                   )}
                 </tr>
               </thead>
@@ -1696,14 +1742,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("fractionName")}</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("roundLabel", { number: index + 1 })}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("winCount")}</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("judgeName")}</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
                   )}
                 </tr>
               </thead>
@@ -1714,7 +1760,7 @@ export function ResultsSection({
 
         <div className="flex justify-end mt-8 mb-8">
           <button type="button" disabled={submitDisabled} className={submitButtonClass}>
-            Submit
+            {t("submit")}
           </button>
         </div>
           </>
@@ -1735,7 +1781,7 @@ export function ResultsSection({
                       onResultsSubTabChange("Results")
                     }}
                   >
-                    {selectedResultsOption} Results
+                    {t("resultsTab", { format: selectedResultsOption })}
                   </button>
                   <button
                     className={`shrink-0 whitespace-nowrap px-4 py-2 ${
@@ -1748,7 +1794,7 @@ export function ResultsSection({
                       onResultsSubTabChange("Speaker Score")
                     }}
                   >
-                    {selectedResultsOption} Speaker Score
+                    {t("speakerScoreTab", { format: selectedResultsOption })}
                   </button>
                   <span className="shrink-0 text-white mx-2">|</span>
                 </>
@@ -1766,7 +1812,7 @@ export function ResultsSection({
                     onResultsSubTabChange("Results")
                   }}
                 >
-                  {round}
+                  {getLocalizedRoundLabel(round)}
                 </button>
               ))}
             </div>

@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import AvatarWithEdit from "./AvatarWithEdit"
+import { LocaleProvider } from "@/lib/i18n"
 
 describe("AvatarWithEdit", () => {
   beforeEach(() => {
@@ -17,6 +18,7 @@ describe("AvatarWithEdit", () => {
 
   afterEach(() => {
     jest.restoreAllMocks()
+    window.localStorage.clear()
   })
 
   it("keeps avatar editing disabled until an image-change handler is wired", () => {
@@ -57,5 +59,23 @@ describe("AvatarWithEdit", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete image" }))
 
     await waitFor(() => expect(onDeleteImage).toHaveBeenCalled())
+  })
+
+  it("translates avatar editing controls into Russian", async () => {
+    window.localStorage.setItem("debetter-locale", "ru")
+    render(
+      <LocaleProvider>
+        <AvatarWithEdit src="/avatar.png" onChangeImage={jest.fn()} onDeleteImage={jest.fn()} />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Изменить аватар" })).toBeEnabled())
+    fireEvent.click(screen.getByRole("button", { name: "Изменить аватар" }))
+
+    expect(screen.getByRole("heading", { name: "Изменить аватар" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Изменить изображение" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Загрузить новое" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Удалить изображение" })).toBeInTheDocument()
+    expect(screen.getByAltText("Аватар пользователя")).toBeInTheDocument()
   })
 })

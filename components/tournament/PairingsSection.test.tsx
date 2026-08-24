@@ -6,6 +6,7 @@ import "@testing-library/jest-dom"
 
 import { PairingsSection } from "./PairingsSection"
 import { RESULT_DRAFTS_CHANGED_EVENT } from "@/lib/tournament-result-drafts"
+import { LocaleProvider } from "@/lib/i18n"
 import { displayRoundLabel } from "@/lib/round-label"
 import { Role } from "@/types/user/user"
 
@@ -45,6 +46,56 @@ describe("PairingsSection", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     window.localStorage.clear()
+  })
+
+  it("renders the pairing path in Russian, including localized status and start time", async () => {
+    window.localStorage.setItem("debetter-locale", "ru")
+
+    render(
+      <LocaleProvider>
+        <PairingsSection
+          {...baseProps}
+          matches={{
+            content: [{
+              id: 1201,
+              team1: { id: 1, name: "Команда 1" },
+              team2: { id: 2, name: "Команда 2" },
+              team1Won: true,
+              team2Won: false,
+              startTime: "2026-08-24T10:30:00.000Z",
+              completed: true,
+            }],
+            totalElements: 1,
+            totalPages: 1,
+          } as never}
+        />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Предварительный этап (APF)" })).toBeInTheDocument()
+    })
+    expect(screen.getByRole("columnheader", { name: "Время начала" })).toBeInTheDocument()
+    expect(screen.getByText("Победитель")).toBeInTheDocument()
+    expect(screen.getByText("Поражение")).toBeInTheDocument()
+    expect(screen.getByText(new Date("2026-08-24T10:30:00.000Z").toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" }))).toBeInTheDocument()
+  })
+
+  it("renders the empty pairing path in Kazakh", async () => {
+    window.localStorage.setItem("debetter-locale", "kk")
+
+    render(
+      <LocaleProvider>
+        <PairingsSection {...baseProps} selectedStage="team" selectedRound="Final" />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Командалық іріктеу (BPF)" })).toBeInTheDocument()
+    })
+    expect(screen.getByRole("button", { name: "Келесі раундқа өту" })).toBeInTheDocument()
+    expect(screen.getByText("Финал үшін жұптар әлі жоқ")).toBeInTheDocument()
+    expect(screen.getByRole("columnheader", { name: "Басталу уақыты" })).toBeInTheDocument()
   })
 
   it("keeps backend-backed pairing actions disabled until handlers are wired", () => {

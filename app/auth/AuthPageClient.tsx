@@ -6,6 +6,128 @@ import { useSWRConfig } from 'swr'
 import { api } from '@/lib/api'
 import { Role, type UserResponse } from '@/types/user/user'
 import { readResponseError } from '@/lib/http-error'
+import {
+  localeLabels,
+  locales,
+  useLocale,
+  useTranslations,
+  type Locale,
+  type TranslationCatalog,
+} from '@/lib/i18n'
+
+const authCatalog: TranslationCatalog = {
+  en: {
+    createAccount: 'Create Account',
+    username: 'Username',
+    email: 'Email',
+    password: 'Password',
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    debater: 'Debater',
+    organizer: 'Organizer',
+    city: 'City',
+    institution: 'Institution',
+    signUp: 'Sign Up',
+    signingUp: 'Signing up...',
+    signInToDeBetter: 'Sign in to DeBetter',
+    rememberMe: 'Remember me',
+    forgotPassword: 'Forgot your password?',
+    signIn: 'Sign In',
+    signingIn: 'Signing in...',
+    welcomeBack: 'Welcome Back!',
+    loginInvitation: 'To keep connected with us please login with your personal info',
+    helloFriend: 'Hello, Friend!',
+    registrationInvitation: 'Enter your personal details and start your journey with us',
+    usernameValidation: 'Username must be 3–20 characters, letters and numbers only',
+    invalidEmail: 'Invalid email format',
+    passwordValidation: 'Password must be at least 8 characters',
+    registrationFailed: 'Registration failed. Please try again.',
+    checkDetails: 'Please check your details and try again.',
+    usernameOrEmailTaken: 'That username or email is already taken.',
+    serverError: 'Server error — please try again later.',
+    accountCreated: 'Account created successfully! Redirecting...',
+    networkError: 'Network error — please check your connection and try again.',
+    invalidUsername: 'Invalid username format',
+    passwordRequired: 'Password is required',
+    loginFailed: 'Login failed. Please try again.',
+    invalidCredentials: 'Invalid username or password.',
+    language: 'Language',
+  },
+  ru: {
+    createAccount: 'Создать аккаунт',
+    username: 'Имя пользователя',
+    email: 'Электронная почта',
+    password: 'Пароль',
+    firstName: 'Имя',
+    lastName: 'Фамилия',
+    debater: 'Дебатёр',
+    organizer: 'Организатор',
+    city: 'Город',
+    institution: 'Учебное заведение',
+    signUp: 'Зарегистрироваться',
+    signingUp: 'Регистрация...',
+    signInToDeBetter: 'Войти в DeBetter',
+    rememberMe: 'Запомнить меня',
+    forgotPassword: 'Забыли пароль?',
+    signIn: 'Войти',
+    signingIn: 'Вход...',
+    welcomeBack: 'С возвращением!',
+    loginInvitation: 'Чтобы оставаться с нами на связи, войдите, используя свои данные',
+    helloFriend: 'Привет, друг!',
+    registrationInvitation: 'Введите свои данные и начните свой путь вместе с нами',
+    usernameValidation: 'Имя пользователя должно содержать от 3 до 20 букв и цифр',
+    invalidEmail: 'Неверный формат электронной почты',
+    passwordValidation: 'Пароль должен содержать не менее 8 символов',
+    registrationFailed: 'Не удалось зарегистрироваться. Попробуйте ещё раз.',
+    checkDetails: 'Проверьте введённые данные и попробуйте ещё раз.',
+    usernameOrEmailTaken: 'Это имя пользователя или электронная почта уже заняты.',
+    serverError: 'Ошибка сервера — попробуйте ещё раз позже.',
+    accountCreated: 'Аккаунт успешно создан! Выполняется перенаправление...',
+    networkError: 'Ошибка сети — проверьте подключение и попробуйте ещё раз.',
+    invalidUsername: 'Неверный формат имени пользователя',
+    passwordRequired: 'Введите пароль',
+    loginFailed: 'Не удалось войти. Попробуйте ещё раз.',
+    invalidCredentials: 'Неверное имя пользователя или пароль.',
+    language: 'Язык',
+  },
+  kk: {
+    createAccount: 'Аккаунт жасау',
+    username: 'Пайдаланушы аты',
+    email: 'Электрондық пошта',
+    password: 'Құпиясөз',
+    firstName: 'Аты',
+    lastName: 'Тегі',
+    debater: 'Дебатшы',
+    organizer: 'Ұйымдастырушы',
+    city: 'Қала',
+    institution: 'Оқу орны',
+    signUp: 'Тіркелу',
+    signingUp: 'Тіркелу орындалуда...',
+    signInToDeBetter: 'DeBetter жүйесіне кіру',
+    rememberMe: 'Мені есте сақтау',
+    forgotPassword: 'Құпиясөзді ұмыттыңыз ба?',
+    signIn: 'Кіру',
+    signingIn: 'Кіру орындалуда...',
+    welcomeBack: 'Қайта қош келдіңіз!',
+    loginInvitation: 'Бізбен байланыста болу үшін жеке деректеріңізбен кіріңіз',
+    helloFriend: 'Сәлем, досым!',
+    registrationInvitation: 'Жеке деректеріңізді енгізіп, бізбен бірге саяхатыңызды бастаңыз',
+    usernameValidation: 'Пайдаланушы аты 3–20 әріп пен саннан тұруы керек',
+    invalidEmail: 'Электрондық пошта пішімі қате',
+    passwordValidation: 'Құпиясөз кемінде 8 таңбадан тұруы керек',
+    registrationFailed: 'Тіркелу сәтсіз аяқталды. Қайталап көріңіз.',
+    checkDetails: 'Деректеріңізді тексеріп, қайталап көріңіз.',
+    usernameOrEmailTaken: 'Бұл пайдаланушы аты немесе электрондық пошта бос емес.',
+    serverError: 'Сервер қатесі — кейінірек қайталап көріңіз.',
+    accountCreated: 'Аккаунт сәтті жасалды! Бағыттау орындалуда...',
+    networkError: 'Желі қатесі — байланысыңызды тексеріп, қайталап көріңіз.',
+    invalidUsername: 'Пайдаланушы атының пішімі қате',
+    passwordRequired: 'Құпиясөзді енгізіңіз',
+    loginFailed: 'Кіру сәтсіз аяқталды. Қайталап көріңіз.',
+    invalidCredentials: 'Пайдаланушы аты немесе құпиясөз қате.',
+    language: 'Тіл',
+  },
+}
 
 // Backend rule (mirrors UserRegistrationDto validation): alphanumeric, 3–20 chars.
 const USERNAME_PATTERN = /^[a-zA-Z0-9]{3,20}$/
@@ -46,6 +168,8 @@ export type AuthPageClientProps = {
 
 export default function AuthPageClient({ initialMode, requestedMode }: AuthPageClientProps) {
   const router = useRouter()
+  const { locale, setLocale } = useLocale()
+  const t = useTranslations(authCatalog)
   const [isSignUp, setIsSignUp] = useState(() => initialMode !== 'login')
   const [isClientReady, setIsClientReady] = useState(false)
   const { mutate } = useSWRConfig()
@@ -87,9 +211,9 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
   const handleSignUpSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const errors: { name?: string; email?: string; password?: string } = {}
-    if (!USERNAME_PATTERN.test(signUpUsername)) errors.name = 'Username must be 3–20 characters, letters and numbers only'
-    if (!/^\S+@\S+\.\S+$/.test(signUpEmail)) errors.email = 'Invalid email format'
-    if (signUpPassword.length < 8) errors.password = 'Password must be at least 8 characters'
+    if (!USERNAME_PATTERN.test(signUpUsername)) errors.name = t('usernameValidation')
+    if (!/^\S+@\S+\.\S+$/.test(signUpEmail)) errors.email = t('invalidEmail')
+    if (signUpPassword.length < 8) errors.password = t('passwordValidation')
     setSignUpErrors(errors)
     if (Object.keys(errors).length > 0) return
     setSignUpErrorMsg(null)
@@ -110,15 +234,15 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
       });
       if (!res.ok) {
         setSignUpErrorMsg(await readResponseError(res, {
-          fallback: 'Registration failed. Please try again.',
-          unauthorized: 'Please check your details and try again.',
-          badRequest: 'Please check your details and try again.',
-          conflict: 'That username or email is already taken.',
-          serverError: 'Server error — please try again later.',
+          fallback: t('registrationFailed'),
+          unauthorized: t('checkDetails'),
+          badRequest: t('checkDetails'),
+          conflict: t('usernameOrEmailTaken'),
+          serverError: t('serverError'),
         }))
       } else {
         const user = await readAuthenticatedUser(res)
-        setSignUpSuccess('Account created successfully! Redirecting...')
+        setSignUpSuccess(t('accountCreated'))
         if (user) {
           await mutate(CURRENT_USER_KEY, user, { revalidate: false })
         } else {
@@ -131,15 +255,15 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
         return                      // prevent setState in finally
       }
     } catch {
-      setSignUpErrorMsg('Network error — please check your connection and try again.')
+      setSignUpErrorMsg(t('networkError'))
     } finally { setSignUpLoading(false) }
   }
 
   const handleSignInSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const validationErrors: string[] = []
-    if (!/^[a-zA-Z0-9]{3,20}$/.test(signInUsername)) validationErrors.push('Invalid username format')
-    if (!signInPassword) validationErrors.push('Password is required')
+    if (!/^[a-zA-Z0-9]{3,20}$/.test(signInUsername)) validationErrors.push(t('invalidUsername'))
+    if (!signInPassword) validationErrors.push(t('passwordRequired'))
     if (validationErrors.length) return setSignInError(validationErrors.join(', '))
     setSignInError(null)
     setSignInLoading(true)
@@ -151,9 +275,9 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
       });
       if (!res.ok) {
         setSignInError(await readResponseError(res, {
-          fallback: 'Login failed. Please try again.',
-          unauthorized: 'Invalid username or password.',
-          serverError: 'Server error — please try again later.',
+          fallback: t('loginFailed'),
+          unauthorized: t('invalidCredentials'),
+          serverError: t('serverError'),
         }))
       }
       else {
@@ -167,7 +291,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
         return
       }
     } catch {
-      setSignInError('Network error — please check your connection and try again.')
+      setSignInError(t('networkError'))
     } finally { setSignInLoading(false) }
   }
 
@@ -175,6 +299,24 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
     <div className="min-h-screen flex items-center justify-center bg-[#F1F1F1] font-hikasami">
       <div className="brand-logo absolute top-4 left-6 text-2xl font-bold text-[#0D1321] z-50">
         DeBetter
+      </div>
+
+      <div className="absolute top-4 right-6 z-[200]">
+        <label htmlFor="auth-language-selector" className="sr-only">{t('language')}</label>
+        <select
+          id="auth-language-selector"
+          aria-label={t('language')}
+          value={locale}
+          onChange={(event) => setLocale(event.target.value as Locale)}
+          className="appearance-none rounded-md border border-[#3E5C76] bg-white px-2 py-1.5 pr-7 text-sm text-[#0D1321] shadow-sm transition-colors hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20"
+          style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%233E5C76%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")', backgroundPosition: 'right 0.35rem center', backgroundSize: '1rem' }}
+        >
+          {locales.map((optionLocale) => (
+            <option key={optionLocale} value={optionLocale}>
+              {localeLabels[optionLocale]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div
@@ -188,14 +330,14 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
           isSignUp ? 'translate-x-full opacity-100 z-10' : 'opacity-0 z-0'
         }`}>
           <form onSubmit={handleSignUpSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
-            <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Create Account</h2>
+            <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">{t('createAccount')}</h2>
 
-            <label htmlFor="auth-signup-name" className="sr-only">Full Name</label>
+            <label htmlFor="auth-signup-name" className="sr-only">{t('username')}</label>
             <input
               id="auth-signup-name"
               name="username"
               type="text"
-              placeholder="Username"
+              placeholder={t('username')}
               required
               maxLength={20}
               value={signUpUsername}
@@ -203,24 +345,24 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
             {signUpErrors.name && <p className="text-red-500 text-xs">{signUpErrors.name}</p>}
-            <label htmlFor="auth-signup-email" className="sr-only">Email</label>
+            <label htmlFor="auth-signup-email" className="sr-only">{t('email')}</label>
             <input
               id="auth-signup-email"
               name="email"
               type="email"
-              placeholder="Email"
+              placeholder={t('email')}
               required
               value={signUpEmail}
               onChange={(e) => setSignUpEmail(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
             {signUpErrors.email && <p className="text-red-500 text-xs">{signUpErrors.email}</p>}
-            <label htmlFor="auth-signup-password" className="sr-only">Password</label>
+            <label htmlFor="auth-signup-password" className="sr-only">{t('password')}</label>
             <input
               id="auth-signup-password"
               name="password"
               type="password"
-              placeholder="Password"
+              placeholder={t('password')}
               required
               minLength={8}
               value={signUpPassword}
@@ -229,22 +371,22 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
             />
             {signUpErrors.password && <p className="text-red-500 text-xs">{signUpErrors.password}</p>}
 
-            <label htmlFor="auth-signup-firstname" className="sr-only">First Name</label>
+            <label htmlFor="auth-signup-firstname" className="sr-only">{t('firstName')}</label>
             <input
               id="auth-signup-firstname"
               type="text"
-              placeholder="First Name"
+              placeholder={t('firstName')}
               required
               value={signUpFirstName}
               onChange={(e) => setSignUpFirstName(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
 
-            <label htmlFor="auth-signup-lastname" className="sr-only">Last Name</label>
+            <label htmlFor="auth-signup-lastname" className="sr-only">{t('lastName')}</label>
             <input
               id="auth-signup-lastname"
               type="text"
-              placeholder="Last Name"
+              placeholder={t('lastName')}
               required
               value={signUpLastName}
               onChange={(e) => setSignUpLastName(e.target.value)}
@@ -264,7 +406,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
                     className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 focus:ring-[#3E5C76] focus:ring-2"
                   />
                   <label htmlFor="debater-radio" className="text-sm text-gray-700 font-hikasami">
-                    Debater
+                    {t('debater')}
                   </label>
                 </div>
                 <div className="flex items-center">
@@ -278,7 +420,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
                     className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 focus:ring-[#3E5C76] focus:ring-2"
                   />
                   <label htmlFor="organizer-radio" className="text-sm text-gray-700 font-hikasami">
-                    Organizer
+                    {t('organizer')}
                   </label>
                 </div>
               </div>
@@ -286,22 +428,22 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
 
             {role === Role.PARTICIPANT && (
               <>
-                <label htmlFor="auth-signup-city" className="sr-only">City</label>
+                <label htmlFor="auth-signup-city" className="sr-only">{t('city')}</label>
                 <input
                   id="auth-signup-city"
                   type="text"
-                  placeholder="City"
+                  placeholder={t('city')}
                   required={role === Role.PARTICIPANT}
                   value={signUpCity}
                   onChange={(e) => setSignUpCity(e.target.value)}
                   className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
                 />
 
-                <label htmlFor="auth-signup-institution" className="sr-only">Institution</label>
+                <label htmlFor="auth-signup-institution" className="sr-only">{t('institution')}</label>
                 <input
                   id="auth-signup-institution"
                   type="text"
-                  placeholder="Institution"
+                  placeholder={t('institution')}
                   required={role === Role.PARTICIPANT}
                   value={signUpInstitution}
                   onChange={(e) => setSignUpInstitution(e.target.value)}
@@ -314,7 +456,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
             {signUpSuccess && <p className="text-green-500 text-xs">{signUpSuccess}</p>}
 
             <button type="submit" disabled={signUpLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] mt-4 disabled:opacity-50">
-              {signUpLoading ? 'Signing up...' : 'Sign Up'}
+              {signUpLoading ? t('signingUp') : t('signUp')}
             </button>
           </form>
         </div>
@@ -324,24 +466,24 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
           isSignUp ? 'translate-x-full z-0' : 'z-20'
         }`}>
           <form onSubmit={handleSignInSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
-            <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Sign in to DeBetter</h2>
+            <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">{t('signInToDeBetter')}</h2>
 
-            <label htmlFor="auth-signin-email" className="sr-only">Username</label>
+            <label htmlFor="auth-signin-email" className="sr-only">{t('username')}</label>
             <input
               id="auth-signin-email"
               name="username"
               type="text"
-              placeholder="Username"
+              placeholder={t('username')}
               value={signInUsername}
               onChange={(e) => setSignInUsername(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
             />
-            <label htmlFor="auth-signin-password" className="sr-only">Password</label>
+            <label htmlFor="auth-signin-password" className="sr-only">{t('password')}</label>
             <input
               id="auth-signin-password"
               name="password"
               type="password"
-              placeholder="Password"
+              placeholder={t('password')}
               value={signInPassword}
               onChange={(e) => setSignInPassword(e.target.value)}
               className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
@@ -355,15 +497,15 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
                     className="w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
                 />
                 <label htmlFor="remember-me-checkbox" className="ml-2 text-sm font-medium text-gray-700">
-                    Remember me
+                    {t('rememberMe')}
                 </label>
             </div>
             {signInError && <p className="text-red-500 text-xs">{signInError}</p>}
 
-            <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">Forgot your password?</a>
+            <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">{t('forgotPassword')}</a>
 
             <button type="submit" disabled={signInLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] disabled:opacity-50">
-              {signInLoading ? 'Signing in...' : 'Sign In'}
+              {signInLoading ? t('signingIn') : t('signIn')}
             </button>
           </form>
         </div>
@@ -382,13 +524,13 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
             <div className={`overlay-panel overlay-left absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-500 ease-in-out ${
               isSignUp ? 'translate-x-0' : '-translate-x-[20%]'
             }`}>
-              <h1 className="font-bold text-4xl mb-4">Welcome Back!</h1>
-              <p className="text-sm mb-6 leading-relaxed">To keep connected with us please login with your personal info</p>
+              <h1 className="font-bold text-4xl mb-4">{t('welcomeBack')}</h1>
+              <p className="text-sm mb-6 leading-relaxed">{t('loginInvitation')}</p>
               <button
                 onClick={() => setIsSignUp(false)}
                 className="rounded-full border-2 border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white hover:bg-opacity-10"
               >
-                Sign In
+                {t('signIn')}
               </button>
             </div>
 
@@ -396,13 +538,13 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
             <div className={`overlay-panel overlay-right absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-500 ease-in-out ${
               isSignUp ? 'translate-x-[20%]' : 'translate-x-0'
             }`}>
-              <h1 className="font-bold text-4xl mb-4">Hello, Friend!</h1>
-              <p className="text-sm mb-6 leading-relaxed">Enter your personal details and start your journey with us</p>
+              <h1 className="font-bold text-4xl mb-4">{t('helloFriend')}</h1>
+              <p className="text-sm mb-6 leading-relaxed">{t('registrationInvitation')}</p>
               <button
                 onClick={() => setIsSignUp(true)}
                 className="rounded-full border-2 border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white hover:bg-opacity-10"
               >
-                Sign Up
+                {t('signUp')}
               </button>
             </div>
           </div>

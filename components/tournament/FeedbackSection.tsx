@@ -8,6 +8,13 @@ import { readResponseError } from "@/lib/http-error"
 import { resolveMediaUrl } from "@/lib/media"
 import type { PageResult } from "@/types/page"
 import type { FeedbackRequest, FeedbackResponse } from "@/types/tournament/feedback"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const catalog: TranslationCatalog = {
+  en: { required: "Title and feedback are required", submitFailed: "Failed to submit feedback", signIn: "Please sign in before submitting feedback.", server: "Server error. Please try again later.", loading: "Loading feedback…", loadFailed: "Failed to load feedback", empty: "No feedback yet", edited: "edited", heading: "Feedback", title: "Title", add: "Add feedback...", submit: "Submit feedback", hint: "Share constructive suggestions with organizers" },
+  ru: { required: "Укажите заголовок и отзыв", submitFailed: "Не удалось отправить отзыв", signIn: "Войдите в систему, чтобы отправить отзыв.", server: "Ошибка сервера. Повторите попытку позже.", loading: "Загрузка отзывов…", loadFailed: "Не удалось загрузить отзывы", empty: "Отзывов пока нет", edited: "изменено", heading: "Отзывы", title: "Заголовок", add: "Добавьте отзыв...", submit: "Отправить отзыв", hint: "Делитесь конструктивными предложениями с организаторами" },
+  kk: { required: "Тақырып пен пікірді толтырыңыз", submitFailed: "Пікірді жіберу мүмкін болмады", signIn: "Пікір жібермес бұрын жүйеге кіріңіз.", server: "Сервер қатесі. Кейінірек қайталап көріңіз.", loading: "Пікірлер жүктелуде…", loadFailed: "Пікірлерді жүктеу мүмкін болмады", empty: "Әзірге пікір жоқ", edited: "өзгертілді", heading: "Пікірлер", title: "Тақырып", add: "Пікір қосыңыз...", submit: "Пікір жіберу", hint: "Ұйымдастырушыларға сындарлы ұсыныстар бөлісіңіз" },
+}
 
 interface FeedbackSectionProps {
   tournamentId: number
@@ -24,6 +31,8 @@ export function FeedbackSection({
   feedbacksError,
   onFeedbackAdded,
 }: FeedbackSectionProps) {
+  const t = useTranslations(catalog)
+  const { locale } = useLocale()
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -35,7 +44,7 @@ export function FeedbackSection({
     const trimmedTitle = title.trim()
     const trimmedContent = content.trim()
     if (!trimmedTitle || !trimmedContent) {
-      setSubmitError("Title and feedback are required")
+      setSubmitError(t("required"))
       return
     }
 
@@ -51,9 +60,9 @@ export function FeedbackSection({
       const response = await api.addFeedback(tournamentId, payload)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: "Failed to submit feedback",
-          unauthorized: "Please sign in before submitting feedback.",
-          serverError: "Server error. Please try again later.",
+          fallback: t("submitFailed"),
+          unauthorized: t("signIn"),
+          serverError: t("server"),
         }))
       }
 
@@ -61,7 +70,7 @@ export function FeedbackSection({
       setContent("")
       await onFeedbackAdded?.()
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Failed to submit feedback")
+      setSubmitError(error instanceof Error ? error.message : t("submitFailed"))
     } finally {
       setSubmitting(false)
     }
@@ -69,15 +78,15 @@ export function FeedbackSection({
 
   const renderBody = () => {
     if (feedbacksLoading) {
-      return <p className="text-center text-[#7A8096]">Loading feedback…</p>
+      return <p className="text-center text-[#7A8096]">{t("loading")}</p>
     }
 
     if (feedbacksError) {
-      return <p className="text-center text-red-500">Failed to load feedback</p>
+      return <p className="text-center text-red-500">{t("loadFailed")}</p>
     }
 
     if (!items.length) {
-      return <p className="text-center text-[#9a8c98]">No feedback yet</p>
+      return <p className="text-center text-[#9a8c98]">{t("empty")}</p>
     }
 
     return (
@@ -85,7 +94,7 @@ export function FeedbackSection({
         {items.map((item) => {
           const displayName = `${item.user.firstName ?? ""} ${item.user.lastName ?? ""}`.trim() || item.user.username
           const avatarUrl = resolveMediaUrl(item.user.imageUrl?.url) ?? "/placeholder-user.jpg"
-          const timestamp = new Date(item.timestamp).toLocaleString()
+          const timestamp = new Date(item.timestamp).toLocaleString(localeTags[locale])
 
           return (
             <article key={item.id} className="rounded-3xl border border-[#ECEFF6] bg-white p-4 shadow-sm sm:p-6">
@@ -96,7 +105,7 @@ export function FeedbackSection({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-col gap-1">
                     <p className="break-words text-lg font-semibold text-[#0B1327]">{displayName}</p>
-                    <p className="text-sm text-[#8B93AC]">{timestamp}{item.edited ? " · edited" : ""}</p>
+                    <p className="text-sm text-[#8B93AC]">{timestamp}{item.edited ? ` · ${t("edited")}` : ""}</p>
                   </div>
                   <p className="mt-3 break-words text-[1.05rem] leading-relaxed text-[#101737]">{item.title}</p>
                   <p className="mt-2 break-words text-[#0F1423] text-[0.98rem] leading-relaxed">{item.content}</p>
@@ -119,7 +128,7 @@ export function FeedbackSection({
   return (
     <section className="mx-auto max-w-3xl py-10">
       <div className="border-b border-[#E7EAF3] pb-4">
-        <h2 className="text-3xl font-semibold text-[#0B1327]">Feedback</h2>
+        <h2 className="text-3xl font-semibold text-[#0B1327]">{t("heading")}</h2>
       </div>
 
       <div className="mt-8">{renderBody()}</div>
@@ -131,7 +140,7 @@ export function FeedbackSection({
             type="text"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Title"
+            placeholder={t("title")}
             className="rounded-lg bg-[#F4F6FB] px-4 py-3 text-sm text-[#0F1423] outline-none focus:ring-1 focus:ring-[#CBD3EC]"
           />
           <div />
@@ -142,14 +151,14 @@ export function FeedbackSection({
             type="text"
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="Add feedback..."
+            placeholder={t("add")}
             className="min-w-0 rounded-full bg-[#F4F6FB] px-4 py-3 text-sm text-[#0F1423] outline-none focus:ring-1 focus:ring-[#CBD3EC]"
           />
           <button
             onClick={handleSubmit}
             disabled={submitting}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2E456E] text-white transition hover:bg-[#1B2C4C] disabled:opacity-60"
-            aria-label="Submit feedback"
+            aria-label={t("submit")}
           >
             <ArrowUp className="h-5 w-5" />
           </button>
@@ -157,7 +166,7 @@ export function FeedbackSection({
           <div className="col-start-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2 break-words text-xs text-[#1D2640]">
               <MessageSquare className="h-4 w-4 shrink-0" />
-              Share constructive suggestions with organizers
+              {t("hint")}
             </div>
             {submitError && <span className="min-w-0 break-words text-xs text-red-500">{submitError}</span>}
           </div>

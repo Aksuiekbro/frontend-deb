@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Pencil } from "lucide-react";
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n";
 
 interface AvatarWithEditProps {
   src: string;
@@ -12,7 +13,44 @@ interface AvatarWithEditProps {
 
 const FALLBACK_AVATAR_SRC = "/images/avatar-placeholder.png";
 
+const avatarMessages: TranslationCatalog = {
+  en: {
+    userAvatar: "User avatar",
+    editAvatar: "Edit avatar",
+    changeAvatar: "Change avatar",
+    close: "Close",
+    editAvatarPrompt: "Edit avatar prompt",
+    changeImage: "Change image",
+    uploadNew: "Upload new",
+    deleting: "Deleting...",
+    deleteImage: "Delete image",
+  },
+  ru: {
+    userAvatar: "Аватар пользователя",
+    editAvatar: "Изменить аватар",
+    changeAvatar: "Изменить аватар",
+    close: "Закрыть",
+    editAvatarPrompt: "Окно изменения аватара",
+    changeImage: "Изменить изображение",
+    uploadNew: "Загрузить новое",
+    deleting: "Удаление...",
+    deleteImage: "Удалить изображение",
+  },
+  kk: {
+    userAvatar: "Пайдаланушы аватары",
+    editAvatar: "Аватарды өзгерту",
+    changeAvatar: "Аватарды өзгерту",
+    close: "Жабу",
+    editAvatarPrompt: "Аватарды өзгерту терезесі",
+    changeImage: "Суретті өзгерту",
+    uploadNew: "Жаңасын жүктеу",
+    deleting: "Жойылуда...",
+    deleteImage: "Суретті жою",
+  },
+};
+
 export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDeleteImage }: AvatarWithEditProps) {
+  const t = useTranslations(avatarMessages);
   const [preview, setPreview] = React.useState<string | null>(null);
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -55,7 +93,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageSrc}
-        alt="User avatar"
+        alt={t("userAvatar")}
         className="h-full w-full rounded-full object-cover bg-black/5"
         onError={() => {
           if (!preview && src !== FALLBACK_AVATAR_SRC) setFailedSrc(src);
@@ -65,7 +103,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
       {/* Edit button overlay (from Figma: small rounded white control) */}
       <button
         type="button"
-        aria-label="Edit avatar"
+        aria-label={t("editAvatar")}
         disabled={!canEdit}
         onClick={onPick}
         className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-black/5 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -87,13 +125,13 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div className="relative z-10 w-[min(90vw,420px)] rounded-[12px] bg-white p-5 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[#0D1321] text-[18px] font-medium">Change avatar</h3>
-              <button onClick={() => setOpen(false)} className="text-[#0D1321] hover:opacity-80">✕</button>
+              <h3 className="text-[#0D1321] text-[18px] font-medium">{t("changeAvatar")}</h3>
+              <button type="button" aria-label={t("close")} onClick={() => setOpen(false)} className="text-[#0D1321] hover:opacity-80">✕</button>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={FALLBACK_AVATAR_SRC}
-              alt="Edit avatar prompt"
+              alt={t("editAvatarPrompt")}
               className="w-full rounded-[8px] border border-black/10 object-contain mb-4"
             />
             <div className="flex items-center justify-end gap-3">
@@ -102,14 +140,14 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
                 className="px-4 py-2 rounded-md border border-black/10 text-[#0D1321] hover:bg-black/5"
                 onClick={() => inputRef.current?.click()}
               >
-                Change image
+                {t("changeImage")}
               </button>
               <button
                 type="button"
                 className="px-4 py-2 rounded-md bg-[#3E5C76] text-white hover:bg-[#4a6d8f]"
                 onClick={() => inputRef.current?.click()}
               >
-                Upload new
+                {t("uploadNew")}
               </button>
             </div>
             <div className="mt-3 flex justify-center">
@@ -119,7 +157,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
                 onClick={handleDelete}
                 className="text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {deleting ? "Deleting..." : "Delete image"}
+                {deleting ? t("deleting") : t("deleteImage")}
               </button>
             </div>
           </div>

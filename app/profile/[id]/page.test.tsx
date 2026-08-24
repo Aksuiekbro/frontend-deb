@@ -1,12 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import ProfileClient from "./ProfileClient"
 import { useCurrentUser, useUser } from "@/hooks/use-api"
 import { Role } from "@/types/user/user"
+import { LocaleProvider } from "@/lib/i18n"
 
 jest.mock("../../../components/Header", () => function Header() {
   return <div data-testid="header" />
@@ -47,6 +48,10 @@ const user = {
 }
 
 describe("ProfilePage actions", () => {
+  afterEach(() => {
+    window.localStorage.clear()
+  })
+
   beforeEach(() => {
     useUserMock.mockReturnValue({
       user,
@@ -87,5 +92,17 @@ describe("ProfilePage actions", () => {
 
     expect(screen.getByRole("button", { name: "Edit avatar" })).toBeDisabled()
     expect(screen.getByTestId("socials")).toHaveAttribute("data-editable", "false")
+  })
+
+  it("translates profile detail copy into Russian", async () => {
+    window.localStorage.setItem("debetter-locale", "ru")
+    render(
+      <LocaleProvider>
+        <ProfileClient userId={1} />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Социальные сети" })).toBeInTheDocument())
+    expect(screen.getByRole("button", { name: "Удалить аккаунт" })).toBeDisabled()
   })
 })

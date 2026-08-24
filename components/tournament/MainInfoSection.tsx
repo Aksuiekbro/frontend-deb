@@ -9,6 +9,13 @@ import type { PageResult } from "@/types/page"
 import type { AnnouncementResponse } from "@/types/tournament/announcement/announcement"
 import type { ScheduleResponse } from "@/types/tournament/schedule"
 import type { TournamentResponse } from "@/types/tournament/tournament"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const catalog: TranslationCatalog = {
+  en: { announcements: "Announcements", schedule: "Schedule", map: "Map", failedAnnouncements: "Failed to load announcements", noAnnouncements: "No announcements yet", previous: "Previous announcement", next: "Next announcement", editAnnouncement: "Edit announcement", edit: "Edit", comments: "Comments", noComments: "No comments yet", commentLabel: "Announcement comment", commentPlaceholder: "Add a comment", addComment: "Add comment", addAnnouncement: "Add announcement", failedComment: "Failed to add comment", removeSchedule: "Remove schedule image", addSchedule: "Add schedule", mapHere: "Map will be displayed here", addMap: "Add map", details: "Details", unableDetails: "Unable to load tournament details", noDescription: "No description available for this tournament.", loadingDetails: "Tournament details will appear here once loaded.", dates: "Dates", datesTba: "Tournament dates TBA", location: "Location", locationTba: "Location TBA", unableAnnouncements: "Unable to load announcements", unableSchedule: "Unable to load schedule", noSchedule: "No schedule entries yet" },
+  ru: { announcements: "Объявления", schedule: "Расписание", map: "Карта", failedAnnouncements: "Не удалось загрузить объявления", noAnnouncements: "Объявлений пока нет", previous: "Предыдущее объявление", next: "Следующее объявление", editAnnouncement: "Изменить объявление", edit: "Изменить", comments: "Комментарии", noComments: "Комментариев пока нет", commentLabel: "Комментарий к объявлению", commentPlaceholder: "Добавить комментарий", addComment: "Добавить комментарий", addAnnouncement: "Добавить объявление", failedComment: "Не удалось добавить комментарий", removeSchedule: "Удалить изображение расписания", addSchedule: "Добавить расписание", mapHere: "Здесь будет отображаться карта", addMap: "Добавить карту", details: "Подробности", unableDetails: "Не удалось загрузить сведения о турнире", noDescription: "Описание этого турнира отсутствует.", loadingDetails: "Сведения о турнире появятся после загрузки.", dates: "Даты", datesTba: "Даты турнира уточняются", location: "Место проведения", locationTba: "Место уточняется", unableAnnouncements: "Не удалось загрузить объявления", unableSchedule: "Не удалось загрузить расписание", noSchedule: "Пунктов расписания пока нет" },
+  kk: { announcements: "Хабарландырулар", schedule: "Кесте", map: "Карта", failedAnnouncements: "Хабарландыруларды жүктеу мүмкін болмады", noAnnouncements: "Әзірге хабарландыру жоқ", previous: "Алдыңғы хабарландыру", next: "Келесі хабарландыру", editAnnouncement: "Хабарландыруды өзгерту", edit: "Өзгерту", comments: "Пікірлер", noComments: "Әзірге пікір жоқ", commentLabel: "Хабарландыру пікірі", commentPlaceholder: "Пікір қосу", addComment: "Пікір қосу", addAnnouncement: "Хабарландыру қосу", failedComment: "Пікір қосу мүмкін болмады", removeSchedule: "Кесте суретін жою", addSchedule: "Кесте қосу", mapHere: "Карта осында көрсетіледі", addMap: "Карта қосу", details: "Толық мәлімет", unableDetails: "Турнир мәліметтерін жүктеу мүмкін болмады", noDescription: "Бұл турнирге сипаттама жоқ.", loadingDetails: "Турнир мәліметтері жүктелгеннен кейін көрінеді.", dates: "Күндер", datesTba: "Турнир күндері нақтылануда", location: "Өтетін орны", locationTba: "Өтетін орны нақтылануда", unableAnnouncements: "Хабарландыруларды жүктеу мүмкін болмады", unableSchedule: "Кестені жүктеу мүмкін болмады", noSchedule: "Әзірге кесте тармағы жоқ" },
+}
 
 interface MainInfoSectionProps {
   selectedOption: string
@@ -45,6 +52,9 @@ export function MainInfoSection({
   onEditAnnouncement,
   onAddAnnouncementComment,
 }: MainInfoSectionProps) {
+  const t = useTranslations(catalog)
+  const { locale } = useLocale()
+  const dateLocale = localeTags[locale]
   const isSpecialOption = (option: string): option is SpecialOption =>
     SPECIAL_OPTIONS.includes(option as SpecialOption)
 
@@ -97,7 +107,7 @@ export function MainInfoSection({
       await onAddAnnouncementComment(announcementId, content)
       setCommentDrafts((prev) => ({ ...prev, [announcementId]: "" }))
     } catch (error) {
-      setCommentError(error instanceof Error ? error.message : "Failed to add comment")
+      setCommentError(error instanceof Error ? error.message : t("failedComment"))
     } finally {
       setCommentSubmitting(false)
     }
@@ -106,13 +116,13 @@ export function MainInfoSection({
   if (selectedOption === "Announcements") {
     return (
       <div>
-        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
+        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">{t("announcements")}</h2>
         <div className="relative rounded-3xl border border-[#CFD6EA] bg-white p-6">
           <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-72 w-full rounded-2xl" />}>
             {announcementsError ? (
-              <div className="text-center text-red-500 text-[16px] py-20">Failed to load announcements</div>
+              <div className="text-center text-red-500 text-[16px] py-20">{t("failedAnnouncements")}</div>
             ) : sortedAnnouncements.length === 0 ? (
-              <div className="text-center text-[#9a8c98] text-[16px] py-20">No announcements yet</div>
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">{t("noAnnouncements")}</div>
             ) : (
               <>
                 <div className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border border-[#D6DEEF] bg-[#1F5957]">
@@ -139,7 +149,7 @@ export function MainInfoSection({
                     className="absolute left-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 text-white transition hover:bg-white/10 disabled:opacity-50"
                     onClick={() => setActiveAnnouncementIndex((prev) => Math.max(prev - 1, 0))}
                     disabled={activeAnnouncementIndex === 0}
-                    aria-label="Previous announcement"
+                    aria-label={t("previous")}
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -149,7 +159,7 @@ export function MainInfoSection({
                       setActiveAnnouncementIndex((prev) => Math.min(prev + 1, sortedAnnouncements.length - 1))
                     }
                     disabled={activeAnnouncementIndex === sortedAnnouncements.length - 1}
-                    aria-label="Next announcement"
+                    aria-label={t("next")}
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -158,7 +168,7 @@ export function MainInfoSection({
                 <div className="mx-auto mt-6 max-w-4xl">
                   <div className="flex items-center justify-between gap-4 text-sm text-[#8A91A8]">
                     <span>
-                      {new Date(currentAnnouncement.timestamp).toLocaleDateString(undefined, {
+                      {new Date(currentAnnouncement.timestamp).toLocaleDateString(dateLocale, {
                         day: "numeric",
                         month: "long",
                         year: "numeric",
@@ -173,11 +183,11 @@ export function MainInfoSection({
                           type="button"
                           onClick={() => onEditAnnouncement(currentAnnouncement)}
                           className="inline-flex items-center gap-1.5 rounded-md border border-[#D6DEEF] px-3 py-1.5 font-medium text-[#0B1327] transition hover:border-[#3E5C76] hover:text-[#3E5C76]"
-                          aria-label="Edit announcement"
-                          title="Edit announcement"
+                          aria-label={t("editAnnouncement")}
+                          title={t("editAnnouncement")}
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                          <span>Edit</span>
+                          <span>{t("edit")}</span>
                         </button>
                       ) : null}
                     </div>
@@ -193,34 +203,39 @@ export function MainInfoSection({
                         : category === "Update"
                           ? "bg-[#9a8c98] text-white"
                           : "bg-green-500 text-white"
+                    const categoryLabel = locale === "ru"
+                      ? ({ Important: "Важно", Update: "Обновление", Info: "Информация" }[category] ?? category)
+                      : locale === "kk"
+                        ? ({ Important: "Маңызды", Update: "Жаңарту", Info: "Ақпарат" }[category] ?? category)
+                        : category
                     return (
                       <span className={`${badgeClass} mt-4 inline-block rounded-full px-3 py-1 text-[12px] font-medium`}>
-                        {category}
+                        {categoryLabel}
                       </span>
                     )
                   })()}
                   <h3 className="mt-4 text-2xl font-semibold text-[#0B1327]">{currentAnnouncement.title}</h3>
                   <p className="mt-3 text-lg leading-relaxed text-[#3A4156]">{currentAnnouncement.content}</p>
                   <div className="mt-6 space-y-3 border-t border-[#E3E8F6] pt-4">
-                    <h4 className="text-base font-semibold text-[#0B1327]">Comments</h4>
+                    <h4 className="text-base font-semibold text-[#0B1327]">{t("comments")}</h4>
                     {currentAnnouncement.comments?.length ? (
                       <div className="space-y-2">
                         {currentAnnouncement.comments.map((comment) => (
                           <div key={comment.id} className="rounded-lg bg-[#F7F9FF] px-4 py-3">
                             <p className="text-sm text-[#0B1327]">{comment.content}</p>
                             <p className="mt-1 text-xs text-[#8A91A8]">
-                              {comment.author.username} · {new Date(comment.timestamp).toLocaleDateString()}
+                              {comment.author.username} · {new Date(comment.timestamp).toLocaleDateString(dateLocale)}
                             </p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-[#8A91A8]">No comments yet</p>
+                      <p className="text-sm text-[#8A91A8]">{t("noComments")}</p>
                     )}
                     {onAddAnnouncementComment && (
                       <div className="flex gap-3">
                         <label className="sr-only" htmlFor={`announcement-comment-${currentAnnouncement.id}`}>
-                          Announcement comment
+                          {t("commentLabel")}
                         </label>
                         <input
                           id={`announcement-comment-${currentAnnouncement.id}`}
@@ -231,7 +246,7 @@ export function MainInfoSection({
                               [currentAnnouncement.id]: event.target.value,
                             }))
                           }
-                          placeholder="Add a comment"
+                          placeholder={t("commentPlaceholder")}
                           className="min-w-0 flex-1 rounded-lg border border-[#D6DEEF] px-3 py-2 text-sm text-[#0B1327] outline-none focus:border-[#3E5C76]"
                         />
                         <button
@@ -240,7 +255,7 @@ export function MainInfoSection({
                           onClick={() => handleAddComment(currentAnnouncement.id)}
                           className="rounded-lg bg-[#0D1321] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#22223b] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Add comment
+                          {t("addComment")}
                         </button>
                       </div>
                     )}
@@ -256,7 +271,7 @@ export function MainInfoSection({
               <button
                 onClick={() => onOpenModal("announcements")}
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
-                aria-label="Add announcement"
+                aria-label={t("addAnnouncement")}
               >
                 <Plus className="h-6 w-6" />
               </button>
@@ -271,13 +286,13 @@ export function MainInfoSection({
     const sortedSchedules = schedules ?? []
     return (
       <div>
-        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Schedule</h2>
+        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">{t("schedule")}</h2>
         <div className="relative rounded-3xl border border-[#CFD6EA] bg-white p-6">
           <LoadingState isLoading={schedulesLoading} fallback={<Skeleton className="h-80 w-full rounded-2xl" />}>
             {schedulesError ? (
-              <div className="text-center text-red-500 text-[16px] py-20">Failed to load schedule</div>
+              <div className="text-center text-red-500 text-[16px] py-20">{t("unableSchedule")}</div>
             ) : sortedSchedules.length === 0 ? (
-              <div className="text-center text-[#9a8c98] text-[16px] py-20">No schedule entries yet</div>
+              <div className="text-center text-[#9a8c98] text-[16px] py-20">{t("noSchedule")}</div>
             ) : (
               <div className="flex max-h-[720px] flex-col gap-6 overflow-y-auto pr-2">
                 {sortedSchedules.map((schedule) => (
@@ -302,7 +317,7 @@ export function MainInfoSection({
                           type="button"
                           className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-300 group-hover:opacity-100"
                           onClick={() => handleRemoveScheduleImage(schedule.id)}
-                          aria-label="Remove schedule image"
+                          aria-label={t("removeSchedule")}
                         >
                           <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-black/40 text-white">
                             <Trash2 className="h-5 w-5" />
@@ -325,7 +340,7 @@ export function MainInfoSection({
               <button
                 onClick={() => onOpenModal("schedule")}
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
-                aria-label="Add schedule"
+                aria-label={t("addSchedule")}
               >
                 <Plus className="h-6 w-6" />
               </button>
@@ -339,14 +354,14 @@ export function MainInfoSection({
   if (selectedOption === "Map") {
     return (
       <div>
-        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Map</h2>
+        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">{t("map")}</h2>
         <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
-          <div className="text-center text-[#9a8c98] text-[16px] py-20">Map will be displayed here</div>
+          <div className="text-center text-[#9a8c98] text-[16px] py-20">{t("mapHere")}</div>
           {onOpenModal ? (
             <button
               onClick={() => onOpenModal("map")}
               className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
-              aria-label="Add map"
+              aria-label={t("addMap")}
             >
               <Plus className="h-6 w-6" />
             </button>
@@ -361,40 +376,40 @@ export function MainInfoSection({
       {(!isSpecialOption(selectedOption)) && (
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="mb-8">
-            <h2 className="text-[#0D1321] text-[24px] font-bold mb-4">Details</h2>
+            <h2 className="text-[#0D1321] text-[24px] font-bold mb-4">{t("details")}</h2>
             <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-24 w-full" />}>
               {tournamentError ? (
-                <p className="text-red-500 text-[16px]">Unable to load tournament details</p>
+                <p className="text-red-500 text-[16px]">{t("unableDetails")}</p>
               ) : tournament ? (
                 <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
-                  {tournament.description || "No description available for this tournament."}
+                  {tournament.description || t("noDescription")}
                 </p>
               ) : (
                 <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
-                  Tournament details will appear here once loaded.
+                  {t("loadingDetails")}
                 </p>
               )}
             </LoadingState>
 
             <div className="flex flex-col gap-6 sm:flex-row sm:gap-12 mb-8">
               <div>
-                <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Dates</h3>
+                <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">{t("dates")}</h3>
                 <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-6 w-48" />}>
                   <p className="text-[#4a4e69] text-[16px]">
                     {tournament ? (
                       tournament.endDate
-                        ? `${new Date(tournament.startDate).toLocaleDateString()} - ${new Date(tournament.endDate).toLocaleDateString()}`
-                        : new Date(tournament.startDate).toLocaleDateString()
+                        ? `${new Date(tournament.startDate).toLocaleDateString(dateLocale)} - ${new Date(tournament.endDate).toLocaleDateString(dateLocale)}`
+                        : new Date(tournament.startDate).toLocaleDateString(dateLocale)
                     ) : (
-                      "Tournament dates TBA"
+                      t("datesTba")
                     )}
                   </p>
                 </LoadingState>
               </div>
               <div>
-                <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Location</h3>
+                <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">{t("location")}</h3>
                 <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-6 w-32" />}>
-                  <p className="text-[#4a4e69] text-[16px]">{tournament?.location || "Location TBA"}</p>
+                  <p className="text-[#4a4e69] text-[16px]">{tournament?.location || t("locationTba")}</p>
                 </LoadingState>
               </div>
             </div>
@@ -404,10 +419,10 @@ export function MainInfoSection({
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
             <div>
-              <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Announcements</h2>
+              <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">{t("announcements")}</h2>
               <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-20 w-full" />}>
                 {announcementsError ? (
-                  <p className="text-red-500 text-[16px]">Unable to load announcements</p>
+                  <p className="text-red-500 text-[16px]">{t("unableAnnouncements")}</p>
                 ) : announcements && announcements.content.length > 0 ? (
                   <div className="text-[#0D1321] text-[18px] leading-relaxed space-y-4">
                     {announcements.content.slice(0, 3).map((announcement) => (
@@ -415,22 +430,22 @@ export function MainInfoSection({
                         <h4 className="font-medium text-[16px] mb-1">{announcement.title}</h4>
                         <p className="text-[14px] text-[#4a4e69]">{announcement.content}</p>
                         <span className="text-[12px] text-[#9a8c98]">
-                          {new Date(announcement.timestamp).toLocaleDateString()}
+                          {new Date(announcement.timestamp).toLocaleDateString(dateLocale)}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-[#9a8c98] text-[16px] py-8">No announcements yet</div>
+                  <div className="text-[#9a8c98] text-[16px] py-8">{t("noAnnouncements")}</div>
                 )}
               </LoadingState>
             </div>
 
             <div>
-              <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Schedule</h2>
+              <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">{t("schedule")}</h2>
               <LoadingState isLoading={schedulesLoading} fallback={<Skeleton className="h-80 w-full rounded-lg" />}>
                 {schedulesError ? (
-                  <p className="text-red-500 text-[16px]">Unable to load schedule</p>
+                  <p className="text-red-500 text-[16px]">{t("unableSchedule")}</p>
                 ) : schedules && schedules.length > 0 ? (
                   <div className="space-y-4">
                     {schedules.slice(0, 3).map((schedule) => (
@@ -441,7 +456,7 @@ export function MainInfoSection({
                     ))}
                   </div>
                 ) : (
-                  <div className="text-[#9a8c98] text-[16px] py-8">No schedule entries yet</div>
+                  <div className="text-[#9a8c98] text-[16px] py-8">{t("noSchedule")}</div>
                 )}
               </LoadingState>
             </div>

@@ -3,11 +3,52 @@
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-api";
 import { resolveMediaUrl } from "@/lib/media";
+import {
+  localeLabels,
+  locales,
+  useLocale,
+  useTranslations,
+  type Locale,
+} from "@/lib/i18n";
 
+const headerMessages = {
+  en: {
+    joinDebates: "Join Debates",
+    hostDebate: "Host Debate",
+    rating: "Rating",
+    news: "News",
+    language: "Language",
+    profile: "Your profile",
+    logIn: "Log In",
+    register: "Register",
+  },
+  ru: {
+    joinDebates: "Участвовать в дебатах",
+    hostDebate: "Провести дебаты",
+    rating: "Рейтинг",
+    news: "Новости",
+    language: "Язык",
+    profile: "Ваш профиль",
+    logIn: "Войти",
+    register: "Регистрация",
+  },
+  kk: {
+    joinDebates: "Дебатқа қатысу",
+    hostDebate: "Дебат өткізу",
+    rating: "Рейтинг",
+    news: "Жаңалықтар",
+    language: "Тіл",
+    profile: "Профиліңіз",
+    logIn: "Кіру",
+    register: "Тіркелу",
+  },
+} as const;
 
 // --- The Header Component ---
 export default function Header() {
   const { user, isLoading } = useCurrentUser();
+  const { locale, setLocale } = useLocale();
+  const t = useTranslations(headerMessages);
 
   const isLoggedIn = !!user;
 
@@ -23,22 +64,27 @@ export default function Header() {
         <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</Link>
         <nav className="flex flex-wrap gap-x-6 gap-y-1 lg:gap-x-12">
           {/* Nav Links */}
-          <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Join Debates</Link>
-          <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Host Debate</Link>
-          <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">Rating</Link>
-          <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">News</Link>
+          <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("joinDebates")}</Link>
+          <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("hostDebate")}</Link>
+          <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("rating")}</Link>
+          <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("news")}</Link>
         </nav>
       </div>
       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         {/* Language Selector */}
         <div className="relative">
           <select
+            aria-label={t("language")}
+            value={locale}
+            onChange={(event) => setLocale(event.target.value as Locale)}
             className="border border-[#3E5C76] rounded-[8px] px-4 py-2 text-[#0D1321] bg-white text-[14px] font-medium appearance-none bg-no-repeat bg-right bg-[length:16px] pr-10 hover:border-[#748CAB] focus:outline-none focus:ring-2 focus:ring-[#3E5C76] focus:ring-opacity-20 transition-all duration-200 cursor-pointer min-w-[100px] shadow-sm"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%233E5C76%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")' }}
           >
-            <option>🇺🇸 English</option>
-            <option>🇷🇺 Русский</option>
-            <option>🇰🇿 Қазақша</option>
+            {locales.map((optionLocale) => (
+              <option key={optionLocale} value={optionLocale}>
+                {localeLabels[optionLocale]}
+              </option>
+            ))}
           </select>
         </div>
         {/* User Info / Auth Buttons */}
@@ -51,7 +97,7 @@ export default function Header() {
           ) : isLoggedIn ? (
             <Link
               href="/profile"
-              aria-label="Your profile"
+              aria-label={t("profile")}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
             >
               {user.imageUrl?.url ? (
@@ -71,8 +117,8 @@ export default function Header() {
             </Link>
           ) : (
             <div className="flex items-center space-x-4">
-              <Link href="/auth?mode=login" prefetch={false} className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium">Log In</Link>
-              <Link href="/auth?mode=register" prefetch={false} className="bg-[#3E5C76] text-white px-4 py-2 rounded-[8px] hover:bg-[#748CAB] transition-colors duration-200 text-[16px] font-medium shadow-sm">Register</Link>
+              <Link href="/auth?mode=login" prefetch={false} className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-medium">{t("logIn")}</Link>
+              <Link href="/auth?mode=register" prefetch={false} className="bg-[#3E5C76] text-white px-4 py-2 rounded-[8px] hover:bg-[#748CAB] transition-colors duration-200 text-[16px] font-medium shadow-sm">{t("register")}</Link>
             </div>
           )}
         </div>

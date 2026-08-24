@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 export type ImagePreview = {
   key: string
@@ -15,7 +16,26 @@ export type ImagePreview = {
 const DEFAULT_MAX_SIZE = 5 * 1024 * 1024 // backend max: 5MB
 const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png"])
 
+const messages: TranslationCatalog = {
+  en: {
+    invalidImage: "please upload JPG or PNG",
+    imageTooLarge: "exceeds {size}",
+    previewLoadFailed: "Failed to load preview",
+  },
+  ru: {
+    invalidImage: "загрузите изображение в формате JPG или PNG",
+    imageTooLarge: "превышает {size}",
+    previewLoadFailed: "Не удалось загрузить предварительный просмотр",
+  },
+  kk: {
+    invalidImage: "JPG немесе PNG форматындағы суретті жүктеңіз",
+    imageTooLarge: "{size} өлшемінен асады",
+    previewLoadFailed: "Алдын ала көріністі жүктеу мүмкін болмады",
+  },
+}
+
 export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
+  const t = useTranslations(messages)
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([])
   const [uploadErrors, setUploadErrors] = useState<string[]>([])
   const [postImages, setPostImages] = useState<File[]>([])
@@ -38,12 +58,12 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
       const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
 
       if (!file.type.startsWith("image/") || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
-        nextErrors.push(`${file.name}: please upload JPG or PNG`)
+        nextErrors.push(`${file.name}: ${t("invalidImage")}`)
         return
       }
 
       if (file.size > maxSize) {
-        nextErrors.push(`${file.name}: exceeds ${formatBytes(maxSize)}`)
+        nextErrors.push(`${file.name}: ${t("imageTooLarge", { size: formatBytes(maxSize) })}`)
         return
       }
 
@@ -63,7 +83,7 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
         setTimeout(() => setDzAnimate(false), 800)
       }
       reader.onerror = () => {
-        setImagePreviews((prev) => prev.map((preview) => (preview.key === key ? { ...preview, status: "error", error: "Failed to load preview" } : preview)))
+        setImagePreviews((prev) => prev.map((preview) => (preview.key === key ? { ...preview, status: "error", error: t("previewLoadFailed") } : preview)))
       }
       reader.readAsDataURL(file)
     })
@@ -75,7 +95,7 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     if (validFiles.length) {
       setPostImages((prev) => [...prev, ...validFiles])
     }
-  }, [formatBytes, maxSize])
+  }, [formatBytes, maxSize, t])
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault()

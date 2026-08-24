@@ -12,8 +12,212 @@ import { Role } from "@/types/user/user"
 import { buildTeamRegistrationPayload, getMaxInvitedParticipants } from "@/lib/team-registration"
 import { readResponseError } from "@/lib/http-error"
 import { resolveMediaUrl } from "@/lib/media"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const translations: TranslationCatalog = {
+  en: {
+    exploreDebates: "Explore Debates",
+    filters: "Filters",
+    startDate: "Start Date:",
+    startDateFrom: "Start date from",
+    startDateTo: "Start date to",
+    registrationDeadline: "Registration Deadline:",
+    registrationDeadlineFrom: "Registration deadline from",
+    registrationDeadlineTo: "Registration deadline to",
+    location: "Location:",
+    locationLabel: "Location",
+    placeCity: "Place/City",
+    league: "League:",
+    school: "School",
+    university: "University",
+    showNonFullDebates: "Show Non-Full Debates",
+    searchByName: "Search by name",
+    nameAscending: "Name (A-Z)",
+    nameDescending: "Name (Z-A)",
+    mostRecent: "Most Recent",
+    upcoming: "Upcoming",
+    noDebates: "No debates found matching your criteria.",
+    leagueValue: "League: {league}",
+    startDateValue: "Start Date: {date}",
+    locationValue: "Location: {location}",
+    notAvailable: "N/A",
+    more: "More...",
+    joinDebates: "Join Debates",
+    loadingMore: "Loading more debates...",
+    loadMore: "Load More Debates",
+    contactUs: "Contact us: debetter@gmail.com",
+    allRightsReserved: "© 2025 all rights reserved",
+    privacyPolicy: "Privacy Policy",
+    telegram: "Telegram",
+    youtube: "YouTube",
+    instagram: "Instagram",
+    close: "Close",
+    registrationSuccessful: "Registration Successful!",
+    tournamentRegistration: "Tournament Registration",
+    registrationSuccess: "✓ Your team has been registered successfully!",
+    confirmationEmail: "You will receive a confirmation email shortly.",
+    teamName: "Team Name:",
+    enterTeamName: "Enter team name",
+    clubName: "Club Name:",
+    enterClubName: "Enter club/institution name",
+    teammate: "Teammate:",
+    secondTeammate: "2nd Teammate:",
+    usernameOptional: "Username (optional)",
+    teammatesOptional: "• Teammate usernames are optional - you can invite team members later",
+    teamAndClubRequired: "• Only team name and club name are required for registration",
+    signInBeforeRegistering: "Please sign in before registering a team.",
+    logIn: "Log In",
+    register: "Register",
+    registering: "Registering...",
+    registerTeam: "Register Team",
+    noTournamentSelected: "No tournament selected",
+    teamAndClubRequiredError: "Team name and club name are required",
+    signInBeforeRegisteringError: "Please sign in before registering a team",
+    participantOnly: "Only participant accounts can register a team",
+    missingProfile: "Your participant profile is missing. Please sign in again",
+    failedToLoadDebates: "Failed to load debates",
+    signInToViewDebates: "Please sign in to view debates.",
+    serverError: "Server error. Please try again later.",
+    registrationFailed: "Registration failed",
+    unexpectedRegistrationError: "An unexpected error occurred. Please try again.",
+  },
+  ru: {
+    exploreDebates: "Исследуйте дебаты",
+    filters: "Фильтры",
+    startDate: "Дата начала:",
+    startDateFrom: "Дата начала от",
+    startDateTo: "Дата начала до",
+    registrationDeadline: "Крайний срок регистрации:",
+    registrationDeadlineFrom: "Крайний срок регистрации от",
+    registrationDeadlineTo: "Крайний срок регистрации до",
+    location: "Место проведения:",
+    locationLabel: "Место проведения",
+    placeCity: "Место/город",
+    league: "Лига:",
+    school: "Школьная",
+    university: "Университетская",
+    showNonFullDebates: "Показывать дебаты с доступными местами",
+    searchByName: "Поиск по названию",
+    nameAscending: "Название (А–Я)",
+    nameDescending: "Название (Я–А)",
+    mostRecent: "Сначала недавние",
+    upcoming: "Предстоящие",
+    noDebates: "Дебаты, соответствующие критериям, не найдены.",
+    leagueValue: "Лига: {league}",
+    startDateValue: "Дата начала: {date}",
+    locationValue: "Место проведения: {location}",
+    notAvailable: "Н/Д",
+    more: "Подробнее...",
+    joinDebates: "Присоединиться к дебатам",
+    loadingMore: "Загрузка дополнительных дебатов...",
+    loadMore: "Загрузить ещё дебаты",
+    contactUs: "Свяжитесь с нами: debetter@gmail.com",
+    allRightsReserved: "© 2025 все права защищены",
+    privacyPolicy: "Политика конфиденциальности",
+    telegram: "Telegram",
+    youtube: "YouTube",
+    instagram: "Instagram",
+    close: "Закрыть",
+    registrationSuccessful: "Регистрация прошла успешно!",
+    tournamentRegistration: "Регистрация на турнир",
+    registrationSuccess: "✓ Ваша команда успешно зарегистрирована!",
+    confirmationEmail: "Вскоре вы получите письмо с подтверждением.",
+    teamName: "Название команды:",
+    enterTeamName: "Введите название команды",
+    clubName: "Название клуба:",
+    enterClubName: "Введите название клуба/учебного заведения",
+    teammate: "Товарищ по команде:",
+    secondTeammate: "2-й товарищ по команде:",
+    usernameOptional: "Имя пользователя (необязательно)",
+    teammatesOptional: "• Имена пользователей товарищей необязательны — их можно пригласить позже",
+    teamAndClubRequired: "• Для регистрации обязательны только название команды и клуба",
+    signInBeforeRegistering: "Войдите, прежде чем регистрировать команду.",
+    logIn: "Войти",
+    register: "Зарегистрироваться",
+    registering: "Регистрация...",
+    registerTeam: "Зарегистрировать команду",
+    noTournamentSelected: "Турнир не выбран",
+    teamAndClubRequiredError: "Необходимо указать название команды и клуба",
+    signInBeforeRegisteringError: "Войдите, прежде чем регистрировать команду",
+    participantOnly: "Только участники могут регистрировать команду",
+    missingProfile: "Профиль участника не найден. Войдите снова",
+    failedToLoadDebates: "Не удалось загрузить дебаты",
+    signInToViewDebates: "Войдите, чтобы просмотреть дебаты.",
+    serverError: "Ошибка сервера. Попробуйте ещё раз позже.",
+    registrationFailed: "Не удалось зарегистрироваться",
+    unexpectedRegistrationError: "Произошла непредвиденная ошибка. Попробуйте ещё раз.",
+  },
+  kk: {
+    exploreDebates: "Пікірсайыстарды зерттеу",
+    filters: "Сүзгілер",
+    startDate: "Басталу күні:",
+    startDateFrom: "Басталу күні (бастап)",
+    startDateTo: "Басталу күні (дейін)",
+    registrationDeadline: "Тіркелудің соңғы мерзімі:",
+    registrationDeadlineFrom: "Тіркелудің соңғы мерзімі (бастап)",
+    registrationDeadlineTo: "Тіркелудің соңғы мерзімі (дейін)",
+    location: "Өтетін орны:",
+    locationLabel: "Өтетін орны",
+    placeCity: "Орын/қала",
+    league: "Лига:",
+    school: "Мектеп",
+    university: "Университет",
+    showNonFullDebates: "Бос орындары бар пікірсайыстарды көрсету",
+    searchByName: "Атауы бойынша іздеу",
+    nameAscending: "Атауы (А–Я)",
+    nameDescending: "Атауы (Я–А)",
+    mostRecent: "Ең соңғылары",
+    upcoming: "Алда болатын",
+    noDebates: "Критерийлеріңізге сәйкес пікірсайыстар табылмады.",
+    leagueValue: "Лига: {league}",
+    startDateValue: "Басталу күні: {date}",
+    locationValue: "Өтетін орны: {location}",
+    notAvailable: "Қ/ж",
+    more: "Толығырақ...",
+    joinDebates: "Пікірсайысқа қосылу",
+    loadingMore: "Қосымша пікірсайыстар жүктелуде...",
+    loadMore: "Қосымша пікірсайыстарды жүктеу",
+    contactUs: "Бізбен байланысыңыз: debetter@gmail.com",
+    allRightsReserved: "© 2025 барлық құқықтар қорғалған",
+    privacyPolicy: "Құпиялылық саясаты",
+    telegram: "Telegram",
+    youtube: "YouTube",
+    instagram: "Instagram",
+    close: "Жабу",
+    registrationSuccessful: "Тіркелу сәтті аяқталды!",
+    tournamentRegistration: "Турнирге тіркелу",
+    registrationSuccess: "✓ Командаңыз сәтті тіркелді!",
+    confirmationEmail: "Жақында растау хатын аласыз.",
+    teamName: "Команда атауы:",
+    enterTeamName: "Команда атауын енгізіңіз",
+    clubName: "Клуб атауы:",
+    enterClubName: "Клуб/мекеме атауын енгізіңіз",
+    teammate: "Команда мүшесі:",
+    secondTeammate: "2-команда мүшесі:",
+    usernameOptional: "Пайдаланушы аты (міндетті емес)",
+    teammatesOptional: "• Команда мүшелерінің пайдаланушы аттары міндетті емес — оларды кейін шақыра аласыз",
+    teamAndClubRequired: "• Тіркелу үшін тек команда мен клуб атауы қажет",
+    signInBeforeRegistering: "Команданы тіркеу үшін жүйеге кіріңіз.",
+    logIn: "Кіру",
+    register: "Тіркелу",
+    registering: "Тіркелу орындалуда...",
+    registerTeam: "Команданы тіркеу",
+    noTournamentSelected: "Турнир таңдалмады",
+    teamAndClubRequiredError: "Команда мен клуб атауын енгізу қажет",
+    signInBeforeRegisteringError: "Команданы тіркеу үшін жүйеге кіріңіз",
+    participantOnly: "Команданы тек қатысушы аккаунттары тіркей алады",
+    missingProfile: "Қатысушы профиліңіз жоқ. Қайта кіріңіз",
+    failedToLoadDebates: "Пікірсайыстарды жүктеу мүмкін болмады",
+    signInToViewDebates: "Пікірсайыстарды көру үшін жүйеге кіріңіз.",
+    serverError: "Сервер қатесі. Кейінірек қайталап көріңіз.",
+    registrationFailed: "Тіркелу сәтсіз аяқталды",
+    unexpectedRegistrationError: "Күтпеген қате орын алды. Қайталап көріңіз.",
+  },
+}
 
 export default function JoinDebatesPage() {
+  const { locale } = useLocale()
+  const t = useTranslations(translations)
   const { user: currentUser, isLoading: currentUserLoading } = useCurrentUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null)
@@ -45,6 +249,15 @@ export default function JoinDebatesPage() {
   const selectedTournament = tournaments.find((tournament) => tournament.id === selectedTournamentId)
   const maxInvitedParticipants = getMaxInvitedParticipants(selectedTournament?.preliminaryFormat)
   const isGuestRegistration = !currentUser && !currentUserLoading
+  const formatDate = (date?: string) => {
+    if (!date) return t("notAvailable")
+    const parsedDate = new Date(date)
+    return Number.isNaN(parsedDate.getTime())
+      ? t("notAvailable")
+      : parsedDate.toLocaleDateString(localeTags[locale])
+  }
+  const getLeagueLabel = (league: TournamentLeague) =>
+    league === TournamentLeague.SCHOOL ? t("school") : t("university")
 
   // Fetch tournaments with all filter parameters
   const fetchTournaments = useCallback(async (reset = false) => {
@@ -66,9 +279,9 @@ export default function JoinDebatesPage() {
       const response = await api.getTournaments(params, { page: currentPage, size: 10, sort: sortBy }) // Pass all params directly
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: "Failed to load debates",
-          unauthorized: "Please sign in to view debates.",
-          serverError: "Server error. Please try again later.",
+          fallback: t("failedToLoadDebates"),
+          unauthorized: t("signInToViewDebates"),
+          serverError: t("serverError"),
         }))
       }
       const data: PageResult<SimpleTournamentResponse> = await response.json()
@@ -82,14 +295,14 @@ export default function JoinDebatesPage() {
       setHasMore(currentPage + 1 < data.totalPages)
       setPage(currentPage + 1)
     } catch (error) {
-      setTournamentError(error instanceof Error ? error.message : "Failed to load debates")
+      setTournamentError(error instanceof Error ? error.message : t("failedToLoadDebates"))
       console.error("Failed to fetch tournaments:", error)
     } finally {
       setLoading(false)
     }
   }, [
       page, sortBy, searchName, searchLocation, startDateFrom, startDateTo,
-      registrationDeadlineFrom, registrationDeadlineTo, selectedLeagues, nonFull
+      registrationDeadlineFrom, registrationDeadlineTo, selectedLeagues, nonFull, t
   ])
 
   useEffect(() => {
@@ -112,27 +325,27 @@ export default function JoinDebatesPage() {
     e.preventDefault()
 
     if (!selectedTournamentId) {
-      setRegistrationError('No tournament selected')
+      setRegistrationError(t("noTournamentSelected"))
       return
     }
 
     if (!teamName.trim() || !clubName.trim()) {
-      setRegistrationError('Team name and club name are required')
+      setRegistrationError(t("teamAndClubRequiredError"))
       return
     }
 
     if (!currentUser?.id) {
-      setRegistrationError('Please sign in before registering a team')
+      setRegistrationError(t("signInBeforeRegisteringError"))
       return
     }
 
     if (currentUser.role !== Role.PARTICIPANT) {
-      setRegistrationError('Only participant accounts can register a team')
+      setRegistrationError(t("participantOnly"))
       return
     }
 
     if (!currentUser.profileId) {
-      setRegistrationError('Your participant profile is missing. Please sign in again')
+      setRegistrationError(t("missingProfile"))
       return
     }
 
@@ -152,9 +365,9 @@ export default function JoinDebatesPage() {
 
       if (!response.ok) {
         setRegistrationError(await readResponseError(response, {
-          fallback: "Registration failed",
-          unauthorized: "Please sign in before registering a team.",
-          serverError: "Server error. Please try again later.",
+          fallback: t("registrationFailed"),
+          unauthorized: t("signInBeforeRegistering"),
+          serverError: t("serverError"),
         }))
         return
       }
@@ -174,7 +387,7 @@ export default function JoinDebatesPage() {
 
     } catch (error) {
       console.error('Registration error:', error)
-      setRegistrationError('An unexpected error occurred. Please try again.')
+      setRegistrationError(t("unexpectedRegistrationError"))
     } finally {
       setIsRegistering(false)
     }
@@ -185,7 +398,7 @@ export default function JoinDebatesPage() {
 
       {/* Page Title */}
       <section className="text-center py-8">
-        <h1 className="text-[#0D1321] text-[56px] font-bold mb-4">Explore Debates</h1>
+        <h1 className="text-[#0D1321] text-[56px] font-bold mb-4">{t("exploreDebates")}</h1>
       </section>
 
       {/* Main Content */}
@@ -196,30 +409,30 @@ export default function JoinDebatesPage() {
             <div className="bg-[#0D1321] rounded-[16px] p-6 sticky top-8">
               <div className="flex items-center mb-6">
                 <Filter className="w-6 h-6 text-[#FFFFFF] mr-3" />
-                <h2 className="text-[#FFFFFF] text-[24px] font-medium">Filters</h2>
+                <h2 className="text-[#FFFFFF] text-[24px] font-medium">{t("filters")}</h2>
               </div>
 
               {/* Start Date Filter */}
               <div className="mb-6">
-                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Start Date:</h3>
+                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">{t("startDate")}</h3>
                 <div className="space-y-3">
                   <div>
-                    <label htmlFor="start-date-from" className="sr-only">Start date from</label>
+                    <label htmlFor="start-date-from" className="sr-only">{t("startDateFrom")}</label>
                     <input
                       id="start-date-from"
                       type="date"
-                      placeholder="Start date from"
+                      placeholder={t("startDateFrom")}
                       className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
                       value={startDateFrom}
                       onChange={(e) => setStartDateFrom(e.target.value + "T00:00:00")}
                     />
                   </div>
                   <div>
-                    <label htmlFor="start-date-to" className="sr-only">Start date to</label>
+                    <label htmlFor="start-date-to" className="sr-only">{t("startDateTo")}</label>
                     <input
                       id="start-date-to"
                       type="date"
-                      placeholder="Start date to"
+                      placeholder={t("startDateTo")}
                       className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
                       value={startDateTo}
                       onChange={(e) => setStartDateTo(e.target.value + "T23:59:59")}
@@ -230,25 +443,25 @@ export default function JoinDebatesPage() {
 
               {/* Registration Deadline Filter */}
               <div className="mb-6">
-                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Registration Deadline:</h3>
+                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">{t("registrationDeadline")}</h3>
                 <div className="space-y-3">
                   <div>
-                    <label htmlFor="reg-deadline-from" className="sr-only">Registration deadline from</label>
+                    <label htmlFor="reg-deadline-from" className="sr-only">{t("registrationDeadlineFrom")}</label>
                     <input
                       id="reg-deadline-from"
                       type="date"
-                      placeholder="Registration deadline from"
+                      placeholder={t("registrationDeadlineFrom")}
                       className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
                       value={registrationDeadlineFrom}
                       onChange={(e) => setRegistrationDeadlineFrom(e.target.value + "T00:00:00")}
                     />
                   </div>
                   <div>
-                    <label htmlFor="reg-deadline-to" className="sr-only">Registration deadline to</label>
+                    <label htmlFor="reg-deadline-to" className="sr-only">{t("registrationDeadlineTo")}</label>
                     <input
                       id="reg-deadline-to"
                       type="date"
-                      placeholder="Registration deadline to"
+                      placeholder={t("registrationDeadlineTo")}
                       className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
                       value={registrationDeadlineTo}
                       onChange={(e) => setRegistrationDeadlineTo(e.target.value + "T23:59:59")}
@@ -259,12 +472,12 @@ export default function JoinDebatesPage() {
 
               {/* Location Filter */}
               <div className="mb-6">
-                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">Location:</h3>
-                <label htmlFor="location" className="sr-only">Location</label>
+                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">{t("location")}</h3>
+                <label htmlFor="location" className="sr-only">{t("locationLabel")}</label>
                 <input
                   id="location"
                   type="text"
-                  placeholder="Place/City"
+                  placeholder={t("placeCity")}
                   className="w-full px-4 py-2 rounded-[8px] border border-[#9a8c98] text-[#4a4e69] text-[14px] font-normal"
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
@@ -273,7 +486,7 @@ export default function JoinDebatesPage() {
 
               {/* League Filter */}
               <div className="mb-6">
-                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">League:</h3>
+                <h3 className="text-[#FFFFFF] text-[18px] font-medium mb-3">{t("league")}</h3>
                 <div className="space-y-2">
                   <label className="flex items-center text-[#FFFFFF] text-[14px] font-normal">
                     <input
@@ -282,7 +495,7 @@ export default function JoinDebatesPage() {
                       checked={selectedLeagues.includes(TournamentLeague.SCHOOL)}
                       onChange={() => handleLeagueChange(TournamentLeague.SCHOOL)}
                     />
-                    School
+                    {t("school")}
                   </label>
                   <label className="flex items-center text-[#FFFFFF] text-[14px] font-normal">
                     <input
@@ -291,7 +504,7 @@ export default function JoinDebatesPage() {
                       checked={selectedLeagues.includes(TournamentLeague.UNIVERSITY)}
                       onChange={() => handleLeagueChange(TournamentLeague.UNIVERSITY)}
                     />
-                    University
+                    {t("university")}
                   </label>
                 </div>
               </div>
@@ -305,7 +518,7 @@ export default function JoinDebatesPage() {
                     checked={nonFull}
                     onChange={(e) => setNonFull(e.target.checked)}
                   />
-                  Show Non-Full Debates
+                  {t("showNonFullDebates")}
                 </label>
               </div>
             </div>
@@ -319,7 +532,7 @@ export default function JoinDebatesPage() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#9a8c98]" />
                 <input
                   type="text"
-                  placeholder="Search by name"
+                  placeholder={t("searchByName")}
                   className="w-full pl-12 pr-40 py-3 rounded-[12px] border border-[#9a8c98] text-[#4a4e69] text-[16px] font-normal"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
@@ -330,10 +543,10 @@ export default function JoinDebatesPage() {
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
-                    <option value="name,asc">Name (A-Z)</option>
-                    <option value="name,desc">Name (Z-A)</option>
-                    <option value="startDate,desc">Most Recent</option>
-                    <option value="startDate,asc">Upcoming</option>
+                    <option value="name,asc">{t("nameAscending")}</option>
+                    <option value="name,desc">{t("nameDescending")}</option>
+                    <option value="startDate,desc">{t("mostRecent")}</option>
+                    <option value="startDate,asc">{t("upcoming")}</option>
                     {/* Note: 'popularity' sorting would require backend support. 
                         If not available, these options will sort by startDate. */}
                   </select>
@@ -352,7 +565,7 @@ export default function JoinDebatesPage() {
                 </p>
               )}
               {tournaments.length === 0 && !loading && !tournamentError && (
-                <p className="text-[#0D1321] text-center text-[20px]">No debates found matching your criteria.</p>
+                <p className="text-[#0D1321] text-center text-[20px]">{t("noDebates")}</p>
               )}
               {tournaments.map((tournament) => (
                 <div key={tournament.id} className="bg-[#0D1321] rounded-[16px] p-8 relative">
@@ -370,18 +583,18 @@ export default function JoinDebatesPage() {
                       <div className="text-[#9a8c98] text-[16px] font-normal space-y-1 mb-4">
                         <div className="flex items-center">
                           <Users className="w-4 h-4 mr-2" />
-                          <span>League: {tournament.league}</span> 
+                          <span>{t("leagueValue", { league: getLeagueLabel(tournament.league) })}</span>
                         </div>
                         <div className="flex items-center">
                           {/* As SimpleTournamentResponse does not include startDate or location,
                               these will show N/A. To display actual dates/locations here, 
                               SimpleTournamentResponse would need to be updated on the backend. */}
                           <Calendar className="w-4 h-4 mr-2" />
-                          <span>Start Date: N/A</span> 
+                          <span>{t("startDateValue", { date: formatDate(tournament.startDate) })}</span>
                         </div>
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-2" />
-                          <span>Location: N/A</span> 
+                          <span>{t("locationValue", { location: tournament.location || t("notAvailable") })}</span>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2"> {/* Use flex-wrap for tags */}
@@ -402,25 +615,25 @@ export default function JoinDebatesPage() {
                   {/* Actions */}
                   <div className="flex items-center justify-between">
                     <Link href={`/tournament/${tournament.id}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
-                      More...
+                      {t("more")}
                     </Link>
                     <button
                       onClick={() => {
                         setSelectedTournamentId(tournament.id)
-                        setRegistrationError(isGuestRegistration ? "Please sign in before registering a team." : null)
+                        setRegistrationError(isGuestRegistration ? t("signInBeforeRegistering") : null)
                         setRegistrationSuccess(false)
                         setSpeakerTwoUsername("")
                         setIsModalOpen(true)
                       }}
                       className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
                     >
-                      Join Debates
+                      {t("joinDebates")}
                     </button>
                   </div>
                 </div>
               ))}
               {loading && (
-                <p className="text-[#0D1321] text-center text-[20px]">Loading more debates...</p>
+                <p className="text-[#0D1321] text-center text-[20px]">{t("loadingMore")}</p>
               )}
             </div>
 
@@ -432,7 +645,7 @@ export default function JoinDebatesPage() {
                   className="bg-[#3E5C76] text-[#FFFFFF] px-8 py-3 rounded-lg hover:bg-[#22223b] text-[16px] font-normal"
                   disabled={loading}
                 >
-                  Load More Debates
+                  {t("loadMore")}
                 </button>
               </div>
             )}
@@ -448,6 +661,7 @@ export default function JoinDebatesPage() {
             <div className="flex justify-center space-x-4 mb-8">
               <a
                 href="#"
+                aria-label={t("telegram")}
                 className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
               >
                 <svg className="w-[36px] h-[36px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
@@ -456,6 +670,7 @@ export default function JoinDebatesPage() {
               </a>
               <a
                 href="#"
+                aria-label={t("youtube")}
                 className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
               >
                 <svg className="w-[24px] h-[24px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
@@ -464,6 +679,7 @@ export default function JoinDebatesPage() {
               </a>
               <a
                 href="#"
+                aria-label={t("instagram")}
                 className="w-[48px] h-[48px] bg-[#FFFFFF] rounded-full flex items-center justify-center hover:bg-[#83c5be] transition-colors"
               >
                 <svg className="w-[24px] h-[24px] text-[#22223b]" fill="currentColor" viewBox="0 0 24 24">
@@ -474,9 +690,9 @@ export default function JoinDebatesPage() {
           </div>
 
           <div className="flex justify-center items-center text-[14px] font-normal relative">
-            <div className="absolute left-0">Contact us: debetter@gmail.com</div>
-            <div className="font-medium">© 2025 all rights reserved</div>
-            <div className="absolute right-0">Privacy Policy</div>
+            <div className="absolute left-0">{t("contactUs")}</div>
+            <div className="font-medium">{t("allRightsReserved")}</div>
+            <div className="absolute right-0">{t("privacyPolicy")}</div>
           </div>
         </div>
       </footer>
@@ -487,84 +703,85 @@ export default function JoinDebatesPage() {
           <div className="bg-[#F1F1F1] rounded-lg p-8 w-full max-w-md mx-4 relative">
             <button 
               onClick={() => setIsModalOpen(false)}
+              aria-label={t("close")}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
             >
               <X className="w-6 h-6" />
             </button>
             
             <h2 className="text-[#0D1321] text-[32px] font-bold text-center mb-8">
-              {registrationSuccess ? 'Registration Successful!' : 'Tournament Registration'}
+              {registrationSuccess ? t("registrationSuccessful") : t("tournamentRegistration")}
             </h2>
 
             {registrationSuccess ? (
               <div className="text-center py-8">
-                <div className="text-green-600 text-[18px] mb-4">✓ Your team has been registered successfully!</div>
-                <p className="text-[#4a4e69] text-[14px]">You will receive a confirmation email shortly.</p>
+                <div className="text-green-600 text-[18px] mb-4">{t("registrationSuccess")}</div>
+                <p className="text-[#4a4e69] text-[14px]">{t("confirmationEmail")}</p>
               </div>
             ) : (
               <form onSubmit={handleRegistrationSubmit} className="space-y-4">
                 <div className="flex items-center">
-                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Team Name:</label>
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">{t("teamName")}</label>
                   <input
                     type="text"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
                     required
                     className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                    placeholder="Enter team name"
+                    placeholder={t("enterTeamName")}
                   />
                 </div>
 
                 <div className="flex items-center">
-                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Club Name:</label>
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">{t("clubName")}</label>
                   <input
                     type="text"
                     value={clubName}
                     onChange={(e) => setClubName(e.target.value)}
                     required
                     className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                    placeholder="Enter club/institution name"
+                    placeholder={t("enterClubName")}
                   />
                 </div>
 
                 <div className="flex items-center">
-                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">Teammate:</label>
+                  <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">{t("teammate")}</label>
                   <input
                     type="text"
                     value={speakerOneUsername}
                     onChange={(e) => setSpeakerOneUsername(e.target.value)}
                     className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                    placeholder="Username (optional)"
+                    placeholder={t("usernameOptional")}
                   />
                 </div>
 
                 {maxInvitedParticipants > 1 && (
                   <div className="flex items-center">
-                    <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">2nd Teammate:</label>
+                    <label className="text-[#0D1321] text-[16px] font-normal w-32 text-right mr-4">{t("secondTeammate")}</label>
                     <input
                       type="text"
                       value={speakerTwoUsername}
                       onChange={(e) => setSpeakerTwoUsername(e.target.value)}
                       className="flex-1 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                      placeholder="Username (optional)"
+                      placeholder={t("usernameOptional")}
                     />
                   </div>
                 )}
 
                 <div className="text-[#9a8c98] text-[14px] px-2">
-                  <p className="mb-2">• Teammate usernames are optional - you can invite team members later</p>
-                  <p>• Only team name and club name are required for registration</p>
+                  <p className="mb-2">{t("teammatesOptional")}</p>
+                  <p>{t("teamAndClubRequired")}</p>
                 </div>
 
                 {isGuestRegistration && (
                   <div role="alert" className="rounded-md border border-[#CFD6EA] bg-white px-4 py-3 text-center">
-                    <p className="text-[#0D1321] text-[14px]">Please sign in before registering a team.</p>
+                    <p className="text-[#0D1321] text-[14px]">{t("signInBeforeRegistering")}</p>
                     <div className="mt-3 flex justify-center gap-3">
                       <Link href="/auth?mode=login" prefetch={false} className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm text-white hover:bg-[#2D3748]">
-                        Log In
+                        {t("logIn")}
                       </Link>
                       <Link href="/auth?mode=register" prefetch={false} className="rounded-md border border-[#3E5C76] px-4 py-2 text-sm text-[#0D1321] hover:bg-white">
-                        Register
+                        {t("register")}
                       </Link>
                     </div>
                   </div>
@@ -582,7 +799,7 @@ export default function JoinDebatesPage() {
                     disabled={isRegistering || currentUserLoading || isGuestRegistration}
                     className="w-full bg-[#3E5C76] text-white py-3 rounded-lg text-[16px] font-medium hover:bg-[#2D3748] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isRegistering ? 'Registering...' : 'Register Team'}
+                    {isRegistering ? t("registering") : t("registerTeam")}
                   </button>
                 </div>
               </form>

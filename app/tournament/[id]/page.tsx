@@ -46,6 +46,112 @@ import type { AnnouncementRequest, AnnouncementResponse } from "@/types/tourname
 import type { ScheduleRequest } from "@/types/tournament/schedule"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType, type RoundGroupResponse } from "@/types/tournament/round/round-group"
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const catalog: TranslationCatalog = {
+  en: {
+    preliminary: "Preliminary", teamElimination: "Team elimination", soloElimination: "Solo elimination",
+    mapUnavailable: "Map uploads are not supported by the backend yet.", mapUnavailableTitle: "Map upload unavailable",
+    requiredPost: "Please add a title and description.", requiredImage: "Please add an image.",
+    permission: "You do not have permission to perform this action.", server: "Server error. Please try again later.",
+    missingInfo: "Missing information", judgeFields: "Please fill in name, email, and phone.", tryLater: "Please try again later.",
+    selectRound: "Select a round first", loadingRound: "Round data is still loading.", noResults: "No results to submit",
+    enterScores: "Enter scores for the current round before submitting.", startFirst: "Start tournament first",
+    randomizeBefore: "Start the tournament before randomizing pairings.", publishBefore: "Start the tournament before publishing pairings.",
+    confirmDelete: "Are you sure you want to delete {name}?", noClub: "No club", duplicate: "Duplicate participant",
+    duplicateDescription: "A participant can only appear once in the same team.", missingParticipants: "Missing participants",
+    addParticipant: "Add at least one participant before saving.", noChanges: "No changes to save",
+    updateDetails: "Update the team details before saving.", saveChanges: "Save changes", submit: "Submit",
+    editJudge: "Edit Judge", addJudge: "Add Judge", saveJudge: "Save Judge",
+    failedUpdateAnnouncement: "Failed to update announcement", failedAddAnnouncement: "Failed to add announcement",
+    announcementUpdated: "Announcement updated", contentSubmitted: "Content submitted", announcementUpdatedDescription: "{title} has been updated.",
+    contentAddedDescription: "{title} has been added.",
+    failedUpdateJudge: "Failed to update judge", failedAddJudge: "Failed to add judge", judgeUpdated: "Judge updated",
+    judgeSubmitted: "Judge submitted", judgeDetailsUpdated: "The judge details have been updated.", judgeAddedRoster: "The judge has been added to the roster.",
+    failedCheckJudgeIn: "Failed to check judge in", failedUncheckJudge: "Failed to uncheck judge", judgeCheckedIn: "Judge checked in",
+    judgeUnchecked: "Judge unchecked", judgeCheckedInDescription: "{name} has been checked in.", judgeUncheckedDescription: "{name} has been unchecked.",
+    failedRemoveJudge: "Failed to remove judge", judgeRemoved: "Judge removed", judgeRemovedDescription: "{name} has been removed.",
+    failedAddComment: "Failed to add comment", commentAdded: "Comment added", commentAddedDescription: "Your comment has been added.",
+    failedCheckTeamIn: "Failed to check team in", failedUncheckTeam: "Failed to uncheck team", teamCheckedIn: "Team checked in",
+    teamUnchecked: "Team unchecked", teamCheckedInDescription: "The team has been checked in.", teamUncheckedDescription: "The team has been unchecked.",
+    failedDisqualifyTeam: "Failed to disqualify team", teamDisqualified: "Team disqualified", teamDisqualifiedDescription: "The team has been disqualified.",
+    failedRequalifyTeam: "Failed to requalify team", teamRequalified: "Team requalified", teamRestoredDescription: "The team has been restored.",
+    tournamentStarted: "Tournament started", proceed: "Pairings and tournament workflow can now proceed.",
+    failedStartTournament: "Failed to start tournament", failedProceedNextRound: "Failed to proceed to the next round",
+    roundAdvanced: "Round advanced", failedAdvanceRound: "Failed to advance round", nextActive: "{name} is now active. Randomize it when you are ready.",
+    proceeded: "The tournament has proceeded to the next round.", failedSubmitResults: "Failed to submit results", resultsSubmitted: "Results submitted",
+    currentRoundResultsSaved: "The current round results have been saved.", failedRandomizePairings: "Failed to randomize pairings",
+    pairingsRandomized: "Pairings randomized", pairingsRegenerated: "The selected round pairings have been regenerated.",
+    failedPublishPairings: "Failed to publish pairings", pairingsPublished: "Pairings published", pairingsVisible: "The selected round pairings are now visible.",
+    failedSaveRooms: "Failed to save rooms", roomsSaved: "{count} rooms saved", failedUpdateMatch: "Failed to update match",
+    matchUpdated: "Match updated", matchChangesSaved: "The match changes have been saved.", failedClearMatches: "Failed to clear matches",
+    matchesCleared: "Matches cleared", roundMatchesRemoved: "The selected round matches have been removed.", failedRemoveTeam: "Failed to remove team",
+    teamRemoved: "Team removed", teamRemovedDescription: "{name} has been removed.", failedUpdateTeam: "Failed to update team",
+    teamUpdated: "Team updated", teamUpdatedDescription: "{name} ({club}) has been updated.",
+  },
+  ru: {
+    preliminary: "Отборочный этап", teamElimination: "Командная сетка", soloElimination: "Индивидуальная сетка",
+    mapUnavailable: "Загрузка карты пока не поддерживается сервером.", mapUnavailableTitle: "Загрузка карты недоступна",
+    requiredPost: "Добавьте заголовок и описание.", requiredImage: "Добавьте изображение.", permission: "У вас нет прав для выполнения этого действия.",
+    server: "Ошибка сервера. Повторите попытку позже.", missingInfo: "Недостаточно данных", judgeFields: "Заполните имя, электронную почту и телефон.",
+    tryLater: "Повторите попытку позже.", selectRound: "Сначала выберите раунд", loadingRound: "Данные раунда ещё загружаются.",
+    noResults: "Нет результатов для отправки", enterScores: "Введите баллы текущего раунда перед отправкой.", startFirst: "Сначала начните турнир",
+    randomizeBefore: "Начните турнир перед созданием жеребьёвки.", publishBefore: "Начните турнир перед публикацией жеребьёвки.",
+    confirmDelete: "Удалить {name}?", noClub: "Без клуба", duplicate: "Повторный участник", duplicateDescription: "Участник может встречаться в команде только один раз.",
+    missingParticipants: "Нет участников", addParticipant: "Добавьте хотя бы одного участника перед сохранением.", noChanges: "Нет изменений для сохранения",
+    updateDetails: "Обновите данные команды перед сохранением.", saveChanges: "Сохранить изменения", submit: "Отправить",
+    editJudge: "Изменить судью", addJudge: "Добавить судью", saveJudge: "Сохранить судью",
+    failedUpdateAnnouncement: "Не удалось обновить объявление", failedAddAnnouncement: "Не удалось добавить объявление",
+    announcementUpdated: "Объявление обновлено", contentSubmitted: "Материал отправлен", announcementUpdatedDescription: "{title} обновлено.", contentAddedDescription: "{title} добавлено.",
+    failedUpdateJudge: "Не удалось обновить судью", failedAddJudge: "Не удалось добавить судью", judgeUpdated: "Судья обновлён", judgeSubmitted: "Судья добавлен",
+    judgeDetailsUpdated: "Данные судьи обновлены.", judgeAddedRoster: "Судья добавлен в список.", failedCheckJudgeIn: "Не удалось отметить явку судьи",
+    failedUncheckJudge: "Не удалось снять отметку явки судьи", judgeCheckedIn: "Судья отмечен", judgeUnchecked: "Отметка судьи снята",
+    judgeCheckedInDescription: "{name} отмечен.", judgeUncheckedDescription: "С {name} снята отметка.", failedRemoveJudge: "Не удалось удалить судью",
+    judgeRemoved: "Судья удалён", judgeRemovedDescription: "{name} удалён.", failedAddComment: "Не удалось добавить комментарий",
+    commentAdded: "Комментарий добавлен", commentAddedDescription: "Ваш комментарий добавлен.", failedCheckTeamIn: "Не удалось отметить команду",
+    failedUncheckTeam: "Не удалось снять отметку команды", teamCheckedIn: "Команда отмечена", teamUnchecked: "Отметка команды снята",
+    teamCheckedInDescription: "Команда отмечена.", teamUncheckedDescription: "С команды снята отметка.", failedDisqualifyTeam: "Не удалось дисквалифицировать команду",
+    teamDisqualified: "Команда дисквалифицирована", teamDisqualifiedDescription: "Команда дисквалифицирована.", failedRequalifyTeam: "Не удалось восстановить команду",
+    teamRequalified: "Команда восстановлена", teamRestoredDescription: "Команда восстановлена.", tournamentStarted: "Турнир начат",
+    proceed: "Теперь можно продолжить жеребьёвку и работу турнира.", failedStartTournament: "Не удалось начать турнир", failedProceedNextRound: "Не удалось перейти к следующему раунду",
+    roundAdvanced: "Раунд продвинут", failedAdvanceRound: "Не удалось продвинуть раунд", nextActive: "{name} активирован. Создайте жеребьёвку, когда будете готовы.",
+    proceeded: "Турнир перешёл к следующему раунду.", failedSubmitResults: "Не удалось отправить результаты", resultsSubmitted: "Результаты отправлены",
+    currentRoundResultsSaved: "Результаты текущего раунда сохранены.", failedRandomizePairings: "Не удалось создать жеребьёвку", pairingsRandomized: "Жеребьёвка создана",
+    pairingsRegenerated: "Жеребьёвка выбранного раунда создана заново.", failedPublishPairings: "Не удалось опубликовать жеребьёвку", pairingsPublished: "Жеребьёвка опубликована",
+    pairingsVisible: "Жеребьёвка выбранного раунда теперь видна.", failedSaveRooms: "Не удалось сохранить аудитории", roomsSaved: "Сохранено аудиторий: {count}",
+    failedUpdateMatch: "Не удалось обновить матч", matchUpdated: "Матч обновлён", matchChangesSaved: "Изменения матча сохранены.", failedClearMatches: "Не удалось очистить матчи",
+    matchesCleared: "Матчи очищены", roundMatchesRemoved: "Матчи выбранного раунда удалены.", failedRemoveTeam: "Не удалось удалить команду", teamRemoved: "Команда удалена",
+    teamRemovedDescription: "{name} удалена.", failedUpdateTeam: "Не удалось обновить команду", teamUpdated: "Команда обновлена", teamUpdatedDescription: "Команда {name} ({club}) обновлена.",
+  },
+  kk: {
+    preliminary: "Іріктеу кезеңі", teamElimination: "Командалық тор", soloElimination: "Жеке тор", mapUnavailable: "Картаны жүктеуге сервер әзірге қолдау көрсетпейді.",
+    mapUnavailableTitle: "Картаны жүктеу қолжетімсіз", requiredPost: "Тақырып пен сипаттаманы қосыңыз.", requiredImage: "Сурет қосыңыз.",
+    permission: "Бұл әрекетті орындауға құқықтарыңыз жоқ.", server: "Сервер қатесі. Кейінірек қайталап көріңіз.", missingInfo: "Ақпарат жеткіліксіз",
+    judgeFields: "Аты-жөнін, электрондық поштаны және телефонды толтырыңыз.", tryLater: "Кейінірек қайталап көріңіз.", selectRound: "Алдымен раундты таңдаңыз",
+    loadingRound: "Раунд деректері әлі жүктелуде.", noResults: "Жіберетін нәтиже жоқ", enterScores: "Жібермес бұрын ағымдағы раундтың ұпайларын енгізіңіз.", startFirst: "Алдымен турнирді бастаңыз",
+    randomizeBefore: "Жеребе жасамас бұрын турнирді бастаңыз.", publishBefore: "Жеребені жарияламас бұрын турнирді бастаңыз.", confirmDelete: "{name} өшірілсін бе?", noClub: "Клуб жоқ",
+    duplicate: "Қайталанған қатысушы", duplicateDescription: "Қатысушы бір командада бір рет қана болуы мүмкін.", missingParticipants: "Қатысушылар жоқ", addParticipant: "Сақтамас бұрын кемінде бір қатысушы қосыңыз.",
+    noChanges: "Сақтайтын өзгеріс жоқ", updateDetails: "Сақтамас бұрын команда мәліметтерін жаңартыңыз.", saveChanges: "Өзгерістерді сақтау", submit: "Жіберу",
+    editJudge: "Судьяны өзгерту", addJudge: "Судья қосу", saveJudge: "Судьяны сақтау", failedUpdateAnnouncement: "Хабарландыруды жаңарту мүмкін болмады", failedAddAnnouncement: "Хабарландыруды қосу мүмкін болмады",
+    announcementUpdated: "Хабарландыру жаңартылды", contentSubmitted: "Материал жіберілді", announcementUpdatedDescription: "{title} жаңартылды.", contentAddedDescription: "{title} қосылды.",
+    failedUpdateJudge: "Судьяны жаңарту мүмкін болмады", failedAddJudge: "Судьяны қосу мүмкін болмады", judgeUpdated: "Судья жаңартылды", judgeSubmitted: "Судья қосылды",
+    judgeDetailsUpdated: "Судья мәліметтері жаңартылды.", judgeAddedRoster: "Судья тізімге қосылды.", failedCheckJudgeIn: "Судьяны белгілеу мүмкін болмады", failedUncheckJudge: "Судья белгісін алып тастау мүмкін болмады",
+    judgeCheckedIn: "Судья белгіленді", judgeUnchecked: "Судья белгісі алынды", judgeCheckedInDescription: "{name} белгіленді.", judgeUncheckedDescription: "{name} белгісі алынды.",
+    failedRemoveJudge: "Судьяны өшіру мүмкін болмады", judgeRemoved: "Судья өшірілді", judgeRemovedDescription: "{name} өшірілді.", failedAddComment: "Пікірді қосу мүмкін болмады",
+    commentAdded: "Пікір қосылды", commentAddedDescription: "Пікіріңіз қосылды.", failedCheckTeamIn: "Команданы белгілеу мүмкін болмады", failedUncheckTeam: "Команда белгісін алып тастау мүмкін болмады",
+    teamCheckedIn: "Команда белгіленді", teamUnchecked: "Команда белгісі алынды", teamCheckedInDescription: "Команда белгіленді.", teamUncheckedDescription: "Команда белгісі алынды.",
+    failedDisqualifyTeam: "Команданы дисквалификациялау мүмкін болмады", teamDisqualified: "Команда дисквалификацияланды", teamDisqualifiedDescription: "Команда дисквалификацияланды.",
+    failedRequalifyTeam: "Команданы қалпына келтіру мүмкін болмады", teamRequalified: "Команда қалпына келтірілді", teamRestoredDescription: "Команда қалпына келтірілді.",
+    tournamentStarted: "Турнир басталды", proceed: "Енді жеребе мен турнир жұмысын жалғастыруға болады.", failedStartTournament: "Турнирді бастау мүмкін болмады", failedProceedNextRound: "Келесі раундқа өту мүмкін болмады",
+    roundAdvanced: "Раунд жылжытылды", failedAdvanceRound: "Раундты жылжыту мүмкін болмады", nextActive: "{name} белсенді. Дайын болғанда жеребе жасаңыз.", proceeded: "Турнир келесі раундқа өтті.",
+    failedSubmitResults: "Нәтижелерді жіберу мүмкін болмады", resultsSubmitted: "Нәтижелер жіберілді", currentRoundResultsSaved: "Ағымдағы раунд нәтижелері сақталды.",
+    failedRandomizePairings: "Жеребе жасау мүмкін болмады", pairingsRandomized: "Жеребе жасалды", pairingsRegenerated: "Таңдалған раунд жеребесі қайта жасалды.",
+    failedPublishPairings: "Жеребені жариялау мүмкін болмады", pairingsPublished: "Жеребе жарияланды", pairingsVisible: "Таңдалған раунд жеребесі енді көрінеді.",
+    failedSaveRooms: "Аудиторияларды сақтау мүмкін болмады", roomsSaved: "Сақталған аудитория саны: {count}", failedUpdateMatch: "Матчты жаңарту мүмкін болмады",
+    matchUpdated: "Матч жаңартылды", matchChangesSaved: "Матч өзгерістері сақталды.", failedClearMatches: "Матчтарды тазалау мүмкін болмады", matchesCleared: "Матчтар тазартылды", roundMatchesRemoved: "Таңдалған раунд матчтары өшірілді.",
+    failedRemoveTeam: "Команданы өшіру мүмкін болмады", teamRemoved: "Команда өшірілді", teamRemovedDescription: "{name} өшірілді.", failedUpdateTeam: "Команданы жаңарту мүмкін болмады", teamUpdated: "Команда жаңартылды", teamUpdatedDescription: "{name} ({club}) жаңартылды.",
+  },
+}
 
 const STAGE_BY_ROUND_GROUP_TYPE: Partial<Record<RoundGroupType, PairingStageId>> = {
   [RoundGroupType.PRELIMINARY]: "preliminary",
@@ -92,6 +198,7 @@ function getAvailablePairingStageDescriptors(
 const TOURNAMENT_ROSTER_PAGEABLE = { page: 0, size: 100 }
 
 export default function TournamentDetailPage() {
+  const t = useTranslations(catalog)
   const params = useParams()
   const tournamentId = parseInt(params.id as string)
   const { user: currentUser } = useCurrentUser()
@@ -230,8 +337,11 @@ export default function TournamentDetailPage() {
       : undefined
 
   const availablePairingStages = useMemo(
-    () => getAvailablePairingStageDescriptors(roundGroups),
-    [roundGroups],
+    () => getAvailablePairingStageDescriptors(roundGroups).map((stage) => ({
+      ...stage,
+      label: t(stage.id === "preliminary" ? "preliminary" : stage.id === "team" ? "teamElimination" : "soloElimination"),
+    })),
+    [roundGroups, t],
   )
   const effectivePairingStage = selectedRoundGroup
     ? STAGE_BY_ROUND_GROUP_TYPE[selectedRoundGroup.type] ?? selectedPairingStage
@@ -255,10 +365,10 @@ export default function TournamentDetailPage() {
     const [primaryImage, ...extraImages] = postImages
 
     if (isMap) {
-      const message = 'Map uploads are not supported by the backend yet.'
+      const message = t("mapUnavailable")
       setPostError(message)
       toast({
-        title: 'Map upload unavailable',
+        title: t("mapUnavailableTitle"),
         description: message,
         variant: 'destructive',
       })
@@ -266,12 +376,12 @@ export default function TournamentDetailPage() {
     }
 
     if (!title || !description) {
-      setPostError('Please add a title and description.')
+      setPostError(t("requiredPost"))
       return
     }
 
     if (!primaryImage && !isEditingAnnouncement) {
-      setPostError('Please add an image.')
+      setPostError(t("requiredImage"))
       return
     }
 
@@ -285,18 +395,18 @@ export default function TournamentDetailPage() {
           ? await api.updateAnnouncement(tournamentId, editingAnnouncement.id, body, primaryImage)
           : await api.createAnnouncement(tournamentId, body, primaryImage)
         if (!response.ok) throw new Error(await readResponseError(response, {
-          fallback: isEditingAnnouncement ? 'Failed to update announcement' : 'Failed to add announcement',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: isEditingAnnouncement ? t("failedUpdateAnnouncement") : t("failedAddAnnouncement"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
         await mutateAnnouncements()
       } else if (isSchedule) {
         const body: ScheduleRequest = { name: title, description }
         const response = await api.addSchedule(tournamentId, body, primaryImage)
         if (!response.ok) throw new Error(await readResponseError(response, {
-          fallback: 'Failed to add schedule',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("server"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
         await mutateSchedules()
       } else if (isNews) {
@@ -307,9 +417,9 @@ export default function TournamentDetailPage() {
         }
         const response = await api.createNews(body, primaryImage, extraImages)
         if (!response.ok) throw new Error(await readResponseError(response, {
-          fallback: 'Failed to add news',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("server"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
         await mutateNews()
       } else {
@@ -317,8 +427,10 @@ export default function TournamentDetailPage() {
       }
 
       toast({
-        title: isEditingAnnouncement ? 'Announcement updated' : 'Content submitted',
-        description: isEditingAnnouncement ? `${title} has been updated.` : `${title} has been added.`,
+        title: isEditingAnnouncement ? t("announcementUpdated") : t("contentSubmitted"),
+        description: isEditingAnnouncement
+          ? t("announcementUpdatedDescription", { title })
+          : t("contentAddedDescription", { title }),
       })
       setPostTitle('')
       setPostDescription('')
@@ -327,11 +439,11 @@ export default function TournamentDetailPage() {
       setIsAddPostModalOpen(false)
       setModalContext('')
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to submit content'
+      const message = e instanceof Error ? e.message : t("server")
       setPostError(message)
       console.error('Failed to submit content', e)
       toast({
-        title: 'Failed to submit content',
+        title: t("server"),
         description: message,
         variant: 'destructive',
       })
@@ -347,8 +459,8 @@ export default function TournamentDetailPage() {
 
     if (!hasAllFields) {
       toast({
-        title: 'Missing information',
-        description: 'Please fill in name, email, and phone.',
+        title: t("missingInfo"),
+        description: t("judgeFields"),
         variant: 'destructive'
       })
       return
@@ -370,15 +482,15 @@ export default function TournamentDetailPage() {
 
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: judgeModalMode === 'edit' ? 'Failed to update judge' : 'Failed to add judge',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: judgeModalMode === 'edit' ? t("failedUpdateJudge") : t("failedAddJudge"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       toast({
-        title: judgeModalMode === 'edit' ? 'Judge updated' : 'Judge submitted',
-        description: judgeModalMode === 'edit' ? 'The judge details have been updated.' : 'The judge has been added to the roster.'
+        title: judgeModalMode === 'edit' ? t("judgeUpdated") : t("judgeSubmitted"),
+        description: judgeModalMode === 'edit' ? t("judgeDetailsUpdated") : t("judgeAddedRoster"),
       })
 
       await mutateJudges()
@@ -387,10 +499,10 @@ export default function TournamentDetailPage() {
       setJudgeModalMode('add')
       setIsAddJudgeModalOpen(false)
     } catch (error) {
-      const message = error instanceof Error ? error.message : judgeModalMode === 'edit' ? 'Failed to update judge' : 'Failed to add judge'
+      const message = error instanceof Error ? error.message : t("server")
       setJudgeError(message)
       toast({
-        title: judgeModalMode === 'edit' ? 'Failed to update judge' : 'Failed to add judge',
+        title: judgeModalMode === 'edit' ? t("failedUpdateJudge") : t("failedAddJudge"),
         description: message,
         variant: 'destructive'
       })
@@ -422,8 +534,8 @@ export default function TournamentDetailPage() {
   const handleToggleJudgeCheckIn = async (judge: JudgeResponse) => {
     if (!isOrganizer) {
       toast({
-        title: 'Insufficient permissions',
-        description: 'Only organizers can check judges in.',
+        title: t("permission"),
+        description: t("permission"),
         variant: 'destructive',
       })
       return
@@ -442,22 +554,24 @@ export default function TournamentDetailPage() {
 
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: nextCheckedIn ? 'Failed to check judge in' : 'Failed to uncheck judge',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: nextCheckedIn ? t("failedCheckJudgeIn") : t("failedUncheckJudge"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateJudges()
       toast({
-        title: nextCheckedIn ? 'Judge checked in' : 'Judge unchecked',
-        description: `${judge.fullName} has been ${nextCheckedIn ? 'checked in' : 'unchecked'}.`,
+        title: nextCheckedIn ? t("judgeCheckedIn") : t("judgeUnchecked"),
+        description: nextCheckedIn
+          ? t("judgeCheckedInDescription", { name: judge.fullName })
+          : t("judgeUncheckedDescription", { name: judge.fullName }),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to update judge check-in', error)
       toast({
-        title: nextCheckedIn ? 'Failed to check judge in' : 'Failed to uncheck judge',
+        title: nextCheckedIn ? t("failedCheckJudgeIn") : t("failedUncheckJudge"),
         description: message,
         variant: 'destructive',
       })
@@ -469,14 +583,14 @@ export default function TournamentDetailPage() {
   const handleDeleteJudge = async (judge: JudgeResponse) => {
     if (!isOrganizer) {
       toast({
-        title: 'Insufficient permissions',
-        description: 'Only organizers can remove judges.',
+        title: t("permission"),
+        description: t("permission"),
         variant: 'destructive',
       })
       return
     }
 
-    const confirmed = window.confirm(`Are you sure you want to delete ${judge.fullName}?`)
+    const confirmed = window.confirm(t("confirmDelete", { name: judge.fullName }))
     if (!confirmed) return
 
     try {
@@ -484,22 +598,22 @@ export default function TournamentDetailPage() {
       const response = await api.deleteJudge(tournamentId, judge.id)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to remove judge',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedRemoveJudge"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateJudges()
       toast({
-        title: 'Judge removed',
-        description: `${judge.fullName} has been removed.`,
+        title: t("judgeRemoved"),
+        description: t("judgeRemovedDescription", { name: judge.fullName }),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to remove judge', error)
       toast({
-        title: 'Failed to remove judge',
+        title: t("failedRemoveJudge"),
         description: message,
         variant: 'destructive',
       })
@@ -516,22 +630,22 @@ export default function TournamentDetailPage() {
       const response = await api.addAnnouncementComment(tournamentId, announcementId, { content: trimmedContent })
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to add comment',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedAddComment"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateAnnouncements()
       toast({
-        title: 'Comment added',
-        description: 'Your comment has been added.',
+        title: t("commentAdded"),
+        description: t("commentAddedDescription"),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add comment'
+      const message = error instanceof Error ? error.message : t("failedAddComment")
       console.error('Failed to add announcement comment', error)
       toast({
-        title: 'Failed to add comment',
+        title: t("failedAddComment"),
         description: message,
         variant: 'destructive',
       })
@@ -572,8 +686,8 @@ export default function TournamentDetailPage() {
   const handleToggleCheckIn = async (teamId: number) => {
     if (!canManageTeams) {
       toast({
-        title: 'Insufficient permissions',
-        description: 'Only organizers can check teams in.',
+        title: t("permission"),
+        description: t("permission"),
         variant: 'destructive',
       })
       return
@@ -594,26 +708,26 @@ export default function TournamentDetailPage() {
 
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: nextCheckedIn ? 'Failed to check team in' : 'Failed to uncheck team',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: nextCheckedIn ? t("failedCheckTeamIn") : t("failedUncheckTeam"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateTeams()
       toast({
-        title: nextCheckedIn ? 'Team checked in' : 'Team unchecked',
-        description: nextCheckedIn ? 'The team has been checked in.' : 'The team has been unchecked.',
+        title: nextCheckedIn ? t("teamCheckedIn") : t("teamUnchecked"),
+        description: nextCheckedIn ? t("teamCheckedInDescription") : t("teamUncheckedDescription"),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       setCheckInStatus((prev) => ({
         ...prev,
         [teamId]: wasCheckedIn,
       }))
       console.error('Failed to update team check-in', error)
       toast({
-        title: nextCheckedIn ? 'Failed to check team in' : 'Failed to uncheck team',
+        title: nextCheckedIn ? t("failedCheckTeamIn") : t("failedUncheckTeam"),
         description: message,
         variant: 'destructive',
       })
@@ -623,8 +737,8 @@ export default function TournamentDetailPage() {
   const handleDisqualifyTeam = async (teamId: number) => {
     if (!canManageTeams) {
       toast({
-        title: 'Insufficient permissions',
-        description: 'Only organizers can disqualify teams.',
+        title: t("permission"),
+        description: t("permission"),
         variant: 'destructive',
       })
       return
@@ -634,22 +748,22 @@ export default function TournamentDetailPage() {
       const response = await api.disqualifyTeam(tournamentId, teamId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to disqualify team',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedDisqualifyTeam"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateTeams()
       toast({
-        title: 'Team disqualified',
-        description: 'The team has been disqualified.',
+        title: t("teamDisqualified"),
+        description: t("teamDisqualifiedDescription"),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to disqualify team', error)
       toast({
-        title: 'Failed to disqualify team',
+        title: t("failedDisqualifyTeam"),
         description: message,
         variant: 'destructive',
       })
@@ -659,8 +773,8 @@ export default function TournamentDetailPage() {
   const handleRequalifyTeam = async (teamId: number) => {
     if (!canManageTeams) {
       toast({
-        title: 'Insufficient permissions',
-        description: 'Only organizers can requalify teams.',
+        title: t("permission"),
+        description: t("permission"),
         variant: 'destructive',
       })
       return
@@ -670,22 +784,22 @@ export default function TournamentDetailPage() {
       const response = await api.requalifyTeam(tournamentId, teamId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to requalify team',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedRequalifyTeam"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateTeams()
       toast({
-        title: 'Team requalified',
-        description: 'The team has been restored.',
+        title: t("teamRequalified"),
+        description: t("teamRestoredDescription"),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to requalify team', error)
       toast({
-        title: 'Failed to requalify team',
+        title: t("failedRequalifyTeam"),
         description: message,
         variant: 'destructive',
       })
@@ -700,25 +814,25 @@ export default function TournamentDetailPage() {
       const response = await api.startTournament(tournamentId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to start tournament',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedStartTournament"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       toast({
-        title: 'Tournament started',
-        description: 'Pairings and tournament workflow can now proceed.',
+        title: t("tournamentStarted"),
+        description: t("proceed"),
       })
       await Promise.all([
         mutateTournament?.(),
         mutateMatches?.(),
       ])
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to start tournament', error)
       toast({
-        title: 'Failed to start tournament',
+        title: t("failedStartTournament"),
         description: message,
         variant: 'destructive',
       })
@@ -732,8 +846,8 @@ export default function TournamentDetailPage() {
 
     if (typeof selectedRoundGroupId !== 'number') {
       toast({
-        title: 'Select a round first',
-        description: 'Round data is still loading.',
+        title: t("selectRound"),
+        description: t("loadingRound"),
         variant: 'destructive',
       })
       return
@@ -743,9 +857,9 @@ export default function TournamentDetailPage() {
       const response = await api.proceedToNextRound(tournamentId, selectedRoundGroupId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to proceed to the next round',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedProceedNextRound"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
@@ -763,16 +877,16 @@ export default function TournamentDetailPage() {
       }
 
       toast({
-        title: 'Round advanced',
+        title: t("roundAdvanced"),
         description: nextRound
-          ? `${nextRound.name} is now active. Randomize it when you are ready.`
-          : 'The tournament has proceeded to the next round.',
+          ? t("nextActive", { name: nextRound.name })
+          : t("proceeded"),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to proceed to next round', error)
       toast({
-        title: 'Failed to advance round',
+        title: t("failedAdvanceRound"),
         description: message,
         variant: 'destructive',
       })
@@ -785,8 +899,8 @@ export default function TournamentDetailPage() {
     }
 
     toast({
-      title: 'Select a round first',
-      description: 'Round data is still loading.',
+      title: t("selectRound"),
+      description: t("loadingRound"),
       variant: 'destructive',
     })
     return null
@@ -797,8 +911,8 @@ export default function TournamentDetailPage() {
 
     if (!results.length) {
       toast({
-        title: 'No results to submit',
-        description: 'Enter scores for the current round before submitting.',
+        title: t("noResults"),
+        description: t("enterScores"),
         variant: 'destructive',
       })
       return false
@@ -818,9 +932,9 @@ export default function TournamentDetailPage() {
 
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to submit results',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedSubmitResults"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
@@ -831,15 +945,15 @@ export default function TournamentDetailPage() {
         mutatePreliminaryRoundMatches?.(),
       ])
       toast({
-        title: 'Results submitted',
-        description: 'The current round results have been saved.',
+        title: t("resultsSubmitted"),
+        description: t("currentRoundResultsSaved"),
       })
       return true
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to submit match results', error)
       toast({
-        title: 'Failed to submit results',
+        title: t("failedSubmitResults"),
         description: message,
         variant: 'destructive',
       })
@@ -854,8 +968,8 @@ export default function TournamentDetailPage() {
 
     if (!tournament?.started) {
       toast({
-        title: 'Start tournament first',
-        description: 'Start the tournament before randomizing pairings.',
+        title: t("startFirst"),
+        description: t("randomizeBefore"),
         variant: 'destructive',
       })
       return false
@@ -868,23 +982,23 @@ export default function TournamentDetailPage() {
       const response = await api.randomizeMatches(tournamentId, selectedIds.roundGroupId, selectedIds.roundId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to randomize pairings',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedRandomizePairings"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateMatches?.()
       toast({
-        title: 'Pairings randomized',
-        description: 'The selected round pairings have been regenerated.',
+        title: t("pairingsRandomized"),
+        description: t("pairingsRegenerated"),
       })
       return true
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to randomize pairings', error)
       toast({
-        title: 'Failed to randomize pairings',
+        title: t("failedRandomizePairings"),
         description: message,
         variant: 'destructive',
       })
@@ -897,8 +1011,8 @@ export default function TournamentDetailPage() {
 
     if (!tournament?.started) {
       toast({
-        title: 'Start tournament first',
-        description: 'Start the tournament before publishing pairings.',
+        title: t("startFirst"),
+        description: t("publishBefore"),
         variant: 'destructive',
       })
       return false
@@ -911,23 +1025,23 @@ export default function TournamentDetailPage() {
       const response = await api.publishMatches(tournamentId, selectedIds.roundGroupId, selectedIds.roundId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to publish pairings',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedPublishPairings"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateMatches?.()
       toast({
-        title: 'Pairings published',
-        description: 'The selected round pairings are now visible.',
+        title: t("pairingsPublished"),
+        description: t("pairingsVisible"),
       })
       return true
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to publish pairings', error)
       toast({
-        title: 'Failed to publish pairings',
+        title: t("failedPublishPairings"),
         description: message,
         variant: 'destructive',
       })
@@ -955,22 +1069,22 @@ export default function TournamentDetailPage() {
       )
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to save rooms',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedSaveRooms"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateMatches?.()
       toast({
-        title: `${entries.length} rooms saved`,
+        title: t("roomsSaved", { count: entries.length }),
       })
       return true
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to save match rooms', error)
       toast({
-        title: 'Failed to save rooms',
+        title: t("failedSaveRooms"),
         description: message,
         variant: 'destructive',
       })
@@ -981,8 +1095,8 @@ export default function TournamentDetailPage() {
   const handleUpdateMatch = async (
     matchId: number,
     payload: MatchUpdateRequest,
-    successTitle = 'Match updated',
-    successDescription = 'The match changes have been saved.',
+    successTitle = t("matchUpdated"),
+    successDescription = t("matchChangesSaved"),
   ) => {
     if (!isOrganizer) return
 
@@ -994,9 +1108,9 @@ export default function TournamentDetailPage() {
       const response = await api.updateMatch(tournamentId, selectedIds.roundGroupId, selectedIds.roundId, matchId, payload)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to update match',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedUpdateMatch"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
@@ -1006,10 +1120,10 @@ export default function TournamentDetailPage() {
         description: successDescription,
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to update match', error)
       toast({
-        title: 'Failed to update match',
+        title: t("failedUpdateMatch"),
         description: message,
         variant: 'destructive',
       })
@@ -1028,22 +1142,22 @@ export default function TournamentDetailPage() {
       const response = await api.clearMatches(tournamentId, selectedIds.roundGroupId, selectedIds.roundId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to clear matches',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedClearMatches"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
 
       await mutateMatches?.()
       toast({
-        title: 'Matches cleared',
-        description: 'The selected round matches have been removed.',
+        title: t("matchesCleared"),
+        description: t("roundMatchesRemoved"),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to clear matches', error)
       toast({
-        title: 'Failed to clear matches',
+        title: t("failedClearMatches"),
         description: message,
         variant: 'destructive',
       })
@@ -1061,14 +1175,14 @@ export default function TournamentDetailPage() {
   const handleDeleteTeam = async (teamId: number, teamName: string) => {
     if (!canManageTeams) {
       toast({
-        title: 'Insufficient permissions',
-        description: 'Only organizers can remove teams.',
+        title: t("permission"),
+        description: t("permission"),
         variant: 'destructive'
       })
       return
     }
 
-    const confirmed = window.confirm(`Are you sure you want to delete ${teamName}?`)
+    const confirmed = window.confirm(t("confirmDelete", { name: teamName }))
     if (!confirmed) return
 
     try {
@@ -1076,21 +1190,21 @@ export default function TournamentDetailPage() {
       const response = await api.removeTeam(tournamentId, teamId)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to remove team',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedRemoveTeam"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
       await mutateTeams()
       toast({
-        title: 'Team removed',
-        description: `${teamName} has been removed.`,
+        title: t("teamRemoved"),
+        description: t("teamRemovedDescription", { name: teamName }),
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to remove team', error)
       toast({
-        title: 'Failed to remove team',
+        title: t("failedRemoveTeam"),
         description: message,
         variant: 'destructive'
       })
@@ -1133,8 +1247,8 @@ export default function TournamentDetailPage() {
     if (trimmedSpeakers.join('\n') !== currentSpeakers.join('\n')) {
       if (new Set(trimmedSpeakers).size !== trimmedSpeakers.length) {
         toast({
-          title: 'Duplicate participant',
-          description: 'A participant can only appear once in the same team.',
+          title: t("duplicate"),
+          description: t("duplicateDescription"),
           variant: 'destructive',
         })
         return
@@ -1142,8 +1256,8 @@ export default function TournamentDetailPage() {
 
       if (trimmedSpeakers.length === 0) {
         toast({
-          title: 'Missing participants',
-          description: 'Add at least one participant before saving.',
+          title: t("missingParticipants"),
+          description: t("addParticipant"),
           variant: 'destructive',
         })
         return
@@ -1154,8 +1268,8 @@ export default function TournamentDetailPage() {
 
     if (!Object.keys(payload).length) {
       toast({
-        title: 'No changes to save',
-        description: 'Update the team details before saving.',
+        title: t("noChanges"),
+        description: t("updateDetails"),
       })
       return
     }
@@ -1165,22 +1279,25 @@ export default function TournamentDetailPage() {
       const response = await api.updateTeam_Organizer(tournamentId, teamEditModalData.id, payload)
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
-          fallback: 'Failed to update team',
-          unauthorized: 'You do not have permission to perform this action.',
-          serverError: 'Server error. Please try again later.',
+          fallback: t("failedUpdateTeam"),
+          unauthorized: t("permission"),
+          serverError: t("server"),
         }))
       }
       await mutateTeams()
       toast({
-        title: 'Team updated',
-        description: `${payload.name ?? teamEditModalData.name} (${trimmedClub || 'No club'}) has been updated.`,
+        title: t("teamUpdated"),
+        description: t("teamUpdatedDescription", {
+          name: payload.name ?? teamEditModalData.name,
+          club: trimmedClub || t("noClub"),
+        }),
       })
       setTeamEditModalData(null)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again later.'
+      const message = error instanceof Error ? error.message : t("tryLater")
       console.error('Failed to update team', error)
       toast({
-        title: 'Failed to update team',
+        title: t("failedUpdateTeam"),
         description: message,
         variant: 'destructive',
       })
@@ -1255,8 +1372,8 @@ export default function TournamentDetailPage() {
   const openContentModal = (context: 'announcements' | 'schedule' | 'map' | 'news') => {
     if (context === 'map') {
       toast({
-        title: 'Map upload unavailable',
-        description: 'Map uploads are not supported by the backend yet.',
+        title: t("mapUnavailableTitle"),
+        description: t("mapUnavailable"),
         variant: 'destructive',
       })
       return
@@ -1484,7 +1601,7 @@ export default function TournamentDetailPage() {
         uploadErrors={uploadErrors}
         isSubmitting={postSubmitting}
         errorMessage={postError}
-        submitLabel={editingAnnouncement ? 'Save changes' : 'Submit'}
+        submitLabel={editingAnnouncement ? t("saveChanges") : t("submit")}
         dzAnimate={dzAnimate}
         formatBytes={formatBytes}
         onClose={closeAddPostModal}
@@ -1514,8 +1631,8 @@ export default function TournamentDetailPage() {
         onChange={(field, value) => setJudgeForm((prev) => ({ ...prev, [field]: value }))}
         isSubmitting={judgeSubmitting}
         errorMessage={judgeError}
-        title={judgeModalMode === 'edit' ? 'Edit Judge' : 'Add Judge'}
-        submitLabel={judgeModalMode === 'edit' ? 'Save Judge' : 'Submit'}
+        title={judgeModalMode === 'edit' ? t("editJudge") : t("addJudge")}
+        submitLabel={judgeModalMode === 'edit' ? t("saveJudge") : t("submit")}
       />
     </div>
   )

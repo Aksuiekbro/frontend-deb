@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { useTournamentVisibility } from "./useTournamentVisibility"
 import { api } from "@/lib/api"
+import { LocaleProvider, useLocale } from "@/lib/i18n"
 import type { TournamentResponse } from "@/types/tournament/tournament"
 
 jest.mock("@/lib/api", () => ({
@@ -37,9 +38,11 @@ function Harness() {
     tournament,
     toast,
   })
+  const { locale } = useLocale()
 
   return (
     <div>
+      <span data-testid="locale">{locale}</span>
       <span>{isTournamentEnabled ? "enabled" : "disabled"}</span>
       <span>{toggleTournamentLoading ? "loading" : "idle"}</span>
       <button type="button" onClick={() => handleTournamentToggle(false)}>Disable</button>
@@ -51,6 +54,7 @@ function Harness() {
 describe("useTournamentVisibility", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    window.localStorage.clear()
     jest.spyOn(console, "error").mockImplementation(() => undefined)
   })
 
@@ -91,5 +95,46 @@ describe("useTournamentVisibility", () => {
     })
     expect(screen.getByText("enabled")).toBeInTheDocument()
     expect(screen.getByText("idle")).toBeInTheDocument()
+  })
+
+  it("translates a successful visibility toast into Russian while preserving the tournament name", async () => {
+    window.localStorage.setItem("debetter-locale", "ru")
+    apiMock.enableTournament.mockResolvedValue(response({}))
+
+    render(
+      <LocaleProvider>
+        <Harness />
+      </LocaleProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("ru"))
+    fireEvent.click(screen.getByText("Enable"))
+
+    await waitFor(() => {
+      expect(toast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Турнир виден",
+        description: "Турнир «Climate Cup» теперь виден участникам.",
+      }))
+    })
+  })
+
+  it("translates a visibility permission error into Kazakh", async () => {
+    window.localStorage.setItem("debetter-locale", "kk")
+    apiMock.disableTournament.mockResolvedValue(response({}, 403))
+
+    render(
+      <LocaleProvider>
+        <Harness />
+      </LocaleProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("kk"))
+    fireEvent.click(screen.getByText("Disable"))
+
+    await waitFor(() => {
+      expect(toast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Турнирді жаңарту мүмкін болмады",
+        description: "Бұл әрекетті орындауға рұқсатыңыз жоқ.",
+        variant: "destructive",
+      }))
+    })
   })
 })

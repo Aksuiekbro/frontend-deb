@@ -6,6 +6,7 @@ import "@testing-library/jest-dom"
 import type { ComponentPropsWithoutRef } from "react"
 
 import Dashboard from "./page"
+import { LocaleProvider } from "../../lib/i18n"
 
 type MockLinkProps = ComponentPropsWithoutRef<"a"> & { prefetch?: boolean }
 
@@ -49,6 +50,12 @@ const tournament = (overrides: Record<string, unknown>) => ({
   ...overrides,
 })
 
+const renderDashboard = () => render(
+  <LocaleProvider>
+    <Dashboard />
+  </LocaleProvider>,
+)
+
 describe("Dashboard", () => {
   beforeEach(() => {
     jest.useFakeTimers()
@@ -83,7 +90,7 @@ describe("Dashboard", () => {
   })
 
   it("loads dashboard tournament sections with backend-shaped filters and tag names", () => {
-    render(<Dashboard />)
+    renderDashboard()
 
     expect(mockUseUpcomingTournaments).toHaveBeenCalledWith(6)
     expect(mockUseTournaments).toHaveBeenCalledWith(
@@ -103,7 +110,7 @@ describe("Dashboard", () => {
       error: undefined,
     })
 
-    render(<Dashboard />)
+    renderDashboard()
 
     expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/auth?mode=login")
     expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("data-prefetch", "false")

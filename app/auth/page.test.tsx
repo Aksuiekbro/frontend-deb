@@ -8,6 +8,7 @@ import AuthRoutePage from './page'
 import AuthPageClient, { type AuthMode, type AuthPageClientProps } from './AuthPageClient'
 import { api } from '../../lib/api'
 import { Role, type UserResponse } from '../../types/user/user'
+import { LocaleProvider } from '../../lib/i18n'
 
 const mockPush = jest.fn()
 const mockMutate = jest.fn()
@@ -58,7 +59,7 @@ function submitSignUp(container: HTMLElement) {
 }
 
 function renderAuthPage(initialMode: AuthMode = 'register', requestedMode: AuthMode | null = null) {
-  return render(<AuthPageClient initialMode={initialMode} requestedMode={requestedMode} />)
+  return render(<AuthPageClient initialMode={initialMode} requestedMode={requestedMode} />, { wrapper: LocaleProvider })
 }
 
 // Both auth forms render simultaneously (sliding-panel UI); target the sign-in one by its fields.
@@ -68,7 +69,10 @@ function fillAndSubmitSignIn(container: HTMLElement, username: string, password:
   fireEvent.submit(container.querySelector('#auth-signin-email')!.closest('form')!)
 }
 
-afterEach(() => jest.clearAllMocks())
+afterEach(() => {
+  jest.clearAllMocks()
+  window.localStorage.removeItem('debetter-locale')
+})
 
 describe('AuthPage server wrapper', () => {
   it.each([
@@ -132,6 +136,36 @@ describe('AuthPageClient query mode', () => {
     expect(container.querySelector('.sign-up-container')).toHaveClass('duration-500')
     expect(container.querySelector('.sign-in-container')).toHaveClass('duration-500')
     expect(container.querySelector('.overlay-container')).toHaveClass('duration-500')
+  })
+
+  it.each([
+    ['ru', 'Создать аккаунт', 'Имя пользователя'],
+    ['kk', 'Аккаунт жасау', 'Пайдаланушы аты'],
+  ])('renders auth copy in the %s locale', async (locale, heading, usernameLabel) => {
+    window.localStorage.setItem('debetter-locale', locale)
+    renderAuthPage()
+
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
+    expect(screen.getAllByPlaceholderText(usernameLabel)).toHaveLength(2)
+  })
+
+  it('switches English, Russian, and Kazakh from the auth language selector and persists the choice', async () => {
+    const { unmount } = renderAuthPage()
+    const selector = await screen.findByRole('combobox', { name: 'Language' })
+
+    expect(selector).toHaveValue('en')
+    fireEvent.change(selector, { target: { value: 'ru' } })
+    expect(await screen.findByRole('heading', { name: 'Создать аккаунт' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Язык' })).toHaveValue('ru')
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Язык' }), { target: { value: 'kk' } })
+    expect(await screen.findByRole('heading', { name: 'Аккаунт жасау' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Тіл' })).toHaveValue('kk')
+    expect(window.localStorage.getItem('debetter-locale')).toBe('kk')
+
+    unmount()
+    renderAuthPage()
+    expect(await screen.findByRole('combobox', { name: 'Тіл' })).toHaveValue('kk')
   })
 })
 

@@ -5,6 +5,7 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import MyTournamentsPage from "./page"
+import { LocaleProvider } from "../../lib/i18n"
 
 const mockUseTournaments = jest.fn()
 
@@ -39,10 +40,17 @@ const tournament = (overrides: Record<string, unknown>) => ({
   ...overrides,
 })
 
+const renderPage = () => render(
+  <LocaleProvider>
+    <MyTournamentsPage />
+  </LocaleProvider>,
+)
+
 describe("MyTournamentsPage", () => {
   beforeEach(() => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date("2026-06-19T12:00:00.000Z"))
+    window.localStorage.setItem("debetter-locale", "en")
     mockUseTournaments.mockImplementation((params?: { startDateTo?: string; startDateFrom?: string }) => {
       if (params?.startDateTo) {
         return {
@@ -79,7 +87,7 @@ describe("MyTournamentsPage", () => {
   })
 
   it("requests date-filtered tournament lists and switches between past, ongoing, and upcoming tabs", () => {
-    render(<MyTournamentsPage />)
+    renderPage()
 
     expect(mockUseTournaments).toHaveBeenNthCalledWith(
       1,
@@ -101,5 +109,21 @@ describe("MyTournamentsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Upcoming" }))
     expect(screen.getByText("Upcoming Cup")).toBeInTheDocument()
+  })
+
+  it.each([
+    ["ru", "Мои турниры", "Прошедшие", "Идёт", "Подробнее"],
+    ["kk", "Менің турнирлерім", "Өткен", "Өтіп жатыр", "Толығырақ көру"],
+  ])("renders localized tournament labels and dates for %s", (locale, title, pastTab, activeStatus, details) => {
+    window.localStorage.setItem("debetter-locale", locale)
+
+    renderPage()
+
+    expect(screen.getByRole("heading", { name: title })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: pastTab })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: locale === "ru" ? "Текущие" : "Өтіп жатқан" }))
+    expect(screen.getByText(`${activeStatus}`)).toBeInTheDocument()
+    expect(screen.getByText(details)).toBeInTheDocument()
+    expect(screen.getByText("19.06.2026")).toBeInTheDocument()
   })
 })

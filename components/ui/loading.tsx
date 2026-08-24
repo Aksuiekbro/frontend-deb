@@ -1,4 +1,13 @@
+"use client"
+
 import { cn } from "@/lib/utils"
+import { useTranslations } from "@/lib/i18n"
+
+const loadingMessages = {
+  en: { loading: "Loading" },
+  ru: { loading: "Загрузка" },
+  kk: { loading: "Жүктелуде" },
+} as const
 
 interface LoadingSpinnerProps {
   className?: string
@@ -6,6 +15,7 @@ interface LoadingSpinnerProps {
 }
 
 export function LoadingSpinner({ className, size = "md" }: LoadingSpinnerProps) {
+  const t = useTranslations(loadingMessages)
   const sizes = {
     sm: "w-4 h-4",
     md: "w-6 h-6",
@@ -14,6 +24,8 @@ export function LoadingSpinner({ className, size = "md" }: LoadingSpinnerProps) 
 
   return (
     <div
+      role="status"
+      aria-label={t("loading")}
       className={cn(
         "animate-spin rounded-full border-2 border-gray-300 border-t-[#3E5C76]",
         sizes[size],
