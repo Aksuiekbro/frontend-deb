@@ -36,6 +36,36 @@ describe("useImageUpload", () => {
     expect(result.current.postImages).toEqual([])
   })
 
+  it("removes only the matching preview and file from the upload state", async () => {
+    const { result } = renderHook(() => useImageUpload())
+    const firstFile = new File(["first"], "human1.png", {
+      type: "image/png",
+      lastModified: 1,
+    })
+    const secondFile = new File(["second"], "human2.png", {
+      type: "image/png",
+      lastModified: 2,
+    })
+
+    act(() => {
+      result.current.handleImageUpload([firstFile, secondFile] as unknown as FileList)
+    })
+
+    await waitFor(() => {
+      expect(result.current.imagePreviews).toHaveLength(2)
+      expect(result.current.postImages).toHaveLength(2)
+    })
+
+    act(() => {
+      result.current.removeImageByKey(
+        `${firstFile.name}-${firstFile.lastModified}-${firstFile.size}`,
+      )
+    })
+
+    expect(result.current.imagePreviews.map((preview) => preview.name)).toEqual(["human2.png"])
+    expect(result.current.postImages).toEqual([secondFile])
+  })
+
   it("translates invalid image validation into Russian", async () => {
     window.localStorage.setItem("debetter-locale", "ru")
     const { result } = renderHook(() => useImageUpload(), {

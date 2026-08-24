@@ -6,12 +6,10 @@ import { useId } from "react"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 const catalog: TranslationCatalog = {
-  en: { addAnnouncement: "Add Announcement", addSchedule: "Add Schedule Item", addMap: "Add Map Item", addNews: "Add News", addContent: "Add Content", editAnnouncement: "Edit Announcement", replace: "Replace Image", attach: "Attach Images", drag: "Drag and Drop here", or: "or", browse: "Browse files", current: "Current announcement", currentImage: "Current image", noPhoto: "No photo saved", uploaded: "Uploaded", remove: "Remove", title: "Title", titlePlaceholder: "Enter post title", description: "Description", descriptionPlaceholder: "Enter post description", category: "Category", important: "Important", update: "Update", info: "Info", submitting: "Submitting...", submit: "Submit", save: "Save changes" },
-  ru: { addAnnouncement: "Добавить объявление", addSchedule: "Добавить пункт расписания", addMap: "Добавить пункт карты", addNews: "Добавить новость", addContent: "Добавить материал", editAnnouncement: "Изменить объявление", replace: "Заменить изображение", attach: "Прикрепить изображения", drag: "Перетащите файлы сюда", or: "или", browse: "Выбрать файлы", current: "Текущее объявление", currentImage: "Текущее изображение", noPhoto: "Фото не сохранено", uploaded: "Загружено", remove: "Удалить", title: "Заголовок", titlePlaceholder: "Введите заголовок публикации", description: "Описание", descriptionPlaceholder: "Введите описание публикации", category: "Категория", important: "Важно", update: "Обновление", info: "Информация", submitting: "Отправка...", submit: "Отправить", save: "Сохранить изменения" },
-  kk: { addAnnouncement: "Хабарландыру қосу", addSchedule: "Кесте тармағын қосу", addMap: "Карта тармағын қосу", addNews: "Жаңалық қосу", addContent: "Материал қосу", editAnnouncement: "Хабарландыруды өзгерту", replace: "Суретті ауыстыру", attach: "Суреттерді тіркеу", drag: "Файлдарды осында сүйреп әкеліңіз", or: "немесе", browse: "Файлдарды шолу", current: "Ағымдағы хабарландыру", currentImage: "Ағымдағы сурет", noPhoto: "Фото сақталмаған", uploaded: "Жүктелді", remove: "Жою", title: "Тақырып", titlePlaceholder: "Жазба тақырыбын енгізіңіз", description: "Сипаттама", descriptionPlaceholder: "Жазба сипаттамасын енгізіңіз", category: "Санат", important: "Маңызды", update: "Жаңарту", info: "Ақпарат", submitting: "Жіберілуде...", submit: "Жіберу", save: "Өзгерістерді сақтау" },
+  en: { addAnnouncement: "Add Announcement", addSchedule: "Add Schedule Item", addMap: "Add Map Item", addNews: "Add News", addContent: "Add Content", editAnnouncement: "Edit Announcement", replace: "Replace Image", attach: "Attach Images", drag: "Drag and Drop here", or: "or", browse: "Browse files", current: "Current announcement", currentImage: "Current image", noPhoto: "No photo saved", remove: "Remove", title: "Title", titlePlaceholder: "Enter post title", description: "Description", descriptionPlaceholder: "Enter post description", category: "Category", important: "Important", update: "Update", info: "Info", submitting: "Submitting...", submit: "Submit", save: "Save changes" },
+  ru: { addAnnouncement: "Добавить объявление", addSchedule: "Добавить пункт расписания", addMap: "Добавить пункт карты", addNews: "Добавить новость", addContent: "Добавить материал", editAnnouncement: "Изменить объявление", replace: "Заменить изображение", attach: "Прикрепить изображения", drag: "Перетащите файлы сюда", or: "или", browse: "Выбрать файлы", current: "Текущее объявление", currentImage: "Текущее изображение", noPhoto: "Фото не сохранено", remove: "Удалить", title: "Заголовок", titlePlaceholder: "Введите заголовок публикации", description: "Описание", descriptionPlaceholder: "Введите описание публикации", category: "Категория", important: "Важно", update: "Обновление", info: "Информация", submitting: "Отправка...", submit: "Отправить", save: "Сохранить изменения" },
+  kk: { addAnnouncement: "Хабарландыру қосу", addSchedule: "Кесте тармағын қосу", addMap: "Карта тармағын қосу", addNews: "Жаңалық қосу", addContent: "Материал қосу", editAnnouncement: "Хабарландыруды өзгерту", replace: "Суретті ауыстыру", attach: "Суреттерді тіркеу", drag: "Файлдарды осында сүйреп әкеліңіз", or: "немесе", browse: "Файлдарды шолу", current: "Ағымдағы хабарландыру", currentImage: "Ағымдағы сурет", noPhoto: "Фото сақталмаған", remove: "Жою", title: "Тақырып", titlePlaceholder: "Жазба тақырыбын енгізіңіз", description: "Сипаттама", descriptionPlaceholder: "Жазба сипаттамасын енгізіңіз", category: "Санат", important: "Маңызды", update: "Жаңарту", info: "Ақпарат", submitting: "Жіберілуде...", submit: "Жіберу", save: "Өзгерістерді сақтау" },
 }
-
-const CHECK_ICON_URL = "http://localhost:3845/assets/34c9396e092463c20579b8768a873faee7143b0b.svg"
 
 type NewsCategory = "Important" | "Update" | "Info"
 
@@ -164,16 +162,12 @@ export function AddPostModal({
                           </div>
                           <button
                             type="button"
-                            onClick={() => (img.status === "done" ? undefined : onRemoveImage(img.key))}
-                            className={`ml-auto w-6 h-6 aspect-square shrink-0 rounded-full overflow-hidden flex items-center justify-center ${img.status === "done" ? "" : "bg-black/60 text-white"}`}
-                            aria-label={img.status === "done" ? t("uploaded") : t("remove")}
-                            title={img.status === "done" ? t("uploaded") : t("remove")}
+                            onClick={() => onRemoveImage(img.key)}
+                            className="ml-auto w-6 h-6 aspect-square shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-black/60 text-white"
+                            aria-label={`${t("remove")} ${img.name}`}
+                            title={`${t("remove")} ${img.name}`}
                           >
-                            {img.status === "done" ? (
-                              <img src={CHECK_ICON_URL} alt={t("uploaded")} className="w-full h-full object-contain" />
-                            ) : (
-                              <span>×</span>
-                            )}
+                            <span aria-hidden="true">×</span>
                           </button>
                         </div>
                         {img.status !== "done" && (
