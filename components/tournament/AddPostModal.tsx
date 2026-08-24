@@ -120,7 +120,10 @@ export function AddPostModal({
                   type="file"
                   multiple={!isEditMode}
                   accept="image/*"
-                  onChange={(event) => onImageUpload(event.target.files)}
+                  onChange={(event) => {
+                    onImageUpload(event.currentTarget.files)
+                    event.currentTarget.value = ""
+                  }}
                   className="hidden"
                 />
               </div>

@@ -57,13 +57,42 @@ describe("useImageUpload", () => {
     })
 
     act(() => {
-      result.current.removeImageByKey(
-        `${firstFile.name}-${firstFile.lastModified}-${firstFile.size}`,
-      )
+      result.current.removeImageByKey(result.current.imagePreviews[0].key)
     })
 
     expect(result.current.imagePreviews.map((preview) => preview.name)).toEqual(["human2.png"])
     expect(result.current.postImages).toEqual([secondFile])
+  })
+
+  it("removes only one occurrence when the same file is selected more than once", async () => {
+    const { result } = renderHook(() => useImageUpload())
+    const repeatedFile = new File(["same image"], "repeat.png", {
+      type: "image/png",
+      lastModified: 3,
+    })
+
+    act(() => {
+      result.current.handleImageUpload([repeatedFile] as unknown as FileList)
+    })
+    act(() => {
+      result.current.handleImageUpload([repeatedFile] as unknown as FileList)
+    })
+
+    await waitFor(() => {
+      expect(result.current.imagePreviews).toHaveLength(2)
+      expect(result.current.postImages).toHaveLength(2)
+    })
+
+    const [firstPreview, secondPreview] = result.current.imagePreviews
+    expect(firstPreview.key).not.toBe(secondPreview.key)
+
+    act(() => {
+      result.current.removeImageByKey(firstPreview.key)
+    })
+
+    expect(result.current.imagePreviews).toHaveLength(1)
+    expect(result.current.imagePreviews[0].key).toBe(secondPreview.key)
+    expect(result.current.postImages).toEqual([repeatedFile])
   })
 
   it("translates invalid image validation into Russian", async () => {

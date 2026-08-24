@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 export type ImagePreview = {
@@ -11,6 +11,11 @@ export type ImagePreview = {
   progress: number
   status: "loading" | "done" | "error"
   error?: string
+}
+
+type ImageSelection = {
+  key: string
+  file: File
 }
 
 const DEFAULT_MAX_SIZE = 5 * 1024 * 1024 // backend max: 5MB
@@ -38,8 +43,9 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
   const t = useTranslations(messages)
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([])
   const [uploadErrors, setUploadErrors] = useState<string[]>([])
-  const [postImages, setPostImages] = useState<File[]>([])
+  const [imageSelections, setImageSelections] = useState<ImageSelection[]>([])
   const [dzAnimate, setDzAnimate] = useState(false)
+  const nextSelectionId = useRef(0)
 
   const formatBytes = useCallback((bytes: number) => {
     return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
@@ -49,12 +55,10 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     if (!files) return
 
     const nextErrors: string[] = []
-    const validFiles: File[] = []
+    const validSelections: ImageSelection[] = []
     const nextPreviews: ImagePreview[] = []
 
     Array.from(files).forEach((file) => {
-      const key = `${file.name}-${file.lastModified}-${file.size}`
-
       const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
 
       if (!file.type.startsWith("image/") || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
@@ -67,7 +71,9 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
         return
       }
 
-      validFiles.push(file)
+      const key = `${file.name}-${file.lastModified}-${file.size}-${nextSelectionId.current}`
+      nextSelectionId.current += 1
+      validSelections.push({ key, file })
       nextPreviews.push({ key, name: file.name, sizeBytes: file.size, src: "", progress: 0, status: "loading" })
 
       const reader = new FileReader()
@@ -92,8 +98,8 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     if (nextPreviews.length) {
       setImagePreviews((prev) => [...prev, ...nextPreviews])
     }
-    if (validFiles.length) {
-      setPostImages((prev) => [...prev, ...validFiles])
+    if (validSelections.length) {
+      setImageSelections((prev) => [...prev, ...validSelections])
     }
   }, [formatBytes, maxSize, t])
 
@@ -109,15 +115,17 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
 
   const removeImageByKey = useCallback((key: string) => {
     setImagePreviews((prev) => prev.filter((preview) => preview.key !== key))
-    setPostImages((prev) => prev.filter((file) => `${file.name}-${file.lastModified}-${file.size}` !== key))
+    setImageSelections((prev) => prev.filter((selection) => selection.key !== key))
   }, [])
 
   const resetUploads = useCallback(() => {
     setImagePreviews([])
     setUploadErrors([])
-    setPostImages([])
+    setImageSelections([])
     setDzAnimate(false)
   }, [])
+
+  const postImages = imageSelections.map((selection) => selection.file)
 
   return {
     imagePreviews,

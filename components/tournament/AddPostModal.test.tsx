@@ -27,7 +27,11 @@ const completedImages: ImagePreview[] = [
   },
 ]
 
-function NewsModalHarness() {
+function NewsModalHarness({
+  onImageUpload = () => undefined,
+}: {
+  onImageUpload?: (files: FileList | null) => void
+}) {
   const [postTitle, setPostTitle] = useState("Tournament final recap")
   const [postDescription, setPostDescription] = useState("A memorable final round.")
   const [imagePreviews, setImagePreviews] = useState(completedImages)
@@ -48,7 +52,7 @@ function NewsModalHarness() {
       onTitleChange={setPostTitle}
       onDescriptionChange={setPostDescription}
       onCategoryChange={() => undefined}
-      onImageUpload={() => undefined}
+      onImageUpload={onImageUpload}
       onDragOver={() => undefined}
       onDrop={() => undefined}
       onRemoveImage={(key) => {
@@ -71,5 +75,27 @@ describe("AddPostModal", () => {
     expect(screen.getByPlaceholderText("Enter post description")).toHaveValue(
       "A memorable final round.",
     )
+  })
+
+  it("clears the native file input so a removed file can be selected again", () => {
+    const onImageUpload = jest.fn()
+    const { container } = render(<NewsModalHarness onImageUpload={onImageUpload} />)
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+    const file = new File(["image"], "human1.png", { type: "image/png" })
+    let inputValue = "C:\\fakepath\\human1.png"
+
+    expect(input).not.toBeNull()
+    Object.defineProperty(input, "value", {
+      configurable: true,
+      get: () => inputValue,
+      set: (value: string) => {
+        inputValue = value
+      },
+    })
+
+    fireEvent.change(input!, { target: { files: [file] } })
+
+    expect(onImageUpload).toHaveBeenCalledWith(expect.objectContaining({ 0: file }))
+    expect(inputValue).toBe("")
   })
 })
