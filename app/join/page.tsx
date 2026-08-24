@@ -45,6 +45,7 @@ const translations: TranslationCatalog = {
     joinDebates: "Join Debates",
     loadingMore: "Loading more debates...",
     loadMore: "Load More Debates",
+    retry: "Try again",
     contactUs: "Contact us: debetter@gmail.com",
     allRightsReserved: "© 2025 all rights reserved",
     privacyPolicy: "Privacy Policy",
@@ -111,6 +112,7 @@ const translations: TranslationCatalog = {
     joinDebates: "Присоединиться к дебатам",
     loadingMore: "Загрузка дополнительных дебатов...",
     loadMore: "Загрузить ещё дебаты",
+    retry: "Попробовать снова",
     contactUs: "Свяжитесь с нами: debetter@gmail.com",
     allRightsReserved: "© 2025 все права защищены",
     privacyPolicy: "Политика конфиденциальности",
@@ -177,6 +179,7 @@ const translations: TranslationCatalog = {
     joinDebates: "Пікірсайысқа қосылу",
     loadingMore: "Қосымша пікірсайыстар жүктелуде...",
     loadMore: "Қосымша пікірсайыстарды жүктеу",
+    retry: "Қайталап көру",
     contactUs: "Бізбен байланысыңыз: debetter@gmail.com",
     allRightsReserved: "© 2025 барлық құқықтар қорғалған",
     privacyPolicy: "Құпиялылық саясаты",
@@ -609,9 +612,19 @@ export default function JoinDebatesPage() {
             {/* Debate Cards */}
             <div className="space-y-6">
               {tournamentError && (
-                <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[16px] text-red-600">
-                  {tournamentError}
-                </p>
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[16px] text-red-600">
+                  <p>{tournamentError}</p>
+                  {tournaments.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void fetchTournamentPage(0, true)}
+                      disabled={loading}
+                      className="mt-3 rounded-lg bg-[#3E5C76] px-5 py-2 text-sm font-medium text-white hover:bg-[#22223b] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {t("retry")}
+                    </button>
+                  )}
+                </div>
               )}
               {tournaments.length === 0 && !loading && !tournamentError && (
                 <p className="text-[#0D1321] text-center text-[20px]">{t("noDebates")}</p>

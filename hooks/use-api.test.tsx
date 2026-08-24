@@ -2,9 +2,9 @@
  * @jest-environment jsdom
  */
 import { StrictMode } from "react"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import { SWRConfig } from "swr"
+import { SWRConfig, useSWRConfig } from "swr"
 import { api } from "@/lib/api"
 import type { UserResponse } from "@/types/user/user"
 import { useCurrentUser, useMyTournaments, useTournamentMainOrganizer } from "./use-api"
@@ -60,6 +60,19 @@ function MyTournamentsConsumer() {
     <output data-testid="my-tournaments">
       {isLoading ? "loading" : tournaments?.content.map((tournament) => tournament.name).join(",")}
     </output>
+  )
+}
+
+function AccountSwitcher({ user }: { user: UserResponse }) {
+  const { mutate } = useSWRConfig()
+
+  return (
+    <button
+      type="button"
+      onClick={() => void mutate(["current-user"], user, { revalidate: false })}
+    >
+      Switch account
+    </button>
   )
 }
 
@@ -143,6 +156,7 @@ describe("useCurrentUser", () => {
 describe("principal-scoped tournament hooks", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    getMeMock.mockResolvedValue(response(authenticatedUser))
   })
 
   it("loads My Tournaments through the principal-scoped API method", async () => {
@@ -165,6 +179,39 @@ describe("principal-scoped tournament hooks", () => {
       { startDateFrom: "2026-06-19T00:00:00" },
       { page: 0, size: 20, sort: ["startDate,asc"] },
     )
+  })
+
+  it("fetches a separate My Tournaments cache entry after the principal changes", async () => {
+    const secondUser = {
+      ...authenticatedUser,
+      id: 8,
+      username: "second-user",
+    }
+    getMyTournamentsMock
+      .mockResolvedValueOnce(response({
+        content: [{ id: 42, name: "First Member Cup" }],
+        totalElements: 1,
+        totalPages: 1,
+      }))
+      .mockResolvedValueOnce(response({
+        content: [{ id: 43, name: "Second Member Cup" }],
+        totalElements: 1,
+        totalPages: 1,
+      }))
+
+    render(
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 5 * 60 * 1000 }}>
+        <MyTournamentsConsumer />
+        <AccountSwitcher user={secondUser} />
+      </SWRConfig>,
+    )
+
+    expect(await screen.findByText("First Member Cup")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Switch account" }))
+
+    expect(await screen.findByText("Second Member Cup")).toBeInTheDocument()
+    expect(screen.queryByText("First Member Cup")).not.toBeInTheDocument()
+    expect(getMyTournamentsMock).toHaveBeenCalledTimes(2)
   })
 
   it("loads the main organizer with an isolated SWR key", async () => {

@@ -341,8 +341,9 @@ export function useTournaments(params?: TournamentGetParams, pageable?: Pageable
 }
 
 export function useMyTournaments(params?: TournamentGetParams, pageable?: Pageable) {
+  const { user, isLoading: isCurrentUserLoading } = useCurrentUser()
   const { data, error, isLoading, mutate } = useSWR(
-    ['my-tournaments', params, pageable],
+    user?.id ? ['my-tournaments', user.id, params, pageable] : null,
     () => fetcher<PageResult<SimpleTournamentResponse>>(() => api.getMyTournaments(params, pageable)),
     {
       revalidateOnFocus: false,
@@ -352,7 +353,7 @@ export function useMyTournaments(params?: TournamentGetParams, pageable?: Pageab
 
   return {
     tournaments: data,
-    isLoading,
+    isLoading: isCurrentUserLoading || (Boolean(user?.id) && isLoading),
     error,
     mutate
   }

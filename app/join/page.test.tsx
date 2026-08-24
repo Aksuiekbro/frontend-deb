@@ -239,12 +239,22 @@ describe("JoinDebatesPage tournament pagination", () => {
 })
 
 describe("JoinDebatesPage team registration", () => {
-  it("shows backend tournament loading errors instead of silently rendering an empty list", async () => {
-    apiMock.getTournaments.mockResolvedValue(response({ message: "Backend is temporarily unavailable" }, 503))
+  it("offers a page-zero retry after the initial tournament load fails", async () => {
+    apiMock.getTournaments
+      .mockResolvedValueOnce(response({ message: "Backend is temporarily unavailable" }, 503))
+      .mockResolvedValueOnce(response(tournamentsPage()))
 
     render(<JoinDebatesPage />)
 
     expect(await screen.findByText("Backend is temporarily unavailable")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+    expect(apiMock.getTournaments).toHaveBeenCalledTimes(2)
+    expect(apiMock.getTournaments).toHaveBeenLastCalledWith(
+      expect.any(Object),
+      { page: 0, size: 10, sort: "startDate,desc" },
+    )
   })
 
   it("registers a participant team with the participant profile id and teammate usernames", async () => {
