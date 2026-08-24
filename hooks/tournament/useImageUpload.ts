@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 export type ImagePreview = {
   key: string
@@ -12,14 +13,39 @@ export type ImagePreview = {
   error?: string
 }
 
+type ImageSelection = {
+  key: string
+  file: File
+}
+
 const DEFAULT_MAX_SIZE = 5 * 1024 * 1024 // backend max: 5MB
 const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png"])
 
+const messages: TranslationCatalog = {
+  en: {
+    invalidImage: "please upload JPG or PNG",
+    imageTooLarge: "exceeds {size}",
+    previewLoadFailed: "Failed to load preview",
+  },
+  ru: {
+    invalidImage: "загрузите изображение в формате JPG или PNG",
+    imageTooLarge: "превышает {size}",
+    previewLoadFailed: "Не удалось загрузить предварительный просмотр",
+  },
+  kk: {
+    invalidImage: "JPG немесе PNG форматындағы суретті жүктеңіз",
+    imageTooLarge: "{size} өлшемінен асады",
+    previewLoadFailed: "Алдын ала көріністі жүктеу мүмкін болмады",
+  },
+}
+
 export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
+  const t = useTranslations(messages)
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([])
   const [uploadErrors, setUploadErrors] = useState<string[]>([])
-  const [postImages, setPostImages] = useState<File[]>([])
+  const [imageSelections, setImageSelections] = useState<ImageSelection[]>([])
   const [dzAnimate, setDzAnimate] = useState(false)
+  const nextSelectionId = useRef(0)
 
   const formatBytes = useCallback((bytes: number) => {
     return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
@@ -29,25 +55,25 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     if (!files) return
 
     const nextErrors: string[] = []
-    const validFiles: File[] = []
+    const validSelections: ImageSelection[] = []
     const nextPreviews: ImagePreview[] = []
 
     Array.from(files).forEach((file) => {
-      const key = `${file.name}-${file.lastModified}-${file.size}`
-
       const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
 
       if (!file.type.startsWith("image/") || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
-        nextErrors.push(`${file.name}: please upload JPG or PNG`)
+        nextErrors.push(`${file.name}: ${t("invalidImage")}`)
         return
       }
 
       if (file.size > maxSize) {
-        nextErrors.push(`${file.name}: exceeds ${formatBytes(maxSize)}`)
+        nextErrors.push(`${file.name}: ${t("imageTooLarge", { size: formatBytes(maxSize) })}`)
         return
       }
 
-      validFiles.push(file)
+      const key = `${file.name}-${file.lastModified}-${file.size}-${nextSelectionId.current}`
+      nextSelectionId.current += 1
+      validSelections.push({ key, file })
       nextPreviews.push({ key, name: file.name, sizeBytes: file.size, src: "", progress: 0, status: "loading" })
 
       const reader = new FileReader()
@@ -63,7 +89,7 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
         setTimeout(() => setDzAnimate(false), 800)
       }
       reader.onerror = () => {
-        setImagePreviews((prev) => prev.map((preview) => (preview.key === key ? { ...preview, status: "error", error: "Failed to load preview" } : preview)))
+        setImagePreviews((prev) => prev.map((preview) => (preview.key === key ? { ...preview, status: "error", error: t("previewLoadFailed") } : preview)))
       }
       reader.readAsDataURL(file)
     })
@@ -72,10 +98,10 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     if (nextPreviews.length) {
       setImagePreviews((prev) => [...prev, ...nextPreviews])
     }
-    if (validFiles.length) {
-      setPostImages((prev) => [...prev, ...validFiles])
+    if (validSelections.length) {
+      setImageSelections((prev) => [...prev, ...validSelections])
     }
-  }, [formatBytes, maxSize])
+  }, [formatBytes, maxSize, t])
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault()
@@ -89,15 +115,17 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
 
   const removeImageByKey = useCallback((key: string) => {
     setImagePreviews((prev) => prev.filter((preview) => preview.key !== key))
-    setPostImages((prev) => prev.filter((file) => `${file.name}-${file.lastModified}-${file.size}` !== key))
+    setImageSelections((prev) => prev.filter((selection) => selection.key !== key))
   }, [])
 
   const resetUploads = useCallback(() => {
     setImagePreviews([])
     setUploadErrors([])
-    setPostImages([])
+    setImageSelections([])
     setDzAnimate(false)
   }, [])
+
+  const postImages = imageSelections.map((selection) => selection.file)
 
   return {
     imagePreviews,

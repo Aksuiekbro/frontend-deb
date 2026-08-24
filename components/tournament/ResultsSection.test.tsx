@@ -10,6 +10,7 @@ import { displayRoundLabel } from "@/lib/round-label"
 import type { MatchResultRequest } from "@/types/tournament/match"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
 import { Role } from "@/types/user/user"
+import { LocaleProvider } from "@/lib/i18n"
 
 const participantProfile = {
   city: { id: 1, name: "City" },
@@ -57,6 +58,34 @@ describe("ResultsSection", () => {
   beforeEach(() => {
     window.localStorage.clear()
     jest.clearAllMocks()
+  })
+
+  it("renders the preliminary Results view in Russian", async () => {
+    window.localStorage.setItem("debetter-locale", "ru")
+
+    render(
+      <LocaleProvider>
+        <ResultsSection {...baseProps} canManageTeams matches={{ content: [], totalElements: 0, totalPages: 0 } as never} matchesLoading={false} />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Данные спикеров" })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Данные спикеров" }))
+    expect(screen.getByText("Предварительные раунды ещё не загружены.")).toBeInTheDocument()
+  })
+
+  it("renders the preliminary Results view in Kazakh", async () => {
+    window.localStorage.setItem("debetter-locale", "kk")
+
+    render(
+      <LocaleProvider>
+        <ResultsSection {...baseProps} canManageTeams matches={{ content: [], totalElements: 0, totalPages: 0 } as never} matchesLoading={false} />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Спикерлер деректері" })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Спикерлер деректері" }))
+    expect(screen.getByText("Алдын ала раундтар әлі жүктелмеген.")).toBeInTheDocument()
   })
 
   it("does not expose an enabled submit button without a real result submit handler", () => {

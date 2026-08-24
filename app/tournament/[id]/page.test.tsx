@@ -9,6 +9,7 @@ import { api } from "@/lib/api"
 import { Role } from "@/types/user/user"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
+import { LocaleProvider } from "@/lib/i18n"
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({ id: "53" }),
@@ -548,6 +549,15 @@ function fillPostForm(title = "Registration open", description = "Teams can regi
   fireEvent.change(screen.getByLabelText("Post description"), { target: { value: description } })
 }
 
+function renderWithLocale(locale: "ru" | "kk") {
+  window.localStorage.setItem("debetter-locale", locale)
+  return render(
+    <LocaleProvider>
+      <TournamentDetailPage />
+    </LocaleProvider>,
+  )
+}
+
 type FixtureRoundGroup = {
   id: number
   type: RoundGroupType
@@ -659,6 +669,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.restoreAllMocks()
+  window.localStorage.removeItem("debetter-locale")
 })
 
 describe("TournamentDetailPage mutations", () => {
@@ -1297,6 +1308,22 @@ describe("TournamentDetailPage mutations", () => {
     }))
   })
 
+  it("translates a team action toast into Kazakh", async () => {
+    apiMock.checkInTeam.mockResolvedValue(okResponse())
+
+    renderWithLocale("kk")
+    await waitFor(() => expect(document.documentElement.lang).toBe("kk"))
+    fireEvent.click(screen.getByText("Teams"))
+    fireEvent.click(screen.getByText("Check In Team"))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Команда белгіленді",
+        description: "Команда белгіленді.",
+      }))
+    })
+  })
+
   it("rolls check-in state back and shows the backend error when check-in fails", async () => {
     apiMock.checkInTeam.mockResolvedValue(errorResponse("Team is missing a speaker"))
 
@@ -1405,6 +1432,22 @@ describe("TournamentDetailPage mutations", () => {
     }))
     expect(mockMutateTournament).toHaveBeenCalledTimes(1)
     expect(mockMutateMatches).toHaveBeenCalledTimes(1)
+  })
+
+  it("translates a tournament action toast into Russian", async () => {
+    mockTournamentStarted = false
+    apiMock.startTournament.mockResolvedValue(okResponse())
+
+    renderWithLocale("ru")
+    await waitFor(() => expect(document.documentElement.lang).toBe("ru"))
+    fireEvent.click(screen.getByText("Start Tournament"))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Турнир начат",
+        description: "Теперь можно продолжить жеребьёвку и работу турнира.",
+      }))
+    })
   })
 
   it("does not show start tournament once the tournament has started", () => {

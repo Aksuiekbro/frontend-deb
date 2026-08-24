@@ -6,6 +6,7 @@ import "@testing-library/jest-dom"
 
 import { MainInfoSection } from "./MainInfoSection"
 import { Role } from "@/types/user/user"
+import { LocaleProvider } from "@/lib/i18n"
 
 const announcement = {
   id: 11,
@@ -56,6 +57,13 @@ describe("MainInfoSection announcement comments", () => {
 
   afterEach(() => {
     process.env.NEXT_PUBLIC_API_URL = originalApiUrl
+    window.localStorage.removeItem("debetter-locale")
+  })
+
+  it.each([["ru", "Объявления"], ["kk", "Хабарландырулар"]] as const)("translates announcement headings for %s", async (locale, heading) => {
+    window.localStorage.setItem("debetter-locale", locale)
+    render(<LocaleProvider><MainInfoSection {...baseProps} /></LocaleProvider>)
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument()
   })
 
   it("resolves backend upload image paths before rendering announcements", () => {

@@ -1,6 +1,13 @@
 "use client"
 
 import { RefObject, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const catalog: TranslationCatalog = {
+  en: { "Main Info": "Main Info", Announcements: "Announcements", Schedule: "Schedule", Map: "Map", Teams: "Teams", Judges: "Judges", "Pairing and Matches": "Pairing and Matches", "Results and Statistics": "Results and Statistics", News: "News", Feedback: "Feedback" },
+  ru: { "Main Info": "Основная информация", Announcements: "Объявления", Schedule: "Расписание", Map: "Карта", Teams: "Команды", Judges: "Судьи", "Pairing and Matches": "Жеребьёвка и матчи", "Results and Statistics": "Результаты и статистика", News: "Новости", Feedback: "Отзывы" },
+  kk: { "Main Info": "Негізгі ақпарат", Announcements: "Хабарландырулар", Schedule: "Кесте", Map: "Карта", Teams: "Командалар", Judges: "Судьялар", "Pairing and Matches": "Жеребе және матчтар", "Results and Statistics": "Нәтижелер мен статистика", News: "Жаңалықтар", Feedback: "Пікірлер" },
+}
 
 type MenuCoords = { top: number; left: number }
 
@@ -74,6 +81,7 @@ export function TournamentTabs({
   resultsDropdownRef,
   resultsOptions = ["APF", "BPF", "LD"],
 }: TournamentTabsProps) {
+  const t = useTranslations(catalog)
   const [isHydrated, setIsHydrated] = useState(false)
   const mainInfoTriggerRef = useRef<HTMLButtonElement>(null)
   const resultsTriggerRef = useRef<HTMLButtonElement>(null)
@@ -107,7 +115,7 @@ export function TournamentTabs({
               : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
           }`}
         >
-          {selectedMainInfoOption}
+          {t(selectedMainInfoOption)}
           <svg
             className={`w-4 h-4 transition-transform shrink-0 ${isMainInfoDropdownOpen ? "rotate-180" : ""}`}
             fill="none"
@@ -130,7 +138,7 @@ export function TournamentTabs({
                 onClick={() => onMainInfoOptionSelect(option)}
                 className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
               >
-                {option}
+                {t(option)}
               </button>
             ))}
           </div>
@@ -149,7 +157,7 @@ export function TournamentTabs({
             activeTab === tab ? "text-[#0D1321] border-[#0D1321]" : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
           }`}
         >
-          {tab}
+          {t(tab)}
         </button>
       ))}
 
@@ -171,7 +179,7 @@ export function TournamentTabs({
               : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
           }`}
         >
-          Results and Statistics
+          {t("Results and Statistics")}
           <svg
             className={`w-4 h-4 transition-transform shrink-0 ${isResultsDropdownOpen ? "rotate-180" : ""}`}
             fill="none"
@@ -213,7 +221,7 @@ export function TournamentTabs({
             activeTab === tab ? "text-[#0D1321] border-[#0D1321]" : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
           }`}
         >
-          {tab}
+          {t(tab)}
         </button>
       ))}
     </div>

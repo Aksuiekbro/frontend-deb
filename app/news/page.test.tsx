@@ -1,10 +1,11 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import NewsPage from './page'
 import { useNews } from '../../hooks/use-api'
+import { LocaleProvider } from '../../lib/i18n'
 
 // Header does its own data fetching; it's not under test here.
 jest.mock('../../components/Header', () => ({
@@ -20,6 +21,7 @@ jest.mock('../../hooks/use-api', () => ({
 const mockUseNews = useNews as jest.Mock
 
 beforeEach(() => {
+  window.localStorage.removeItem('debetter-locale')
   mockUseNews.mockReturnValue({
     news: { content: [], totalElements: 0, totalPages: 0 },
     isLoading: false,
@@ -70,5 +72,21 @@ describe('NewsPage', () => {
 
     expect(screen.getByText('important')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Registration update/i })).toHaveAttribute('href', '/news/42')
+  })
+
+  it('localizes the empty state and heading for Russian', async () => {
+    window.localStorage.setItem('debetter-locale', 'ru')
+
+    render(
+      <LocaleProvider>
+        <NewsPage />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Прошедшие дебаты')).toBeInTheDocument()
+      expect(screen.getByText('Новостей пока нет')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Зайдите позже, чтобы узнать последние новости и обновления турниров')).toBeInTheDocument()
   })
 })

@@ -7,6 +7,7 @@ import type { ReactNode } from "react"
 
 import HostDebate from "./HostDebate"
 import { api } from "@/lib/api"
+import { LocaleProvider, useLocale } from "@/lib/i18n"
 
 const pushMock = jest.fn()
 
@@ -45,6 +46,17 @@ jest.mock("@/components/ui/select", () => ({
 }))
 
 const createTournamentMock = api.createTournament as jest.Mock
+
+function LocaleControls() {
+  const { setLocale } = useLocale()
+
+  return (
+    <>
+      <button type="button" onClick={() => setLocale("ru")}>Russian</button>
+      <button type="button" onClick={() => setLocale("kk")}>Kazakh</button>
+    </>
+  )
+}
 
 function fillTournamentForm(container: HTMLElement, includeImage = true) {
   fireEvent.change(screen.getByPlaceholderText(/clear and engaging title/i), {
@@ -95,6 +107,27 @@ afterEach(() => {
 })
 
 describe("HostDebate", () => {
+  it("translates the complete form when the locale changes", async () => {
+    render(
+      <LocaleProvider>
+        <LocaleControls />
+        <HostDebate />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Russian" }))
+    expect(await screen.findByText("Начните дебаты")).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Введите понятное и интересное название дебатов")).toBeInTheDocument()
+    expect(screen.getByText("Школьная")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Отмена" })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Kazakh" }))
+    expect(await screen.findByText("Пікірсайысты бастаңыз")).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Пікірсайысыңызға түсінікті әрі қызықты атау енгізіңіз")).toBeInTheDocument()
+    expect(screen.getByText("Мектеп")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Бас тарту" })).toBeInTheDocument()
+  })
+
   it("does not render unused debate-side or category fields", () => {
     render(<HostDebate />)
 

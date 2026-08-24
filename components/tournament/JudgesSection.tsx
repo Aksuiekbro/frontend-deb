@@ -3,6 +3,13 @@
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import type { PageResult } from "@/types/page"
 import type { JudgeResponse } from "@/types/tournament/judge"
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const catalog: TranslationCatalog = {
+  en: { name: "Name", email: "Email", phone: "Phone", checkIn: "Check In", actions: "Actions", loading: "Loading judges...", failed: "Failed to load judges", uncheck: "Uncheck", check: "Check in", edit: "Edit", delete: "Delete", empty: "No judges assigned yet", add: "Add judge" },
+  ru: { name: "Имя", email: "Электронная почта", phone: "Телефон", checkIn: "Регистрация", actions: "Действия", loading: "Загрузка судей...", failed: "Не удалось загрузить судей", uncheck: "Отменить регистрацию", check: "Зарегистрировать", edit: "Изменить", delete: "Удалить", empty: "Судьи пока не назначены", add: "Добавить судью" },
+  kk: { name: "Аты-жөні", email: "Электрондық пошта", phone: "Телефон", checkIn: "Тіркеу", actions: "Әрекеттер", loading: "Судьялар жүктелуде...", failed: "Судьяларды жүктеу мүмкін болмады", uncheck: "Тіркеуден шығару", check: "Тіркеу", edit: "Өзгерту", delete: "Жою", empty: "Судьялар әлі тағайындалмаған", add: "Судья қосу" },
+}
 
 interface JudgesSectionProps {
   judges?: PageResult<JudgeResponse>
@@ -27,6 +34,7 @@ export function JudgesSection({
   updatingJudgeId,
   deletingJudgeId,
 }: JudgesSectionProps) {
+  const t = useTranslations(catalog)
   const rows = judges?.content ?? []
   const hasActions = Boolean(onEditJudge || onDeleteJudge)
   const columnCount = hasActions ? 5 : 4
@@ -37,12 +45,12 @@ export function JudgesSection({
         <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Name</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Email</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Phone</th>
-              <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Check In</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("name")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("email")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("phone")}</th>
+              <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("checkIn")}</th>
               {hasActions ? (
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
               ) : null}
             </tr>
           </thead>
@@ -50,13 +58,13 @@ export function JudgesSection({
             {judgesLoading ? (
               <tr>
                 <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
-                  Loading judges...
+                  {t("loading")}
                 </td>
               </tr>
             ) : judgesError ? (
               <tr>
                 <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-red-500">
-                  Failed to load judges
+                  {t("failed")}
                 </td>
               </tr>
             ) : rows.length ? (
@@ -76,7 +84,7 @@ export function JudgesSection({
                             ? "border-green-200 bg-green-50 text-green-600 hover:bg-green-100"
                             : "border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
                         } disabled:cursor-not-allowed disabled:opacity-50`}
-                        aria-label={`${judge.checkedIn ? "Uncheck" : "Check in"} ${judge.fullName}`}
+                        aria-label={`${judge.checkedIn ? t("uncheck") : t("check")} ${judge.fullName}`}
                       >
                         {updatingJudgeId === judge.id ? "..." : judge.checkedIn ? "✓" : "✕"}
                       </button>
@@ -92,8 +100,8 @@ export function JudgesSection({
                             type="button"
                             onClick={() => onEditJudge(judge)}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#0D1321] hover:bg-gray-50"
-                            aria-label={`Edit ${judge.fullName}`}
-                            title={`Edit ${judge.fullName}`}
+                            aria-label={`${t("edit")} ${judge.fullName}`}
+                            title={`${t("edit")} ${judge.fullName}`}
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -104,8 +112,8 @@ export function JudgesSection({
                             onClick={() => onDeleteJudge(judge)}
                             disabled={deletingJudgeId === judge.id}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-white text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Delete ${judge.fullName}`}
-                            title={`Delete ${judge.fullName}`}
+                            aria-label={`${t("delete")} ${judge.fullName}`}
+                            title={`${t("delete")} ${judge.fullName}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -118,7 +126,7 @@ export function JudgesSection({
             ) : (
               <tr>
                 <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
-                  No judges assigned yet
+                  {t("empty")}
                 </td>
               </tr>
             )}
@@ -132,7 +140,7 @@ export function JudgesSection({
             type="button"
             onClick={onAddJudge}
             className="w-12 h-12 bg-[#3E5C76] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
-            aria-label="Add judge"
+            aria-label={t("add")}
           >
             <Plus className="h-6 w-6" />
           </button>

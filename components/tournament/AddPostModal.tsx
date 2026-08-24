@@ -3,8 +3,13 @@
 import type { ImagePreview } from "@/hooks/tournament/useImageUpload"
 import { resolveMediaUrl } from "@/lib/media"
 import { useId } from "react"
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
-const CHECK_ICON_URL = "http://localhost:3845/assets/34c9396e092463c20579b8768a873faee7143b0b.svg"
+const catalog: TranslationCatalog = {
+  en: { addAnnouncement: "Add Announcement", addSchedule: "Add Schedule Item", addMap: "Add Map Item", addNews: "Add News", addContent: "Add Content", editAnnouncement: "Edit Announcement", replace: "Replace Image", attach: "Attach Images", drag: "Drag and Drop here", or: "or", browse: "Browse files", current: "Current announcement", currentImage: "Current image", noPhoto: "No photo saved", remove: "Remove", title: "Title", titlePlaceholder: "Enter post title", description: "Description", descriptionPlaceholder: "Enter post description", category: "Category", important: "Important", update: "Update", info: "Info", submitting: "Submitting...", submit: "Submit", save: "Save changes" },
+  ru: { addAnnouncement: "Добавить объявление", addSchedule: "Добавить пункт расписания", addMap: "Добавить пункт карты", addNews: "Добавить новость", addContent: "Добавить материал", editAnnouncement: "Изменить объявление", replace: "Заменить изображение", attach: "Прикрепить изображения", drag: "Перетащите файлы сюда", or: "или", browse: "Выбрать файлы", current: "Текущее объявление", currentImage: "Текущее изображение", noPhoto: "Фото не сохранено", remove: "Удалить", title: "Заголовок", titlePlaceholder: "Введите заголовок публикации", description: "Описание", descriptionPlaceholder: "Введите описание публикации", category: "Категория", important: "Важно", update: "Обновление", info: "Информация", submitting: "Отправка...", submit: "Отправить", save: "Сохранить изменения" },
+  kk: { addAnnouncement: "Хабарландыру қосу", addSchedule: "Кесте тармағын қосу", addMap: "Карта тармағын қосу", addNews: "Жаңалық қосу", addContent: "Материал қосу", editAnnouncement: "Хабарландыруды өзгерту", replace: "Суретті ауыстыру", attach: "Суреттерді тіркеу", drag: "Файлдарды осында сүйреп әкеліңіз", or: "немесе", browse: "Файлдарды шолу", current: "Ағымдағы хабарландыру", currentImage: "Ағымдағы сурет", noPhoto: "Фото сақталмаған", remove: "Жою", title: "Тақырып", titlePlaceholder: "Жазба тақырыбын енгізіңіз", description: "Сипаттама", descriptionPlaceholder: "Жазба сипаттамасын енгізіңіз", category: "Санат", important: "Маңызды", update: "Жаңарту", info: "Ақпарат", submitting: "Жіберілуде...", submit: "Жіберу", save: "Өзгерістерді сақтау" },
+}
 
 type NewsCategory = "Important" | "Update" | "Info"
 
@@ -36,14 +41,6 @@ interface AddPostModalProps {
   onRemoveImage: (key: string) => void
 }
 
-const MODAL_TITLES: Record<ModalContext, string> = {
-  announcements: "Add Announcement",
-  schedule: "Add Schedule Item",
-  map: "Add Map Item",
-  news: "Add News",
-  "": "Add Content",
-}
-
 export function AddPostModal({
   isOpen,
   modalContext,
@@ -69,11 +66,13 @@ export function AddPostModal({
   onDrop,
   onRemoveImage,
 }: AddPostModalProps) {
+  const t = useTranslations(catalog)
   const inputId = useId()
   const isEditMode = mode === "edit"
   const modalTitle = isEditMode && modalContext === "announcements"
-    ? "Edit Announcement"
-    : MODAL_TITLES[modalContext]
+    ? t("editAnnouncement")
+    : ({ announcements: t("addAnnouncement"), schedule: t("addSchedule"), map: t("addMap"), news: t("addNews"), "": t("addContent") }[modalContext])
+  const resolvedSubmitLabel = submitLabel === "Save changes" ? t("save") : submitLabel === "Submit" ? t("submit") : submitLabel
   const resolvedCurrentImageUrl = resolveMediaUrl(currentImageUrl)
 
   if (!isOpen) return null
@@ -97,7 +96,7 @@ export function AddPostModal({
         >
           <div>
             <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">
-              {isEditMode ? "Replace Image" : "Attach Images"}
+              {isEditMode ? t("replace") : t("attach")}
             </label>
             <div className="md:flex md:items-start md:gap-6">
               <div
@@ -111,9 +110,9 @@ export function AddPostModal({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <div className="text-[#4a4e69]">
-                    <p className="text-[18px] font-medium mb-2">Drag and Drop here</p>
-                    <p className="text-[16px] mb-2">or</p>
-                    <p className="text-[#3E5C76] text-[16px] font-medium hover:underline">Browse files</p>
+                    <p className="text-[18px] font-medium mb-2">{t("drag")}</p>
+                    <p className="text-[16px] mb-2">{t("or")}</p>
+                    <p className="text-[#3E5C76] text-[16px] font-medium hover:underline">{t("browse")}</p>
                   </div>
                 </div>
                 <input
@@ -121,7 +120,10 @@ export function AddPostModal({
                   type="file"
                   multiple={!isEditMode}
                   accept="image/*"
-                  onChange={(event) => onImageUpload(event.target.files)}
+                  onChange={(event) => {
+                    onImageUpload(event.currentTarget.files)
+                    event.currentTarget.value = ""
+                  }}
                   className="hidden"
                 />
               </div>
@@ -129,15 +131,15 @@ export function AddPostModal({
               {isEditMode && resolvedCurrentImageUrl && imagePreviews.length === 0 ? (
                 <div className="mt-4 md:mt-0 md:w-[260px]">
                   <div className="overflow-hidden rounded-lg border border-gray-300 bg-white">
-                    <img src={resolvedCurrentImageUrl} alt="Current announcement" className="h-40 w-full bg-[#F7F9FF] object-contain" />
-                    <div className="px-3 py-2 text-sm font-medium text-[#4a4e69]">Current image</div>
+                    <img src={resolvedCurrentImageUrl} alt={t("current")} className="h-40 w-full bg-[#F7F9FF] object-contain" />
+                    <div className="px-3 py-2 text-sm font-medium text-[#4a4e69]">{t("currentImage")}</div>
                   </div>
                 </div>
               ) : null}
 
               {isEditMode && !resolvedCurrentImageUrl && imagePreviews.length === 0 ? (
                 <div className="mt-4 md:mt-0 md:w-[260px] rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-[#8A91A8]">
-                  No photo saved
+                  {t("noPhoto")}
                 </div>
               ) : null}
 
@@ -163,16 +165,12 @@ export function AddPostModal({
                           </div>
                           <button
                             type="button"
-                            onClick={() => (img.status === "done" ? undefined : onRemoveImage(img.key))}
-                            className={`ml-auto w-6 h-6 aspect-square shrink-0 rounded-full overflow-hidden flex items-center justify-center ${img.status === "done" ? "" : "bg-black/60 text-white"}`}
-                            aria-label={img.status === "done" ? "Uploaded" : "Remove"}
-                            title={img.status === "done" ? "Uploaded" : "Remove"}
+                            onClick={() => onRemoveImage(img.key)}
+                            className="ml-auto w-6 h-6 aspect-square shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-black/60 text-white"
+                            aria-label={`${t("remove")} ${img.name}`}
+                            title={`${t("remove")} ${img.name}`}
                           >
-                            {img.status === "done" ? (
-                              <img src={CHECK_ICON_URL} alt="Uploaded" className="w-full h-full object-contain" />
-                            ) : (
-                              <span>×</span>
-                            )}
+                            <span aria-hidden="true">×</span>
                           </button>
                         </div>
                         {img.status !== "done" && (
@@ -204,38 +202,38 @@ export function AddPostModal({
           {(modalContext === "announcements" || modalContext === "schedule" || modalContext === "news") && (
             <div className="space-y-6">
               <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Title</label>
+                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("title")}</label>
                 <input
                   type="text"
                   value={postTitle}
                   onChange={(event) => onTitleChange(event.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
-                  placeholder="Enter post title"
+                  placeholder={t("titlePlaceholder")}
                   required
                 />
               </div>
               <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Description</label>
+                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("description")}</label>
                 <textarea
                   value={postDescription}
                   onChange={(event) => onDescriptionChange(event.target.value)}
                   rows={6}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
-                  placeholder="Enter post description"
+                  placeholder={t("descriptionPlaceholder")}
                   required
                 />
               </div>
               {modalContext === "announcements" && (
                 <div>
-                  <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Category</label>
+                  <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("category")}</label>
                   <select
                     value={selectedNewsCategory}
                     onChange={(event) => onCategoryChange(event.target.value as NewsCategory)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
                   >
-                    <option value="Important">Important</option>
-                    <option value="Update">Update</option>
-                    <option value="Info">Info</option>
+                    <option value="Important">{t("important")}</option>
+                    <option value="Update">{t("update")}</option>
+                    <option value="Info">{t("info")}</option>
                   </select>
                 </div>
               )}
@@ -252,7 +250,7 @@ export function AddPostModal({
               disabled={isSubmitting}
               className="w-full px-8 py-4 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[18px] font-medium transition-colors disabled:opacity-60"
             >
-              {isSubmitting ? "Submitting..." : submitLabel ?? "Submit"}
+              {isSubmitting ? t("submitting") : resolvedSubmitLabel ?? t("submit")}
             </button>
           </div>
         </form>

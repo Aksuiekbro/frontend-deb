@@ -6,8 +6,13 @@ import "@testing-library/jest-dom"
 
 import SocialsManager from "./SocialsManager"
 import { SocialPlatform } from "@/types/util/socials/social-profile"
+import { LocaleProvider } from "@/lib/i18n"
 
 describe("SocialsManager", () => {
+  afterEach(() => {
+    window.localStorage.clear()
+  })
+
   it("renders social profiles as read-only until a save flow is wired", () => {
     render(<SocialsManager initialSocials={[{ platform: SocialPlatform.TELEGRAM, handle: "@debetter" }]} />)
 
@@ -64,5 +69,21 @@ describe("SocialsManager", () => {
 
     expect(addButton).toHaveAttribute("aria-expanded", "true")
     expect(screen.getByRole("button", { name: "Telegram" })).toHaveClass("translate-x-0", "opacity-100")
+  })
+
+  it("translates social profile controls and placeholders into Russian", async () => {
+    window.localStorage.setItem("debetter-locale", "ru")
+    render(
+      <LocaleProvider>
+        <SocialsManager editable initialSocials={[]} onSave={jest.fn()} />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Добавить социальную сеть" })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Добавить социальную сеть" }))
+    fireEvent.click(screen.getByRole("button", { name: "Telegram" }))
+
+    expect(screen.getByPlaceholderText("@имя")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Сохранить профили в социальных сетях" })).toBeInTheDocument()
   })
 })

@@ -1,19 +1,149 @@
 "use client"
 
-import { MapPin, Calendar } from "lucide-react"
+import { AlertCircle, Calendar, MapPin, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useTournaments } from "../../hooks/use-api"
 import { toBackendDateTime } from "@/lib/datetime"
 import { resolveMediaUrl } from "@/lib/media"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
 import { LoadingState, CardSkeleton } from "../../components/ui/loading"
-import { ErrorState, EmptyState } from "../../components/ui/error"
+import { EmptyState } from "../../components/ui/error"
+
+const translations: TranslationCatalog = {
+  en: {
+    title: "My Tournaments",
+    past: "Past",
+    ongoing: "Ongoing",
+    upcoming: "Upcoming",
+    failedPast: "Failed to load past tournaments",
+    failedOngoing: "Failed to load ongoing tournaments",
+    failedUpcoming: "Failed to load upcoming tournaments",
+    noPast: "No past tournaments",
+    noPastDescription: "You haven't participated in any tournaments yet.",
+    noOngoing: "No ongoing tournaments",
+    noOngoingDescription: "You haven't participated in any ongoing tournaments yet.",
+    noUpcoming: "No upcoming tournaments",
+    noUpcomingDescription: "You haven't registered for any upcoming tournaments yet.",
+    browseTournaments: "Browse Tournaments",
+    noImage: "No Image",
+    tournamentLogoAlt: "{name} tournament logo - debate competition in {location}",
+    teams: "Teams",
+    status: "Status",
+    format: "Format",
+    showDetails: "Show Details",
+    tryAgain: "Try again",
+    somethingWentWrong: "Oops! Something went wrong",
+    loading: "Loading tournaments",
+    unknown: "Unknown",
+    statusActive: "Active",
+    statusUpcoming: "Upcoming",
+    statusCompleted: "Completed",
+  },
+  ru: {
+    title: "Мои турниры",
+    past: "Прошедшие",
+    ongoing: "Текущие",
+    upcoming: "Предстоящие",
+    failedPast: "Не удалось загрузить прошедшие турниры",
+    failedOngoing: "Не удалось загрузить текущие турниры",
+    failedUpcoming: "Не удалось загрузить предстоящие турниры",
+    noPast: "Нет прошедших турниров",
+    noPastDescription: "Вы ещё не участвовали ни в одном турнире.",
+    noOngoing: "Нет текущих турниров",
+    noOngoingDescription: "Вы ещё не участвуете ни в одном текущем турнире.",
+    noUpcoming: "Нет предстоящих турниров",
+    noUpcomingDescription: "Вы ещё не зарегистрировались ни на один предстоящий турнир.",
+    browseTournaments: "Все турниры",
+    noImage: "Нет изображения",
+    tournamentLogoAlt: "Логотип турнира «{name}» — соревнование по дебатам в городе {location}",
+    teams: "Команды",
+    status: "Статус",
+    format: "Формат",
+    showDetails: "Подробнее",
+    tryAgain: "Повторить",
+    somethingWentWrong: "Ой! Что-то пошло не так",
+    loading: "Загрузка турниров",
+    unknown: "Неизвестно",
+    statusActive: "Идёт",
+    statusUpcoming: "Предстоящий",
+    statusCompleted: "Завершённый",
+  },
+  kk: {
+    title: "Менің турнирлерім",
+    past: "Өткен",
+    ongoing: "Өтіп жатқан",
+    upcoming: "Алда болатын",
+    failedPast: "Өткен турнирлерді жүктеу мүмкін болмады",
+    failedOngoing: "Өтіп жатқан турнирлерді жүктеу мүмкін болмады",
+    failedUpcoming: "Алда болатын турнирлерді жүктеу мүмкін болмады",
+    noPast: "Өткен турнирлер жоқ",
+    noPastDescription: "Сіз әлі ешбір турнирге қатысқан жоқсыз.",
+    noOngoing: "Өтіп жатқан турнирлер жоқ",
+    noOngoingDescription: "Сіз қазір өтіп жатқан турнирлердің ешқайсысына қатысып жатқан жоқсыз.",
+    noUpcoming: "Алда болатын турнирлер жоқ",
+    noUpcomingDescription: "Сіз әлі алда болатын турнирлердің ешқайсысына тіркелмедіңіз.",
+    browseTournaments: "Турнирлерді көру",
+    noImage: "Сурет жоқ",
+    tournamentLogoAlt: "{location} қаласындағы пікірсайыс жарысының «{name}» турнир логотипі",
+    teams: "Командалар",
+    status: "Мәртебе",
+    format: "Формат",
+    showDetails: "Толығырақ көру",
+    tryAgain: "Қайталап көру",
+    somethingWentWrong: "Ой! Бірдеңе дұрыс болмады",
+    loading: "Турнирлер жүктелуде",
+    unknown: "Белгісіз",
+    statusActive: "Өтіп жатыр",
+    statusUpcoming: "Алда болатын",
+    statusCompleted: "Аяқталған",
+  },
+}
 
 const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string" ? tag : tag.name ?? "")
 
+const tabDefinitions = [
+  { value: "Past", key: "past" },
+  { value: "Ongoing", key: "ongoing" },
+  { value: "Upcoming", key: "upcoming" },
+] as const
+
+type TabValue = (typeof tabDefinitions)[number]["value"]
+
+function LocalizedErrorState({
+  error,
+  message,
+  onRetry,
+  t,
+}: {
+  error?: Error | null
+  message: string
+  onRetry: () => void
+  t: (key: string) => string
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4" role="alert">
+      <AlertCircle className="w-12 h-12 text-red-500 mb-4" aria-hidden="true" />
+      <h3 className="text-lg font-medium text-[#0D1321] mb-2">{t("somethingWentWrong")}</h3>
+      <p className="text-[#4a4e69] text-center mb-4 max-w-md">{message || error?.message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        aria-label={t("tryAgain")}
+        className="inline-flex items-center space-x-2 bg-[#3E5C76] text-white px-4 py-2 rounded-lg hover:bg-[#22223b] text-sm font-medium transition-colors"
+      >
+        <RefreshCw className="w-4 h-4" aria-hidden="true" />
+        <span>{t("tryAgain")}</span>
+      </button>
+    </div>
+  )
+}
+
 export default function MyTournamentsPage() {
-  const [activeTab, setActiveTab] = useState('Past')
+  const { locale } = useLocale()
+  const t = useTranslations(translations)
+  const [activeTab, setActiveTab] = useState<TabValue>('Past')
   const [imageErrors, setImageErrors] = useState<{ [key: number]: boolean }>({})
 
   // Get current date for filtering
@@ -41,8 +171,8 @@ export default function MyTournamentsPage() {
 
   // Filter for ongoing tournaments (started but not yet ended)
   const ongoingTournaments = allTournaments?.content.filter(tournament => {
-    const startDate = new Date(tournament.startDate)
-    const endDate = new Date(tournament.endDate || tournament.startDate)
+    const startDate = new Date(tournament.startDate ?? "")
+    const endDate = new Date(tournament.endDate || tournament.startDate || "")
     const now = new Date()
     return startDate <= now && endDate >= now
   }) || []
@@ -62,27 +192,47 @@ export default function MyTournamentsPage() {
   }
 
   const { tournaments, isLoading, error } = getCurrentTournaments()
+  const activeTabKey = tabDefinitions.find((tab) => tab.value === activeTab)?.key ?? "past"
+  const errorMessageKey = activeTabKey === "past"
+    ? "failedPast"
+    : activeTabKey === "ongoing"
+      ? "failedOngoing"
+      : "failedUpcoming"
+  const emptyCopy = activeTabKey === "past"
+    ? { title: t("noPast"), description: t("noPastDescription") }
+    : activeTabKey === "ongoing"
+      ? { title: t("noOngoing"), description: t("noOngoingDescription") }
+      : { title: t("noUpcoming"), description: t("noUpcomingDescription") }
+
+  const getStatusLabel = (status?: string) => {
+    if (status === "ACTIVE") return t("statusActive")
+    if (status === "UPCOMING") return t("statusUpcoming")
+    if (status === "COMPLETED") return t("statusCompleted")
+    return status || t("unknown")
+  }
 
   return (
     <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
 
       {/* Page Title */}
       <section className="px-12 py-8">
-        <h1 className="text-[#0D1321] text-[48px] font-bold mb-8">My Tournaments</h1>
+        <h1 className="text-[#0D1321] text-[48px] font-bold mb-8">{t("title")}</h1>
         
         {/* Tabs */}
         <div className="flex border-b border-gray-300 mb-8">
-          {['Past', 'Ongoing', 'Upcoming'].map((tab) => (
+          {tabDefinitions.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveTab(tab.value)}
+              aria-label={t(tab.key)}
               className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors ${
-                activeTab === tab
+                activeTab === tab.value
                   ? 'text-[#0D1321] border-[#0D1321]'
                   : 'text-[#9a8c98] border-transparent hover:text-[#4a4e69]'
               }`}
             >
-              {tab}
+              {t(tab.key)}
             </button>
           ))}
         </div>
@@ -94,7 +244,7 @@ export default function MyTournamentsPage() {
         <LoadingState
           isLoading={isLoading}
           fallback={
-            <div className="space-y-6">
+            <div className="space-y-6" role="status" aria-label={t("loading")}>
               {[1, 2, 3].map(i => (
                 <CardSkeleton key={i} />
               ))}
@@ -102,15 +252,16 @@ export default function MyTournamentsPage() {
           }
         >
           {error ? (
-            <ErrorState
+            <LocalizedErrorState
               error={error}
               onRetry={() => window.location.reload()}
-              message={`Failed to load ${activeTab.toLowerCase()} tournaments`}
+              message={t(errorMessageKey)}
+              t={t}
             />
           ) : tournaments.length > 0 ? (
             <div className="space-y-6">
               {tournaments.map((tournament) => {
-                const formattedDate = new Date(tournament.startDate).toLocaleDateString('en-GB')
+                const formattedDate = new Date(tournament.startDate ?? "").toLocaleDateString(localeTags[locale])
 
                 return (
                   <div key={tournament.id} className="bg-[#0D1321] rounded-[16px] p-8">
@@ -120,7 +271,7 @@ export default function MyTournamentsPage() {
                         {tournament.imageUrl && !imageErrors[tournament.id] ? (
                           <Image
                             src={resolveMediaUrl(tournament.imageUrl.url) ?? tournament.imageUrl.url}
-                            alt={`${tournament.name} tournament logo - debate competition in ${tournament.location}`}
+                            alt={t("tournamentLogoAlt", { name: tournament.name, location: tournament.location ?? "" })}
                             width={150}
                             height={150}
                             className="w-full h-full object-cover"
@@ -128,7 +279,7 @@ export default function MyTournamentsPage() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-sm">
-                            <span>No Image</span>
+                            <span>{t("noImage")}</span>
                           </div>
                         )}
                       </div>
@@ -136,11 +287,11 @@ export default function MyTournamentsPage() {
                         <h3 className="text-[#FFFFFF] text-[32px] font-medium mb-2">{tournament.name}</h3>
                         <div className="text-[#9a8c98] text-[16px] font-normal space-y-1 mb-4">
                           <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-2" />
+                            <MapPin className="w-4 h-4 mr-2" aria-hidden="true" />
                             <span>{tournament.location}</span>
                           </div>
                           <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
+                            <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
                             <span>{formattedDate}</span>
                           </div>
                         </div>
@@ -161,9 +312,9 @@ export default function MyTournamentsPage() {
 
                     {/* Tournament Stats */}
                     <div className="flex items-center justify-between mb-4 text-[#9a8c98] text-[14px]">
-                      <span>Teams: {tournament.currentTeamCount}/{tournament.maxTeamCount}</span>
-                      <span>Status: {tournament.status}</span>
-                      <span>Format: {tournament.debateFormat}</span>
+                      <span>{t("teams")}: {tournament.currentTeamCount}/{tournament.maxTeamCount}</span>
+                      <span>{t("status")}: {getStatusLabel(tournament.status)}</span>
+                      <span>{t("format")}: {tournament.debateFormat || t("unknown")}</span>
                     </div>
 
                     {/* Actions */}
@@ -174,14 +325,14 @@ export default function MyTournamentsPage() {
                           tournament.status === 'UPCOMING' ? 'bg-blue-100 text-blue-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {tournament.status}
+                          {getStatusLabel(tournament.status)}
                         </span>
                       </div>
                       <Link
                         href={`/tournament/${tournament.id}`}
                         className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal transition-colors"
                       >
-                        Show Details
+                        {t("showDetails")}
                       </Link>
                     </div>
                   </div>
@@ -190,9 +341,9 @@ export default function MyTournamentsPage() {
             </div>
           ) : (
             <EmptyState
-              title={`No ${activeTab.toLowerCase()} tournaments`}
-              description={`You haven't ${activeTab === 'Upcoming' ? 'registered for any upcoming' : activeTab === 'Ongoing' ? 'participated in any ongoing' : 'participated in any'} tournaments yet.`}
-              actionText="Browse Tournaments"
+              title={emptyCopy.title}
+              description={emptyCopy.description}
+              actionText={t("browseTournaments")}
               actionHref="/tournaments"
             />
           )}

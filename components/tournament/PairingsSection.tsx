@@ -31,6 +31,220 @@ import {
 } from "@/components/ui/dialog"
 import { useActionFeedback } from "@/components/tournament/useActionFeedback"
 import { displayRoundLabel } from "@/lib/round-label"
+import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
+
+const catalog: TranslationCatalog = {
+  en: {
+    preliminary: "Preliminary",
+    teamElimination: "Team elimination",
+    soloElimination: "Solo elimination",
+    round: "Round {number}",
+    preliminaryRound: "Preliminary {number}",
+    semifinal: "Semifinal",
+    quarterfinal: "Quarterfinal",
+    final: "Final",
+    currentRound: "the current round",
+    debaters: "debaters",
+    teams: "teams",
+    lockedRound: "{selected} is locked until {current} is completed and advanced.",
+    pastRound: "{selected} is not the active round anymore. Review it here, but manage pairings on {current}.",
+    correction: "Some completed matches need correction, but their participant scores cannot be repaired.",
+    noPairings: "No pairings yet for {round}. Randomize {kind}, adjust rooms and judges, then publish pairings.",
+    resultsPending: "Results are pending. Completed {completed} of {total} matches.",
+    enterResults: "Enter results for all matches before proceeding. Completed {completed} of {total} matches.",
+    allCompletedNext: "All matches in this round are completed. You can proceed to the next round.",
+    allCompleted: "All matches in this round are completed.",
+    loading: "Loading matches...",
+    loadFailed: "Failed to load matches",
+    futureEmpty: "{round} will unlock after {current} is completed.",
+    noPairingsShort: "No pairings yet for {round}",
+    open: "Open",
+    needsCorrection: "Needs correction",
+    needsCorrectionNotRepairable: "Needs correction (not repairable)",
+    completed: "Completed",
+    winner: "Winner",
+    loss: "Loss",
+    resultPending: "Result pending",
+    roomForMatch: "Room for match {id}",
+    room: "Room",
+    editMatch: "Edit match {id}",
+    editMatchTitle: "Edit match {id}",
+    editMatchGeneric: "Edit match",
+    updateMatchDescription: "Update teams, room, and judge after randomizing pairings.",
+    debater: "Debater {number}",
+    team: "Team {number}",
+    unassigned: "Unassigned",
+    judge: "Judge",
+    matchRoom: "Match room",
+    duplicateDebater: "A debater can only appear once in the same match.",
+    exactlyTwoDebaters: "LD matches require exactly two debaters.",
+    duplicateTeam: "A team can only appear once in the same match.",
+    exactlyFourTeams: "BPF matches require exactly four teams.",
+    exactlyTwoTeams: "APF matches require exactly two teams.",
+    cancel: "Cancel",
+    delete: "Delete",
+    saveMatch: "Save match",
+    saving: "Saving...",
+    startTime: "Start time",
+    judgeName: "Judge Name",
+    status: "Status",
+    actions: "Actions",
+    clearMatches: "Clear matches",
+    deletePairings: "Are you sure you want to delete the pairings for {stage}?",
+    deleteDescription: "Confirm deleting the current pairings before the action is sent to the backend.",
+    proceed: "Proceed to next round",
+    saveAllRooms: "Save all rooms ({count})",
+    savingAllRooms: "Saving all rooms...",
+    roomsSaved: "✓ Rooms saved",
+    randomize: "Randomize",
+    randomizing: "Randomizing...",
+    randomized: "✓ Randomized",
+    publish: "Publish pairings",
+    publishing: "Publishing...",
+    published: "✓ Published",
+    fraction: "Fraction {number}",
+  },
+  ru: {
+    preliminary: "Предварительный этап",
+    teamElimination: "Командная сетка",
+    soloElimination: "Личная сетка",
+    round: "Раунд {number}",
+    preliminaryRound: "Предварительный раунд {number}",
+    semifinal: "Полуфинал",
+    quarterfinal: "Четвертьфинал",
+    final: "Финал",
+    currentRound: "текущий раунд",
+    debaters: "дебатёров",
+    teams: "команд",
+    lockedRound: "{selected} заблокирован, пока не будет завершён и пройден этап {current}.",
+    pastRound: "{selected} больше не является активным раундом. Просмотрите его здесь, а пары управляйте в разделе {current}.",
+    correction: "Некоторые завершённые матчи требуют исправления, но баллы участников восстановить нельзя.",
+    noPairings: "Пар пока нет для этапа «{round}». Сформируйте пары для: {kind}, настройте аудитории и судей, затем опубликуйте пары.",
+    resultsPending: "Результаты ещё не внесены. Завершено матчей: {completed} из {total}.",
+    enterResults: "Внесите результаты всех матчей перед переходом дальше. Завершено матчей: {completed} из {total}.",
+    allCompletedNext: "Все матчи этого раунда завершены. Можно перейти к следующему раунду.",
+    allCompleted: "Все матчи этого раунда завершены.",
+    loading: "Загрузка матчей...",
+    loadFailed: "Не удалось загрузить матчи",
+    futureEmpty: "{round} откроется после завершения этапа {current}.",
+    noPairingsShort: "Пар для этапа «{round}» пока нет",
+    open: "Открыт",
+    needsCorrection: "Требует исправления",
+    needsCorrectionNotRepairable: "Требует исправления (восстановление невозможно)",
+    completed: "Завершён",
+    winner: "Победитель",
+    loss: "Поражение",
+    resultPending: "Результат ожидается",
+    roomForMatch: "Аудитория для матча {id}",
+    room: "Аудитория",
+    editMatch: "Изменить матч {id}",
+    editMatchTitle: "Изменить матч {id}",
+    editMatchGeneric: "Изменить матч",
+    updateMatchDescription: "После формирования пар измените команды, аудиторию и судью.",
+    debater: "Дебатёр {number}",
+    team: "Команда {number}",
+    unassigned: "Не назначен",
+    judge: "Судья",
+    matchRoom: "Аудитория матча",
+    duplicateDebater: "Один дебатёр может участвовать в матче только один раз.",
+    exactlyTwoDebaters: "Для матчей LD требуется ровно два дебатёра.",
+    duplicateTeam: "Одна команда может участвовать в матче только один раз.",
+    exactlyFourTeams: "Для матчей BPF требуется ровно четыре команды.",
+    exactlyTwoTeams: "Для матчей APF требуется ровно две команды.",
+    cancel: "Отмена",
+    delete: "Удалить",
+    saveMatch: "Сохранить матч",
+    saving: "Сохранение...",
+    startTime: "Время начала",
+    judgeName: "Имя судьи",
+    status: "Статус",
+    actions: "Действия",
+    clearMatches: "Очистить пары",
+    deletePairings: "Вы уверены, что хотите удалить пары для этапа «{stage}»?",
+    deleteDescription: "Подтвердите удаление текущих пар перед отправкой действия на сервер.",
+    proceed: "Перейти к следующему раунду",
+    saveAllRooms: "Сохранить все аудитории ({count})",
+    savingAllRooms: "Сохранение аудиторий...",
+    roomsSaved: "✓ Аудитории сохранены",
+    randomize: "Сформировать пары",
+    randomizing: "Формирование пар...",
+    randomized: "✓ Пары сформированы",
+    publish: "Опубликовать пары",
+    publishing: "Публикация...",
+    published: "✓ Опубликовано",
+    fraction: "Фракция {number}",
+  },
+  kk: {
+    preliminary: "Алдын ала кезең",
+    teamElimination: "Командалық іріктеу",
+    soloElimination: "Жеке іріктеу",
+    round: "{number}-раунд",
+    preliminaryRound: "Алдын ала раунд {number}",
+    semifinal: "Жартылай финал",
+    quarterfinal: "Ширек финал",
+    final: "Финал",
+    currentRound: "ағымдағы раунд",
+    debaters: "дебатшыларды",
+    teams: "командаларды",
+    lockedRound: "{selected} {current} аяқталып, келесі кезеңге өткенше құлыптаулы.",
+    pastRound: "{selected} енді белсенді раунд емес. Оны осы жерден көріңіз, ал жұптарды {current} кезеңінде басқарыңыз.",
+    correction: "Кейбір аяқталған матчтарды түзету қажет, бірақ қатысушылар ұпайларын қалпына келтіру мүмкін емес.",
+    noPairings: "{round} үшін жұптар әлі жоқ. {kind} жұптарын кездейсоқ құрып, аудиториялар мен төрешілерді реттеп, жұптарды жариялаңыз.",
+    resultsPending: "Нәтижелер күтілуде. Аяқталған матчтар: {completed}/{total}.",
+    enterResults: "Жалғастырмас бұрын барлық матчтың нәтижесін енгізіңіз. Аяқталған матчтар: {completed}/{total}.",
+    allCompletedNext: "Бұл раундтағы барлық матч аяқталды. Келесі раундқа өтуге болады.",
+    allCompleted: "Бұл раундтағы барлық матч аяқталды.",
+    loading: "Матчтар жүктелуде...",
+    loadFailed: "Матчтарды жүктеу мүмкін болмады",
+    futureEmpty: "{current} аяқталғаннан кейін {round} ашылады.",
+    noPairingsShort: "{round} үшін жұптар әлі жоқ",
+    open: "Ашық",
+    needsCorrection: "Түзету қажет",
+    needsCorrectionNotRepairable: "Түзету қажет (қалпына келмейді)",
+    completed: "Аяқталды",
+    winner: "Жеңімпаз",
+    loss: "Жеңіліс",
+    resultPending: "Нәтиже күтілуде",
+    roomForMatch: "{id}-матч аудиториясы",
+    room: "Аудитория",
+    editMatch: "{id}-матчты өзгерту",
+    editMatchTitle: "{id}-матчты өзгерту",
+    editMatchGeneric: "Матчты өзгерту",
+    updateMatchDescription: "Жұптарды кездейсоқ құрғаннан кейін командаларды, аудиторияны және төрешіні өзгертіңіз.",
+    debater: "{number}-дебатшы",
+    team: "{number}-команда",
+    unassigned: "Тағайындалмаған",
+    judge: "Төреші",
+    matchRoom: "Матч аудиториясы",
+    duplicateDebater: "Бір дебатшы бір матчта бір рет қана қатыса алады.",
+    exactlyTwoDebaters: "LD матчтарына дәл екі дебатшы қажет.",
+    duplicateTeam: "Бір команда бір матчта бір рет қана қатыса алады.",
+    exactlyFourTeams: "BPF матчтарына дәл төрт команда қажет.",
+    exactlyTwoTeams: "APF матчтарына дәл екі команда қажет.",
+    cancel: "Бас тарту",
+    delete: "Жою",
+    saveMatch: "Матчты сақтау",
+    saving: "Сақталуда...",
+    startTime: "Басталу уақыты",
+    judgeName: "Төрешінің аты",
+    status: "Мәртебе",
+    actions: "Әрекеттер",
+    clearMatches: "Жұптарды тазарту",
+    deletePairings: "«{stage}» кезеңінің жұптарын жоюға сенімдісіз бе?",
+    deleteDescription: "Әрекетті серверге жібермес бұрын ағымдағы жұптарды жоюды растаңыз.",
+    proceed: "Келесі раундқа өту",
+    saveAllRooms: "Барлық аудиторияны сақтау ({count})",
+    savingAllRooms: "Аудиториялар сақталуда...",
+    roomsSaved: "✓ Аудиториялар сақталды",
+    randomize: "Жұптарды құру",
+    randomizing: "Жұптар құрылуда...",
+    randomized: "✓ Жұптар құрылды",
+    publish: "Жұптарды жариялау",
+    publishing: "Жариялануда...",
+    published: "✓ Жарияланды",
+    fraction: "{number}-фракция",
+  },
+}
 
 interface PairingsSectionProps {
   matches?: PageResult<MatchResponse>
@@ -85,6 +299,28 @@ const DEFAULT_ROUND_BY_STAGE: Record<StageId, string> = {
   preliminary: STANDARD_ROUNDS[0],
   team: ELIMINATION_ROUNDS[0],
   solo: ELIMINATION_ROUNDS[0],
+}
+
+type Translate = (key: string, values?: Record<string, string | number>) => string
+
+const translateStageLabel = (label: string, t: Translate) => {
+  if (label === "Preliminary") return t("preliminary")
+  if (label === "Team elimination") return t("teamElimination")
+  if (label === "Solo elimination") return t("soloElimination")
+  return label
+}
+
+const translateRoundLabel = (round: string, t: Translate) => {
+  const displayedRound = displayRoundLabel(round)
+  const standardRound = displayedRound.match(/^Round (\d+)$/)
+  if (standardRound) return t("round", { number: standardRound[1] })
+
+  const preliminaryRound = displayedRound.match(/^Preliminary (\d+)$/)
+  if (preliminaryRound) return t("preliminaryRound", { number: preliminaryRound[1] })
+  if (displayedRound === "Semifinal") return t("semifinal")
+  if (displayedRound === "Quarterfinal") return t("quarterfinal")
+  if (displayedRound === "Final") return t("final")
+  return displayedRound
 }
 
 type MatchDraft = {
@@ -239,6 +475,8 @@ export function PairingsSection({
   savingMatchId,
   resultStorageKey,
 }: PairingsSectionProps) {
+  const t = useTranslations(catalog)
+  const { locale } = useLocale()
   const [isHydrated, setIsHydrated] = useState(false)
   const [deleteConfirmStage, setDeleteConfirmStage] = useState<StageId | null>(null)
   const [roomDrafts, setRoomDrafts] = useState<Record<number, string>>({})
@@ -322,7 +560,7 @@ export function PairingsSection({
     : (["team1", "team2"] as const)
   const debaterSlotsToRender = ["debater1", "debater2"] as const
   const pairSlotCount = isSoloStage ? debaterSlotsToRender.length : teamSlotsToRender.length
-  const tableColumnCount = pairSlotCount + 3 + (canEditMatches ? 1 : 0)
+  const tableColumnCount = pairSlotCount + 4 + (canEditMatches ? 1 : 0)
   const tableMinWidthClass = isSoloStage ? "min-w-[760px]" : "min-w-[960px]"
   const roundLabels = rounds?.length
     ? rounds.map((round) => round.name)
@@ -331,39 +569,42 @@ export function PairingsSection({
       : [...ELIMINATION_ROUNDS, ...STANDARD_ROUNDS]
 
   const currentRoundLabel =
-    typeof currentRoundNumber === "number" ? `Round ${currentRoundNumber}` : "the current round"
+    typeof currentRoundNumber === "number" ? t("round", { number: currentRoundNumber }) : t("currentRound")
   const selectedRoundLabel =
-    typeof selectedRoundNumber === "number" ? `Round ${selectedRoundNumber}` : selectedRound
+    typeof selectedRoundNumber === "number" ? t("round", { number: selectedRoundNumber }) : translateRoundLabel(selectedRound, t)
 
   const workflowMessage = (() => {
     if (isFutureRound) {
-      return `${selectedRoundLabel} is locked until ${currentRoundLabel} is completed and advanced.`
+      return t("lockedRound", { selected: selectedRoundLabel, current: currentRoundLabel })
     }
 
     if (isPastRound) {
-      return `${selectedRoundLabel} is not the active round anymore. Review it here, but manage pairings on ${currentRoundLabel}.`
+      return t("pastRound", { selected: selectedRoundLabel, current: currentRoundLabel })
     }
 
     if (matchesLoading || matchesError) return null
 
     if (hasNonrepairableMatches) {
-      return "Some completed matches need correction, but their participant scores cannot be repaired."
+      return t("correction")
     }
 
     if (!hasMatches) {
-      return `No pairings yet for ${selectedRound}. Randomize ${isSoloStage ? "debaters" : "teams"}, adjust rooms and judges, then publish pairings.`
+      return t("noPairings", {
+        round: translateRoundLabel(selectedRound, t),
+        kind: isSoloStage ? t("debaters") : t("teams"),
+      })
     }
 
     if (!allMatchesCompleted) {
       if (!canManageWorkflow) {
-        return `Results are pending. Completed ${completedMatches} of ${matchRows.length} matches.`
+        return t("resultsPending", { completed: completedMatches, total: matchRows.length })
       }
-      return `Enter results for all matches before proceeding. Completed ${completedMatches} of ${matchRows.length} matches.`
+      return t("enterResults", { completed: completedMatches, total: matchRows.length })
     }
 
     return canManageWorkflow
-      ? "All matches in this round are completed. You can proceed to the next round."
-      : "All matches in this round are completed."
+      ? t("allCompletedNext")
+      : t("allCompleted")
   })()
 
   const handleSelectStage = (stage: StageId) => {
@@ -452,8 +693,8 @@ export function PairingsSection({
           <input
             type="text"
             value={draft}
-            aria-label={`Room for match ${match.id}`}
-            placeholder="Room"
+            aria-label={t("roomForMatch", { id: match.id })}
+            placeholder={t("room")}
             onChange={(event) => {
               const value = event.target.value
               setRoomDrafts((current) => ({ ...current, [match.id]: value }))
@@ -465,14 +706,21 @@ export function PairingsSection({
     )
   }
 
+  const formatMatchStartTime = (value?: string | null) => {
+    if (!value) return "-"
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleString(localeTags[locale], { dateStyle: "medium", timeStyle: "short" })
+  }
+
   const getMatchStatus = (match: MatchResponse) => {
-    if (!match.completed) return "Open"
+    if (!match.completed) return t("open")
     if (selectedStage === "preliminary" && match.participantScoresComplete === false) {
       return match.participantScoresRepairable === true
-        ? "Needs correction"
-        : "Needs correction (not repairable)"
+        ? t("needsCorrection")
+        : t("needsCorrectionNotRepairable")
     }
-    return "Completed"
+    return t("completed")
   }
 
   const renderTeamCell = (match: MatchResponse, slot: (typeof teamSlotsToRender)[number]) => {
@@ -482,7 +730,7 @@ export function PairingsSection({
     }
 
     const won = resolveTeamCurrentWon(match, slot, team.id) ?? getPersistedWon(persistedResultDrafts, match.id, slot)
-    const resultLabel = won === true ? "Winner" : won === false ? "Loss" : "Result pending"
+    const resultLabel = won === true ? t("winner") : won === false ? t("loss") : t("resultPending")
 
     return (
       <td key={slot} className="px-6 py-4 text-lg font-semibold text-[#0B1327]">
@@ -499,11 +747,11 @@ export function PairingsSection({
     }
 
     const won = resolveDebaterCurrentWon(match, slot, debater.id) ?? getPersistedWon(persistedResultDrafts, match.id, slot)
-    const resultLabel = won === true ? "Winner" : won === false ? "Loss" : "Result pending"
+    const resultLabel = won === true ? t("winner") : won === false ? t("loss") : t("resultPending")
 
     return (
       <td key={slot} className="px-6 py-4 text-lg font-semibold text-[#0B1327]">
-        <div>{getParticipantName(debater, `Debater ${debater.id}`)}</div>
+        <div>{getParticipantName(debater, t("debater", { number: debater.id }))}</div>
         <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-[#6C738A]">{resultLabel}</div>
       </td>
     )
@@ -543,12 +791,12 @@ export function PairingsSection({
       const selectedDebaterIds = [matchDraft.debater1Id, matchDraft.debater2Id].filter(Boolean)
 
       if (new Set(selectedDebaterIds).size !== selectedDebaterIds.length) {
-        setMatchEditError("A debater can only appear once in the same match.")
+        setMatchEditError(t("duplicateDebater"))
         return
       }
 
       if (selectedDebaterIds.length !== 2) {
-        setMatchEditError("LD matches require exactly two debaters.")
+        setMatchEditError(t("exactlyTwoDebaters"))
         return
       }
 
@@ -570,7 +818,7 @@ export function PairingsSection({
     ].filter(Boolean)
 
     if (new Set(selectedTeamIds).size !== selectedTeamIds.length) {
-      setMatchEditError("A team can only appear once in the same match.")
+      setMatchEditError(t("duplicateTeam"))
       return
     }
 
@@ -578,8 +826,8 @@ export function PairingsSection({
     if (selectedTeamIds.length !== requiredTeamCount) {
       setMatchEditError(
         shouldShowFourTeamSlots
-          ? "BPF matches require exactly four teams."
-          : "APF matches require exactly two teams."
+          ? t("exactlyFourTeams")
+          : t("exactlyTwoTeams")
       )
       return
     }
@@ -605,7 +853,7 @@ export function PairingsSection({
       return (
         <tr>
           <td colSpan={tableColumnCount} className="px-6 py-10 text-center text-[#7A83A0]">
-            Loading matches...
+            {t("loading")}
           </td>
         </tr>
       )
@@ -615,7 +863,7 @@ export function PairingsSection({
       return (
         <tr>
           <td colSpan={tableColumnCount} className="px-6 py-10 text-center text-red-500">
-            Failed to load matches
+            {t("loadFailed")}
           </td>
         </tr>
       )
@@ -626,8 +874,8 @@ export function PairingsSection({
         <tr>
           <td colSpan={tableColumnCount} className="px-6 py-10 text-center text-[#7A83A0]">
             {isFutureRound
-              ? `${selectedRound} will unlock after ${currentRoundLabel} is completed.`
-              : `No pairings yet for ${selectedRound}`}
+              ? t("futureEmpty", { round: translateRoundLabel(selectedRound, t), current: currentRoundLabel })
+              : t("noPairingsShort", { round: translateRoundLabel(selectedRound, t) })}
           </td>
         </tr>
       )
@@ -639,6 +887,7 @@ export function PairingsSection({
           ? debaterSlotsToRender.map((slot) => renderDebaterCell(match, slot))
           : teamSlotsToRender.map((slot) => renderTeamCell(match, slot))}
         {renderRoomCell(match)}
+        <td className="px-6 py-4 text-sm text-[#7A83A0]">{formatMatchStartTime(match.startTime)}</td>
         <td className="px-6 py-4 text-sm text-[#7A83A0]">{match.judge?.fullName ?? "-"}</td>
         <td className="px-6 py-4 text-sm text-[#4A5168]">{getMatchStatus(match)}</td>
         {canEditMatches ? (
@@ -647,7 +896,7 @@ export function PairingsSection({
               type="button"
               onClick={() => openMatchEditor(match)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D5D9E7] text-[#0B1327] transition hover:bg-[#F5F7FC]"
-              aria-label={`Edit match ${match.id}`}
+              aria-label={t("editMatch", { id: match.id })}
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -679,7 +928,7 @@ export function PairingsSection({
                   onClick={() => handleSelectStage(stage.id)}
                   className="px-4 py-2"
                 >
-                  {stage.label} ({stage.format})
+                  {translateStageLabel(stage.label, t)} ({stage.format})
                 </button>
                 {isActive && (
                   <div className="relative flex items-center gap-2 pr-3 text-white/80">
@@ -693,7 +942,7 @@ export function PairingsSection({
                         if (!onClearMatches) return
                         setDeleteConfirmStage(stage.id)
                       }}
-                      aria-label="Clear matches"
+                      aria-label={t("clearMatches")}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -708,11 +957,13 @@ export function PairingsSection({
         <DialogContent className="rounded-3xl border border-[#E2E6F2] bg-white p-10 shadow-[0_20px_70px_rgba(6,14,39,0.25)] sm:max-w-md">
           <DialogTitle className="text-center text-lg font-semibold text-[#0B1327]">
             {deleteConfirmStage
-              ? `Are you sure you want to delete the pairings for ${stageDescriptors.find(({ id }) => id === deleteConfirmStage)?.label ?? "this round"}?`
+              ? t("deletePairings", {
+                stage: translateStageLabel(stageDescriptors.find(({ id }) => id === deleteConfirmStage)?.label ?? t("currentRound"), t),
+              })
               : ""}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Confirm deleting the current pairings before the action is sent to the backend.
+            {t("deleteDescription")}
           </DialogDescription>
           <DialogFooter className="mt-6 flex w-full flex-row gap-4 px-6">
             <button
@@ -720,7 +971,7 @@ export function PairingsSection({
               className="flex-1 rounded-2xl border border-[#0B1327] px-6 py-3 text-sm font-semibold text-[#4A5A7A] transition hover:bg-[#EEF2FB]"
               onClick={() => setDeleteConfirmStage(null)}
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="button"
@@ -733,7 +984,7 @@ export function PairingsSection({
                 setDeleteConfirmStage(null)
               }}
             >
-              Delete
+              {t("delete")}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -741,24 +992,24 @@ export function PairingsSection({
       <Dialog open={Boolean(editingMatch)} onOpenChange={(open) => !open && setEditingMatch(null)}>
         <DialogContent className="rounded-3xl border border-[#E2E6F2] bg-white p-8 shadow-[0_20px_70px_rgba(6,14,39,0.25)] sm:max-w-2xl">
           <DialogTitle className="text-xl font-semibold text-[#0B1327]">
-            {editingMatch ? `Edit match ${editingMatch.id}` : "Edit match"}
+            {editingMatch ? t("editMatchTitle", { id: editingMatch.id }) : t("editMatchGeneric")}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Update teams, room, and judge after randomizing pairings.
+            {t("updateMatchDescription")}
           </DialogDescription>
 
           <div className="grid gap-4 py-4 md:grid-cols-2">
             {isSoloStage ? (
               <>
                 <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-                  Debater 1
+                  {t("debater", { number: 1 })}
                   <select
                     value={matchDraft.debater1Id}
                     onChange={(event) => setDraftField("debater1Id", event.target.value)}
                     className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                    aria-label="Debater 1"
+                    aria-label={t("debater", { number: 1 })}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("unassigned")}</option>
                     {participants?.content.map((participant) => (
                       <option key={participant.id} value={participant.id}>
                         {getParticipantName(participant, `Debater ${participant.id}`)}
@@ -767,14 +1018,14 @@ export function PairingsSection({
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-                  Debater 2
+                  {t("debater", { number: 2 })}
                   <select
                     value={matchDraft.debater2Id}
                     onChange={(event) => setDraftField("debater2Id", event.target.value)}
                     className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                    aria-label="Debater 2"
+                    aria-label={t("debater", { number: 2 })}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("unassigned")}</option>
                     {participants?.content.map((participant) => (
                       <option key={participant.id} value={participant.id}>
                         {getParticipantName(participant, `Debater ${participant.id}`)}
@@ -786,28 +1037,28 @@ export function PairingsSection({
             ) : (
               <>
                 <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-                  Team 1
+                  {t("team", { number: 1 })}
                   <select
                     value={matchDraft.team1Id}
                     onChange={(event) => setDraftField("team1Id", event.target.value)}
                     className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                    aria-label="Team 1"
+                    aria-label={t("team", { number: 1 })}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("unassigned")}</option>
                     {teams?.content.map((team) => (
                       <option key={team.id} value={team.id}>{team.name}</option>
                     ))}
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-                  Team 2
+                  {t("team", { number: 2 })}
                   <select
                     value={matchDraft.team2Id}
                     onChange={(event) => setDraftField("team2Id", event.target.value)}
                     className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                    aria-label="Team 2"
+                    aria-label={t("team", { number: 2 })}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("unassigned")}</option>
                     {teams?.content.map((team) => (
                       <option key={team.id} value={team.id}>{team.name}</option>
                     ))}
@@ -819,28 +1070,28 @@ export function PairingsSection({
             {shouldShowFourTeamSlots ? (
               <>
                 <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-                  Team 3
+                  {t("team", { number: 3 })}
                   <select
                     value={matchDraft.team3Id}
                     onChange={(event) => setDraftField("team3Id", event.target.value)}
                     className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                    aria-label="Team 3"
+                    aria-label={t("team", { number: 3 })}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("unassigned")}</option>
                     {teams?.content.map((team) => (
                       <option key={team.id} value={team.id}>{team.name}</option>
                     ))}
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-                  Team 4
+                  {t("team", { number: 4 })}
                   <select
                     value={matchDraft.team4Id}
                     onChange={(event) => setDraftField("team4Id", event.target.value)}
                     className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                    aria-label="Team 4"
+                    aria-label={t("team", { number: 4 })}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("unassigned")}</option>
                     {teams?.content.map((team) => (
                       <option key={team.id} value={team.id}>{team.name}</option>
                     ))}
@@ -850,25 +1101,25 @@ export function PairingsSection({
             ) : null}
 
             <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-              Room
+              {t("room")}
               <input
                 type="text"
                 value={matchDraft.location}
                 onChange={(event) => setDraftField("location", event.target.value)}
-                placeholder="Room"
+                placeholder={t("room")}
                 className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                aria-label="Match room"
+                aria-label={t("matchRoom")}
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
-              Judge
+              {t("judge")}
               <select
                 value={matchDraft.judgeId}
                 onChange={(event) => setDraftField("judgeId", event.target.value)}
                 className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
-                aria-label="Judge"
+                aria-label={t("judge")}
               >
-                <option value="">Unassigned</option>
+                <option value="">{t("unassigned")}</option>
                 {judges?.content.map((judge) => (
                   <option key={judge.id} value={judge.id}>{judge.fullName}</option>
                 ))}
@@ -884,7 +1135,7 @@ export function PairingsSection({
               className="flex-1 rounded-2xl border border-[#0B1327] px-6 py-3 text-sm font-semibold text-[#4A5A7A] transition hover:bg-[#EEF2FB]"
               onClick={() => setEditingMatch(null)}
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="button"
@@ -892,7 +1143,7 @@ export function PairingsSection({
               className="flex-1 rounded-2xl bg-[#2B3F63] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1E2D48] disabled:cursor-not-allowed disabled:opacity-50"
               onClick={handleSaveMatchDraft}
             >
-              {editingMatch && savingMatchId === editingMatch.id ? "Saving..." : "Save match"}
+              {editingMatch && savingMatchId === editingMatch.id ? t("saving") : t("saveMatch")}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -904,15 +1155,16 @@ export function PairingsSection({
             <tr className="bg-[#0B1327] text-xs uppercase tracking-[0.08em] text-white/70">
               {isSoloStage
                 ? debaterSlotsToRender.map((slot, index) => (
-                    <th key={slot} className="px-6 py-4">Debater {index + 1}</th>
+                    <th key={slot} className="px-6 py-4">{t("debater", { number: index + 1 })}</th>
                   ))
                 : teamSlotsToRender.map((slot, index) => (
-                    <th key={slot} className="px-6 py-4">Fraction {index + 1}</th>
+                    <th key={slot} className="px-6 py-4">{t("fraction", { number: index + 1 })}</th>
                   ))}
-              <th className="px-6 py-4">Room</th>
-              <th className="px-6 py-4">Judge Name</th>
-              <th className="px-6 py-4">Status</th>
-              {canEditMatches ? <th className="px-6 py-4 text-right">Actions</th> : null}
+              <th className="px-6 py-4">{t("room")}</th>
+              <th className="px-6 py-4">{t("startTime")}</th>
+              <th className="px-6 py-4">{t("judgeName")}</th>
+              <th className="px-6 py-4">{t("status")}</th>
+              {canEditMatches ? <th className="px-6 py-4 text-right">{t("actions")}</th> : null}
             </tr>
           </thead>
           <tbody>{renderRows()}</tbody>
@@ -927,7 +1179,7 @@ export function PairingsSection({
             disabled={!canProceedToNextRound}
             onClick={onProceedToNextRound}
           >
-            Proceed to next round
+            {t("proceed")}
           </button>
           {workflowMessage ? (
             <p className="text-sm text-[#6C738A]" role="status">
@@ -950,10 +1202,10 @@ export function PairingsSection({
             >
               {saveRoomsFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
               {saveRoomsFeedback.isPending
-                ? "Saving all rooms..."
+                ? t("savingAllRooms")
                 : saveRoomsFeedback.isSuccess
-                  ? "✓ Rooms saved"
-                  : `Save all rooms (${dirtyRoomEntries.length})`}
+                  ? t("roomsSaved")
+                  : t("saveAllRooms", { count: dirtyRoomEntries.length })}
             </button>
           ) : null}
           <button
@@ -967,7 +1219,7 @@ export function PairingsSection({
             }`}
           >
             {randomizeFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-            {randomizeFeedback.isPending ? "Randomizing..." : randomizeFeedback.isSuccess ? "✓ Randomized" : "Randomize"}
+            {randomizeFeedback.isPending ? t("randomizing") : randomizeFeedback.isSuccess ? t("randomized") : t("randomize")}
           </button>
           <button
             type="button"
@@ -978,7 +1230,7 @@ export function PairingsSection({
             }`}
           >
             {publishFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-            {publishFeedback.isPending ? "Publishing..." : publishFeedback.isSuccess ? "✓ Published" : "Publish pairings"}
+            {publishFeedback.isPending ? t("publishing") : publishFeedback.isSuccess ? t("published") : t("publish")}
           </button>
         </div>
       </div>
@@ -995,7 +1247,7 @@ export function PairingsSection({
                 selectedRound === round ? "bg-white text-[#050A18]" : "text-white/70 hover:bg-white/10"
               }`}
             >
-              {displayRoundLabel(round)}
+              {translateRoundLabel(round, t)}
             </button>
           ))}
         </div>

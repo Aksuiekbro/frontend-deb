@@ -3,6 +3,7 @@
 import React from "react";
 import { Facebook, Instagram, Linkedin, Pencil, Plus, Send, Trash2, Twitter, Youtube } from "lucide-react";
 
+import { useTranslations, type TranslationCatalog } from "@/lib/i18n";
 import { SocialPlatform, type SocialProfileRequest } from "@/types/util/socials/social-profile";
 
 interface SocialsManagerProps {
@@ -23,6 +24,42 @@ const allNetworks: SocialPlatform[] = [
 const PLUS_ROTATION_MS = 1000;
 const CHIP_DURATION_MS = 300;
 const CHIP_DELAY_STEP_MS = Math.floor((PLUS_ROTATION_MS - CHIP_DURATION_MS) / Math.max(1, allNetworks.length - 1));
+
+const socialsMessages: TranslationCatalog = {
+  en: {
+    edit: "Edit",
+    delete: "Delete",
+    addSocial: "Add social",
+    saveSocialProfiles: "Save social profiles",
+    saving: "Saving...",
+    save: "Save",
+    telegramHandlePlaceholder: "@handle",
+    usernamePlaceholder: "username",
+    failedSaveSocialProfiles: "Failed to save social profiles",
+  },
+  ru: {
+    edit: "Изменить",
+    delete: "Удалить",
+    addSocial: "Добавить социальную сеть",
+    saveSocialProfiles: "Сохранить профили в социальных сетях",
+    saving: "Сохранение...",
+    save: "Сохранить",
+    telegramHandlePlaceholder: "@имя",
+    usernamePlaceholder: "имя пользователя",
+    failedSaveSocialProfiles: "Не удалось сохранить профили в социальных сетях",
+  },
+  kk: {
+    edit: "Өзгерту",
+    delete: "Жою",
+    addSocial: "Әлеуметтік желі қосу",
+    saveSocialProfiles: "Әлеуметтік желі профильдерін сақтау",
+    saving: "Сақталуда...",
+    save: "Сақтау",
+    telegramHandlePlaceholder: "@аты",
+    usernamePlaceholder: "пайдаланушы аты",
+    failedSaveSocialProfiles: "Әлеуметтік желі профильдерін сақтау мүмкін болмады",
+  },
+};
 
 function NetworkIcon({ type, className }: { type: SocialPlatform; className?: string }) {
   switch (type) {
@@ -55,6 +92,7 @@ function networkLabel(type: SocialPlatform): string {
 }
 
 export default function SocialsManager({ initialSocials, editable = false, onSave }: SocialsManagerProps) {
+  const t = useTranslations(socialsMessages);
   const [socials, setSocials] = React.useState<SocialProfileRequest[]>(initialSocials);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -92,7 +130,7 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
       await onSave(socials);
       setDirty(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save social profiles");
+      setError(err instanceof Error ? err.message : t("failedSaveSocialProfiles"));
     } finally {
       setSaving(false);
     }
@@ -110,16 +148,17 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
               value={s.handle}
               onChange={(e) => handleChange(s.platform, e.target.value)}
               readOnly={!editable}
-              placeholder={s.platform === SocialPlatform.TELEGRAM ? "@handle" : "username"}
+              aria-label={`${networkLabel(s.platform)} ${t("usernamePlaceholder")}`}
+              placeholder={s.platform === SocialPlatform.TELEGRAM ? t("telegramHandlePlaceholder") : t("usernamePlaceholder")}
               className="w-full border-b border-black/20 bg-transparent py-2 outline-none text-[#0D1321] read-only:cursor-default"
             />
           </div>
           {editable && (
             <>
-              <button type="button" aria-label="Edit" className="p-2 rounded hover:bg-black/5">
+              <button type="button" aria-label={t("edit")} className="p-2 rounded hover:bg-black/5">
                 <Pencil className="h-5 w-5 text-[#0D1321]" />
               </button>
-              <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.platform)}>
+              <button type="button" aria-label={t("delete")} className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.platform)}>
                 <Trash2 className="h-5 w-5 text-[#0D1321]" />
               </button>
             </>
@@ -131,7 +170,7 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
       <div className="inline-flex max-w-full items-center gap-3">
         <button
           type="button"
-          aria-label="Add social"
+          aria-label={t("addSocial")}
           aria-expanded={pickerOpen}
           onClick={() => setPickerOpen((open) => !open)}
           className="h-9 w-9 shrink-0 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-transform duration-1000 aria-expanded:rotate-45"
@@ -182,16 +221,16 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
         <div className="flex justify-end">
           <button
             type="button"
-            aria-label="Save social profiles"
+            aria-label={t("saveSocialProfiles")}
             disabled={!dirty || saving}
             onClick={handleSave}
             className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm font-medium text-white hover:bg-[#2D3748] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save"}
+            {saving ? t("saving") : t("save")}
           </button>
         </div>
       )}
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error || t("failedSaveSocialProfiles")}</p>}
     </div>
   );
 }

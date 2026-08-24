@@ -2,10 +2,12 @@
  * @jest-environment jsdom
  */
 import type { ComponentPropsWithoutRef } from "react"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
 
 import Header from "./Header"
+import { LocaleProvider } from "@/lib/i18n"
+import { Role } from "@/types/user/user"
 
 type MockLinkProps = ComponentPropsWithoutRef<"a"> & { prefetch?: boolean }
 
@@ -29,6 +31,7 @@ describe("Header auth links", () => {
 
   afterEach(() => {
     jest.clearAllMocks()
+    window.localStorage.clear()
   })
 
   it("disables auth prefetching while preserving hrefs and default behavior elsewhere", () => {
@@ -42,5 +45,72 @@ describe("Header auth links", () => {
     for (const name of ["DB", "Join Debates", "Host Debate", "Rating", "News"]) {
       expect(screen.getByRole("link", { name })).toHaveAttribute("data-prefetch", "default")
     }
+  })
+
+  it("switches the shared navigation to Russian", () => {
+    render(
+      <LocaleProvider>
+        <Header />
+      </LocaleProvider>,
+    )
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+      target: { value: "ru" },
+    })
+
+    expect(screen.getByRole("link", { name: "Участвовать в дебатах" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Войти" })).toBeInTheDocument()
+    expect(screen.getByRole("combobox", { name: "Язык" })).toHaveValue("ru")
+  })
+
+  it("gives authenticated organizers persistent access to My Tournaments", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 17,
+        username: "organizer",
+        firstName: "Tour",
+        lastName: "Director",
+        role: Role.ORGANIZER,
+      },
+      isLoading: false,
+    })
+
+    render(<Header />)
+
+    expect(screen.getByRole("link", { name: "My Tournaments" })).toHaveAttribute(
+      "href",
+      "/my-tournaments",
+    )
+  })
+
+  it.each([
+    ["ru", "Мои турниры"],
+    ["kk", "Менің турнирлерім"],
+  ] as const)("localizes the organizer route in %s", (locale, label) => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 17,
+        username: "organizer",
+        firstName: "Tour",
+        lastName: "Director",
+        role: Role.ORGANIZER,
+      },
+      isLoading: false,
+    })
+
+    render(
+      <LocaleProvider>
+        <Header />
+      </LocaleProvider>,
+    )
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+      target: { value: locale },
+    })
+
+    expect(screen.getByRole("link", { name: label })).toHaveAttribute(
+      "href",
+      "/my-tournaments",
+    )
   })
 })
