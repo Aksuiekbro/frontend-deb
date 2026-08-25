@@ -7,14 +7,15 @@ import { LoadingState, Skeleton } from "@/components/ui/loading"
 import { resolveMediaUrl } from "@/lib/media"
 import type { PageResult } from "@/types/page"
 import type { AnnouncementResponse } from "@/types/tournament/announcement/announcement"
+import type { TournamentMapResponse } from "@/types/tournament/map"
 import type { ScheduleResponse } from "@/types/tournament/schedule"
 import type { TournamentResponse } from "@/types/tournament/tournament"
 import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 const catalog: TranslationCatalog = {
-  en: { announcements: "Announcements", schedule: "Schedule", map: "Map", failedAnnouncements: "Failed to load announcements", noAnnouncements: "No announcements yet", previous: "Previous announcement", next: "Next announcement", editAnnouncement: "Edit announcement", edit: "Edit", comments: "Comments", noComments: "No comments yet", commentLabel: "Announcement comment", commentPlaceholder: "Add a comment", addComment: "Add comment", addAnnouncement: "Add announcement", failedComment: "Failed to add comment", removeSchedule: "Remove schedule image", addSchedule: "Add schedule", mapHere: "Map will be displayed here", addMap: "Add map", details: "Details", unableDetails: "Unable to load tournament details", noDescription: "No description available for this tournament.", loadingDetails: "Tournament details will appear here once loaded.", dates: "Dates", datesTba: "Tournament dates TBA", location: "Location", locationTba: "Location TBA", unableAnnouncements: "Unable to load announcements", unableSchedule: "Unable to load schedule", noSchedule: "No schedule entries yet" },
-  ru: { announcements: "Объявления", schedule: "Расписание", map: "Карта", failedAnnouncements: "Не удалось загрузить объявления", noAnnouncements: "Объявлений пока нет", previous: "Предыдущее объявление", next: "Следующее объявление", editAnnouncement: "Изменить объявление", edit: "Изменить", comments: "Комментарии", noComments: "Комментариев пока нет", commentLabel: "Комментарий к объявлению", commentPlaceholder: "Добавить комментарий", addComment: "Добавить комментарий", addAnnouncement: "Добавить объявление", failedComment: "Не удалось добавить комментарий", removeSchedule: "Удалить изображение расписания", addSchedule: "Добавить расписание", mapHere: "Здесь будет отображаться карта", addMap: "Добавить карту", details: "Подробности", unableDetails: "Не удалось загрузить сведения о турнире", noDescription: "Описание этого турнира отсутствует.", loadingDetails: "Сведения о турнире появятся после загрузки.", dates: "Даты", datesTba: "Даты турнира уточняются", location: "Место проведения", locationTba: "Место уточняется", unableAnnouncements: "Не удалось загрузить объявления", unableSchedule: "Не удалось загрузить расписание", noSchedule: "Пунктов расписания пока нет" },
-  kk: { announcements: "Хабарландырулар", schedule: "Кесте", map: "Карта", failedAnnouncements: "Хабарландыруларды жүктеу мүмкін болмады", noAnnouncements: "Әзірге хабарландыру жоқ", previous: "Алдыңғы хабарландыру", next: "Келесі хабарландыру", editAnnouncement: "Хабарландыруды өзгерту", edit: "Өзгерту", comments: "Пікірлер", noComments: "Әзірге пікір жоқ", commentLabel: "Хабарландыру пікірі", commentPlaceholder: "Пікір қосу", addComment: "Пікір қосу", addAnnouncement: "Хабарландыру қосу", failedComment: "Пікір қосу мүмкін болмады", removeSchedule: "Кесте суретін жою", addSchedule: "Кесте қосу", mapHere: "Карта осында көрсетіледі", addMap: "Карта қосу", details: "Толық мәлімет", unableDetails: "Турнир мәліметтерін жүктеу мүмкін болмады", noDescription: "Бұл турнирге сипаттама жоқ.", loadingDetails: "Турнир мәліметтері жүктелгеннен кейін көрінеді.", dates: "Күндер", datesTba: "Турнир күндері нақтылануда", location: "Өтетін орны", locationTba: "Өтетін орны нақтылануда", unableAnnouncements: "Хабарландыруларды жүктеу мүмкін болмады", unableSchedule: "Кестені жүктеу мүмкін болмады", noSchedule: "Әзірге кесте тармағы жоқ" },
+  en: { announcements: "Announcements", schedule: "Schedule", map: "Map", failedAnnouncements: "Failed to load announcements", noAnnouncements: "No announcements yet", previous: "Previous announcement", next: "Next announcement", editAnnouncement: "Edit announcement", edit: "Edit", comments: "Comments", noComments: "No comments yet", commentLabel: "Announcement comment", commentPlaceholder: "Add a comment", addComment: "Add comment", addAnnouncement: "Add announcement", failedComment: "Failed to add comment", removeSchedule: "Remove schedule image", addSchedule: "Add schedule", noMap: "No map has been added yet", unableMap: "Unable to load the tournament map", addMap: "Add map", editMap: "Edit map", details: "Details", unableDetails: "Unable to load tournament details", noDescription: "No description available for this tournament.", loadingDetails: "Tournament details will appear here once loaded.", dates: "Dates", datesTba: "Tournament dates TBA", location: "Location", locationTba: "Location TBA", unableAnnouncements: "Unable to load announcements", unableSchedule: "Unable to load schedule", noSchedule: "No schedule entries yet" },
+  ru: { announcements: "Объявления", schedule: "Расписание", map: "Карта", failedAnnouncements: "Не удалось загрузить объявления", noAnnouncements: "Объявлений пока нет", previous: "Предыдущее объявление", next: "Следующее объявление", editAnnouncement: "Изменить объявление", edit: "Изменить", comments: "Комментарии", noComments: "Комментариев пока нет", commentLabel: "Комментарий к объявлению", commentPlaceholder: "Добавить комментарий", addComment: "Добавить комментарий", addAnnouncement: "Добавить объявление", failedComment: "Не удалось добавить комментарий", removeSchedule: "Удалить изображение расписания", addSchedule: "Добавить расписание", noMap: "Карта пока не добавлена", unableMap: "Не удалось загрузить карту турнира", addMap: "Добавить карту", editMap: "Изменить карту", details: "Подробности", unableDetails: "Не удалось загрузить сведения о турнире", noDescription: "Описание этого турнира отсутствует.", loadingDetails: "Сведения о турнире появятся после загрузки.", dates: "Даты", datesTba: "Даты турнира уточняются", location: "Место проведения", locationTba: "Место уточняется", unableAnnouncements: "Не удалось загрузить объявления", unableSchedule: "Не удалось загрузить расписание", noSchedule: "Пунктов расписания пока нет" },
+  kk: { announcements: "Хабарландырулар", schedule: "Кесте", map: "Карта", failedAnnouncements: "Хабарландыруларды жүктеу мүмкін болмады", noAnnouncements: "Әзірге хабарландыру жоқ", previous: "Алдыңғы хабарландыру", next: "Келесі хабарландыру", editAnnouncement: "Хабарландыруды өзгерту", edit: "Өзгерту", comments: "Пікірлер", noComments: "Әзірге пікір жоқ", commentLabel: "Хабарландыру пікірі", commentPlaceholder: "Пікір қосу", addComment: "Пікір қосу", addAnnouncement: "Хабарландыру қосу", failedComment: "Пікір қосу мүмкін болмады", removeSchedule: "Кесте суретін жою", addSchedule: "Кесте қосу", noMap: "Карта әлі қосылмаған", unableMap: "Турнир картасын жүктеу мүмкін болмады", addMap: "Карта қосу", editMap: "Картаны өзгерту", details: "Толық мәлімет", unableDetails: "Турнир мәліметтерін жүктеу мүмкін болмады", noDescription: "Бұл турнирге сипаттама жоқ.", loadingDetails: "Турнир мәліметтері жүктелгеннен кейін көрінеді.", dates: "Күндер", datesTba: "Турнир күндері нақтылануда", location: "Өтетін орны", locationTba: "Өтетін орны нақтылануда", unableAnnouncements: "Хабарландыруларды жүктеу мүмкін болмады", unableSchedule: "Кестені жүктеу мүмкін болмады", noSchedule: "Әзірге кесте тармағы жоқ" },
 }
 
 interface MainInfoSectionProps {
@@ -28,8 +29,12 @@ interface MainInfoSectionProps {
   schedules?: ScheduleResponse[]
   schedulesLoading: boolean
   schedulesError?: Error
+  map?: TournamentMapResponse | null
+  mapLoading: boolean
+  mapError?: Error
   onOpenModal?: (context: "announcements" | "schedule" | "map") => void
   onEditAnnouncement?: (announcement: AnnouncementResponse) => void
+  onEditMap?: (map: TournamentMapResponse) => void
   onAddAnnouncementComment?: (announcementId: number, content: string) => Promise<void> | void
 }
 
@@ -48,8 +53,12 @@ export function MainInfoSection({
   schedules,
   schedulesLoading,
   schedulesError,
+  map,
+  mapLoading,
+  mapError,
   onOpenModal,
   onEditAnnouncement,
+  onEditMap,
   onAddAnnouncementComment,
 }: MainInfoSectionProps) {
   const t = useTranslations(catalog)
@@ -355,12 +364,40 @@ export function MainInfoSection({
     return (
       <div>
         <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">{t("map")}</h2>
-        <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
-          <div className="text-center text-[#9a8c98] text-[16px] py-20">{t("mapHere")}</div>
-          {onOpenModal ? (
+        <div className="relative min-h-[400px] rounded-2xl border border-[#CFD6EA] bg-white p-6">
+          <LoadingState isLoading={mapLoading} fallback={<Skeleton className="h-[352px] w-full rounded-xl" />}>
+            {mapError ? (
+              <div className="py-36 text-center text-[16px] text-red-500">{t("unableMap")}</div>
+            ) : map ? (
+              <div className="overflow-hidden rounded-xl border border-[#D6DEEF] bg-[#F7F9FF]">
+                <img
+                  src={resolveMediaUrl(map.imageUrl.url)}
+                  alt={map.title}
+                  className="max-h-[680px] min-h-[280px] w-full object-contain"
+                />
+                <div className="space-y-2 bg-white px-6 py-5">
+                  <h3 className="text-xl font-semibold text-[#0B1327]">{map.title}</h3>
+                  <p className="whitespace-pre-wrap text-[#3A4156]">{map.description}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-36 text-center text-[16px] text-[#9a8c98]">{t("noMap")}</div>
+            )}
+          </LoadingState>
+          {!mapLoading && !mapError && map && onEditMap ? (
             <button
+              type="button"
+              onClick={() => onEditMap(map)}
+              className="absolute bottom-8 right-8 flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition-colors hover:bg-[#22223b]"
+              aria-label={t("editMap")}
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+          ) : !mapLoading && !mapError && !map && onOpenModal ? (
+            <button
+              type="button"
               onClick={() => onOpenModal("map")}
-              className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              className="absolute bottom-8 right-8 flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition-colors hover:bg-[#22223b]"
               aria-label={t("addMap")}
             >
               <Plus className="h-6 w-6" />

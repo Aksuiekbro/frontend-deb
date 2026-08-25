@@ -28,6 +28,7 @@ import {
   useTournamentTeams,
   useTournamentAnnouncements,
   useTournamentSchedules,
+  useTournamentMap,
   useTournamentJudges,
   useTournamentOrganizers,
   useTournamentMainOrganizer,
@@ -45,16 +46,16 @@ import type { JudgeRequest, JudgeResponse } from "@/types/tournament/judge"
 import type { NewsRequest } from "@/types/news"
 import type { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/announcement/announcement"
 import type { ScheduleRequest } from "@/types/tournament/schedule"
+import type { TournamentMapRequest, TournamentMapResponse } from "@/types/tournament/map"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType, type RoundGroupResponse } from "@/types/tournament/round/round-group"
 import { displayRoundLabel } from "@/lib/round-label"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
-import type { SimpleUserResponse } from "@/types/user/user"
+import { Role, type SimpleUserResponse } from "@/types/user/user"
 
 const catalog: TranslationCatalog = {
   en: {
     preliminary: "Preliminary", teamElimination: "Team elimination", soloElimination: "Solo elimination",
-    mapUnavailable: "Map uploads are not supported by the backend yet.", mapUnavailableTitle: "Map upload unavailable",
     requiredPost: "Please add a title and description.", requiredImage: "Please add an image.",
     tooManyNewsImages: "A News post can contain one cover image and at most 10 gallery photos.",
     permission: "You do not have permission to perform this action.", server: "Server error. Please try again later.",
@@ -68,6 +69,8 @@ const catalog: TranslationCatalog = {
     updateDetails: "Update the team details before saving.", saveChanges: "Save changes", submit: "Submit",
     editJudge: "Edit Judge", addJudge: "Add Judge", saveJudge: "Save Judge",
     failedUpdateAnnouncement: "Failed to update announcement", failedAddAnnouncement: "Failed to add announcement",
+    failedUpdateMap: "Failed to update map", failedAddMap: "Failed to add map", mapUpdated: "Map updated", mapAdded: "Map added",
+    invalidMap: "Check the title, description, and JPG/PNG image.", mapConflict: "A map already exists for this tournament. Refresh and edit it instead.", mapImageTooLarge: "The map image must be 5 MB or smaller.",
     announcementUpdated: "Announcement updated", contentSubmitted: "Content submitted", announcementUpdatedDescription: "{title} has been updated.",
     contentAddedDescription: "{title} has been added.",
     failedUpdateJudge: "Failed to update judge", failedAddJudge: "Failed to add judge", judgeUpdated: "Judge updated",
@@ -95,7 +98,6 @@ const catalog: TranslationCatalog = {
   },
   ru: {
     preliminary: "Отборочный этап", teamElimination: "Командная сетка", soloElimination: "Индивидуальная сетка",
-    mapUnavailable: "Загрузка карты пока не поддерживается сервером.", mapUnavailableTitle: "Загрузка карты недоступна",
     requiredPost: "Добавьте заголовок и описание.", requiredImage: "Добавьте изображение.",
     tooManyNewsImages: "Новостной пост может содержать одну обложку и не более 10 фотографий в галерее.", permission: "У вас нет прав для выполнения этого действия.",
     server: "Ошибка сервера. Повторите попытку позже.", missingInfo: "Недостаточно данных", judgeFields: "Заполните имя, электронную почту и телефон.",
@@ -107,6 +109,8 @@ const catalog: TranslationCatalog = {
     updateDetails: "Обновите данные команды перед сохранением.", saveChanges: "Сохранить изменения", submit: "Отправить",
     editJudge: "Изменить судью", addJudge: "Добавить судью", saveJudge: "Сохранить судью",
     failedUpdateAnnouncement: "Не удалось обновить объявление", failedAddAnnouncement: "Не удалось добавить объявление",
+    failedUpdateMap: "Не удалось обновить карту", failedAddMap: "Не удалось добавить карту", mapUpdated: "Карта обновлена", mapAdded: "Карта добавлена",
+    invalidMap: "Проверьте заголовок, описание и изображение JPG/PNG.", mapConflict: "Карта для этого турнира уже существует. Обновите страницу и измените её.", mapImageTooLarge: "Размер изображения карты не должен превышать 5 МБ.",
     announcementUpdated: "Объявление обновлено", contentSubmitted: "Материал отправлен", announcementUpdatedDescription: "{title} обновлено.", contentAddedDescription: "{title} добавлено.",
     failedUpdateJudge: "Не удалось обновить судью", failedAddJudge: "Не удалось добавить судью", judgeUpdated: "Судья обновлён", judgeSubmitted: "Судья добавлен",
     judgeDetailsUpdated: "Данные судьи обновлены.", judgeAddedRoster: "Судья добавлен в список.", failedCheckJudgeIn: "Не удалось отметить явку судьи",
@@ -129,8 +133,8 @@ const catalog: TranslationCatalog = {
     teamRemovedDescription: "{name} удалена.", failedUpdateTeam: "Не удалось обновить команду", teamUpdated: "Команда обновлена", teamUpdatedDescription: "Команда {name} ({club}) обновлена.",
   },
   kk: {
-    preliminary: "Іріктеу кезеңі", teamElimination: "Командалық тор", soloElimination: "Жеке тор", mapUnavailable: "Картаны жүктеуге сервер әзірге қолдау көрсетпейді.",
-    mapUnavailableTitle: "Картаны жүктеу қолжетімсіз", requiredPost: "Тақырып пен сипаттаманы қосыңыз.", requiredImage: "Сурет қосыңыз.",
+    preliminary: "Іріктеу кезеңі", teamElimination: "Командалық тор", soloElimination: "Жеке тор",
+    requiredPost: "Тақырып пен сипаттаманы қосыңыз.", requiredImage: "Сурет қосыңыз.",
     tooManyNewsImages: "Жаңалық жазбасында бір мұқаба және галереяда ең көбі 10 фотосурет болуы мүмкін.",
     permission: "Бұл әрекетті орындауға құқықтарыңыз жоқ.", server: "Сервер қатесі. Кейінірек қайталап көріңіз.", missingInfo: "Ақпарат жеткіліксіз",
     judgeFields: "Аты-жөнін, электрондық поштаны және телефонды толтырыңыз.", tryLater: "Кейінірек қайталап көріңіз.", selectRound: "Алдымен раундты таңдаңыз",
@@ -139,6 +143,8 @@ const catalog: TranslationCatalog = {
     duplicate: "Қайталанған қатысушы", duplicateDescription: "Қатысушы бір командада бір рет қана болуы мүмкін.", missingParticipants: "Қатысушылар жоқ", addParticipant: "Сақтамас бұрын кемінде бір қатысушы қосыңыз.",
     noChanges: "Сақтайтын өзгеріс жоқ", updateDetails: "Сақтамас бұрын команда мәліметтерін жаңартыңыз.", saveChanges: "Өзгерістерді сақтау", submit: "Жіберу",
     editJudge: "Судьяны өзгерту", addJudge: "Судья қосу", saveJudge: "Судьяны сақтау", failedUpdateAnnouncement: "Хабарландыруды жаңарту мүмкін болмады", failedAddAnnouncement: "Хабарландыруды қосу мүмкін болмады",
+    failedUpdateMap: "Картаны жаңарту мүмкін болмады", failedAddMap: "Картаны қосу мүмкін болмады", mapUpdated: "Карта жаңартылды", mapAdded: "Карта қосылды",
+    invalidMap: "Тақырыпты, сипаттаманы және JPG/PNG суретін тексеріңіз.", mapConflict: "Бұл турнирдің картасы әлдеқашан бар. Бетті жаңартып, картаны өзгертіңіз.", mapImageTooLarge: "Карта суретінің өлшемі 5 МБ-тан аспауы керек.",
     announcementUpdated: "Хабарландыру жаңартылды", contentSubmitted: "Материал жіберілді", announcementUpdatedDescription: "{title} жаңартылды.", contentAddedDescription: "{title} қосылды.",
     failedUpdateJudge: "Судьяны жаңарту мүмкін болмады", failedAddJudge: "Судьяны қосу мүмкін болмады", judgeUpdated: "Судья жаңартылды", judgeSubmitted: "Судья қосылды",
     judgeDetailsUpdated: "Судья мәліметтері жаңартылды.", judgeAddedRoster: "Судья тізімге қосылды.", failedCheckJudgeIn: "Судьяны белгілеу мүмкін болмады", failedUncheckJudge: "Судья белгісін алып тастау мүмкін болмады",
@@ -255,6 +261,12 @@ export default function TournamentDetailPage() {
     error: schedulesError,
     mutate: mutateSchedules,
   } = useTournamentSchedules(tournamentId)
+  const {
+    map,
+    isLoading: mapLoading,
+    error: mapError,
+    mutate: mutateMap,
+  } = useTournamentMap(tournamentId)
   const { judges, isLoading: judgesLoading, error: judgesError, mutate: mutateJudges } = useTournamentJudges(
     tournamentId,
     undefined,
@@ -305,8 +317,10 @@ export default function TournamentDetailPage() {
     dzAnimate,
     formatBytes,
     handleImageUpload,
+    handleSingleImageUpload,
     handleDragOver,
     handleDrop,
+    handleSingleImageDrop,
     removeImageByKey,
     resetUploads,
   } = useImageUpload()
@@ -319,6 +333,7 @@ export default function TournamentDetailPage() {
   const [isAddJudgeModalOpen, setIsAddJudgeModalOpen] = useState(false)
   const [modalContext, setModalContext] = useState<'announcements' | 'schedule' | 'map' | 'news' | ''>('')
   const [editingAnnouncement, setEditingAnnouncement] = useState<AnnouncementResponse | null>(null)
+  const [editingMap, setEditingMap] = useState<TournamentMapResponse | null>(null)
   const [postTitle, setPostTitle] = useState('')
   const [postDescription, setPostDescription] = useState('')
   const [postSubmitting, setPostSubmitting] = useState(false)
@@ -465,27 +480,17 @@ export default function TournamentDetailPage() {
     const isMap = modalContext === 'map'
     const isNews = modalContext === 'news'
     const isEditingAnnouncement = isAnnouncement && editingAnnouncement
+    const isEditingMap = isMap && editingMap
     const title = postTitle.trim()
     const description = postDescription.trim()
     const [primaryImage, ...extraImages] = postImages
-
-    if (isMap) {
-      const message = t("mapUnavailable")
-      setPostError(message)
-      toast({
-        title: t("mapUnavailableTitle"),
-        description: message,
-        variant: 'destructive',
-      })
-      return
-    }
 
     if (!title || !description) {
       setPostError(t("requiredPost"))
       return
     }
 
-    if (!primaryImage && !isEditingAnnouncement) {
+    if (!primaryImage && !isEditingAnnouncement && !isEditingMap) {
       setPostError(t("requiredImage"))
       return
     }
@@ -519,6 +524,33 @@ export default function TournamentDetailPage() {
           serverError: t("server"),
         }))
         await mutateSchedules()
+      } else if (isMap) {
+        const body: TournamentMapRequest = { title, description }
+        const response = isEditingMap
+          ? await api.updateTournamentMap(tournamentId, body, primaryImage)
+          : await api.createTournamentMap(tournamentId, body, primaryImage)
+        if (!response.ok) {
+          const localizedStatusMessage = response.status === 400
+            ? t("invalidMap")
+            : response.status === 401 || response.status === 403
+              ? t("permission")
+              : response.status === 409
+                ? t("mapConflict")
+                : response.status === 413
+                  ? t("mapImageTooLarge")
+                  : response.status >= 500
+                    ? t("server")
+                    : null
+          throw new Error(localizedStatusMessage ?? await readResponseError(response, {
+            fallback: isEditingMap ? t("failedUpdateMap") : t("failedAddMap"),
+          }))
+        }
+        const savedMap = await response.json() as TournamentMapResponse
+        try {
+          await mutateMap(savedMap, { revalidate: false })
+        } catch (cacheError) {
+          console.error('Map saved, but the local map cache could not be updated', cacheError)
+        }
       } else if (isNews) {
         const body: NewsRequest = {
           title,
@@ -537,14 +569,19 @@ export default function TournamentDetailPage() {
       }
 
       toast({
-        title: isEditingAnnouncement ? t("announcementUpdated") : t("contentSubmitted"),
-        description: isEditingAnnouncement
+        title: isEditingAnnouncement
+          ? t("announcementUpdated")
+          : isMap
+            ? t(isEditingMap ? "mapUpdated" : "mapAdded")
+            : t("contentSubmitted"),
+        description: isEditingAnnouncement || isEditingMap
           ? t("announcementUpdatedDescription", { title })
           : t("contentAddedDescription", { title }),
       })
       setPostTitle('')
       setPostDescription('')
       setEditingAnnouncement(null)
+      setEditingMap(null)
       resetUploads()
       setIsAddPostModalOpen(false)
       setModalContext('')
@@ -553,7 +590,7 @@ export default function TournamentDetailPage() {
       setPostError(message)
       console.error('Failed to submit content', e)
       toast({
-        title: t("server"),
+        title: isMap ? t(isEditingMap ? "failedUpdateMap" : "failedAddMap") : t("server"),
         description: message,
         variant: 'destructive',
       })
@@ -766,6 +803,7 @@ export default function TournamentDetailPage() {
 
   const isOrganizer = Boolean(
     currentUser &&
+    currentUser.role === Role.ORGANIZER &&
     organizers?.some((organizer) => organizer?.id === currentUser.id)
   )
   const canControlVisibility = Boolean(
@@ -1495,17 +1533,9 @@ export default function TournamentDetailPage() {
   }, [currentRoundNumber, resultsFormatOptions, roundGroups, selectedResultsOption, selectedRoundNumber])
 
   const openContentModal = (context: 'announcements' | 'schedule' | 'map' | 'news') => {
-    if (context === 'map') {
-      toast({
-        title: t("mapUnavailableTitle"),
-        description: t("mapUnavailable"),
-        variant: 'destructive',
-      })
-      return
-    }
-
     setPostError(null)
     setEditingAnnouncement(null)
+    setEditingMap(null)
     setPostTitle('')
     setPostDescription('')
     setSelectedNewsCategory('Info')
@@ -1519,6 +1549,7 @@ export default function TournamentDetailPage() {
     resetUploads()
     setModalContext('announcements')
     setEditingAnnouncement(announcement)
+    setEditingMap(null)
     setPostTitle(announcement.title ?? '')
     setPostDescription(announcement.content ?? '')
     const existingCategory = (announcement.tags ?? [])
@@ -1529,10 +1560,22 @@ export default function TournamentDetailPage() {
     setIsAddPostModalOpen(true)
   }
 
+  const openEditMapModal = (tournamentMap: TournamentMapResponse) => {
+    setPostError(null)
+    resetUploads()
+    setModalContext('map')
+    setEditingAnnouncement(null)
+    setEditingMap(tournamentMap)
+    setPostTitle(tournamentMap.title)
+    setPostDescription(tournamentMap.description)
+    setIsAddPostModalOpen(true)
+  }
+
   const closeAddPostModal = () => {
     setIsAddPostModalOpen(false)
     setModalContext('')
     setEditingAnnouncement(null)
+    setEditingMap(null)
     setPostTitle('')
     setPostDescription('')
     setPostError(null)
@@ -1587,8 +1630,12 @@ export default function TournamentDetailPage() {
             schedules={schedules}
             schedulesLoading={schedulesLoading}
             schedulesError={schedulesError}
+            map={map}
+            mapLoading={mapLoading}
+            mapError={mapError}
             onOpenModal={isOrganizer ? openContentModal : undefined}
             onEditAnnouncement={isOrganizer ? openEditAnnouncementModal : undefined}
+            onEditMap={isOrganizer ? openEditMapModal : undefined}
             onAddAnnouncementComment={currentUser ? handleAddAnnouncementComment : undefined}
           />
         )}
@@ -1720,16 +1767,16 @@ export default function TournamentDetailPage() {
       <AddPostModal
         isOpen={isAddPostModalOpen}
         modalContext={modalContext}
-        mode={editingAnnouncement ? 'edit' : 'add'}
+        mode={editingAnnouncement || editingMap ? 'edit' : 'add'}
         postTitle={postTitle}
         postDescription={postDescription}
         selectedNewsCategory={selectedNewsCategory}
-        currentImageUrl={editingAnnouncement?.imageUrl?.url}
+        currentImageUrl={editingAnnouncement?.imageUrl?.url ?? editingMap?.imageUrl.url}
         imagePreviews={imagePreviews}
         uploadErrors={uploadErrors}
         isSubmitting={postSubmitting}
         errorMessage={postError}
-        submitLabel={editingAnnouncement ? t("saveChanges") : t("submit")}
+        submitLabel={editingAnnouncement || editingMap ? t("saveChanges") : t("submit")}
         dzAnimate={dzAnimate}
         formatBytes={formatBytes}
         onClose={closeAddPostModal}
@@ -1737,9 +1784,9 @@ export default function TournamentDetailPage() {
         onTitleChange={setPostTitle}
         onDescriptionChange={setPostDescription}
         onCategoryChange={setSelectedNewsCategory}
-        onImageUpload={handleImageUpload}
+        onImageUpload={modalContext === 'map' ? handleSingleImageUpload : handleImageUpload}
         onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        onDrop={modalContext === 'map' ? handleSingleImageDrop : handleDrop}
         onRemoveImage={removeImageByKey}
       />
 

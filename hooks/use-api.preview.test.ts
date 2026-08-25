@@ -44,4 +44,39 @@ describe("preview News hooks", () => {
     expect(await result.mutate()).toBe(result.newsItem)
     expect(getNews).not.toHaveBeenCalled()
   })
+
+  it("serves a preview tournament map without requesting the backend", async () => {
+    process.env.NEXT_PUBLIC_PREVIEW_MODE = "true"
+    const useSWR = jest.fn(() => ({
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+      mutate: jest.fn(),
+    }))
+    const getTournamentMap = jest.fn()
+
+    jest.doMock("swr", () => ({
+      __esModule: true,
+      default: useSWR,
+    }))
+    jest.doMock("@/lib/api", () => ({
+      api: { getTournamentMap },
+    }))
+
+    const { useTournamentMap } = await import("./use-api")
+    const result = useTournamentMap(1)
+
+    expect(useSWR).toHaveBeenCalledWith(null, expect.any(Function), {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    })
+    expect(result.map).toMatchObject({
+      title: "Preview venue map",
+      imageUrl: { url: "/preview/placeholder.jpg" },
+    })
+    expect(result.isLoading).toBe(false)
+    expect(result.error).toBeUndefined()
+    expect(await result.mutate()).toBe(result.map)
+    expect(getTournamentMap).not.toHaveBeenCalled()
+  })
 })

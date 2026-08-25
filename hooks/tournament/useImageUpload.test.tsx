@@ -95,6 +95,40 @@ describe("useImageUpload", () => {
     expect(result.current.postImages).toEqual([repeatedFile])
   })
 
+  it("replaces the current single image when another file is selected", () => {
+    const { result } = renderHook(() => useImageUpload())
+    const firstFile = new File(["first"], "first-map.png", { type: "image/png" })
+    const secondFile = new File(["second"], "second-map.png", { type: "image/png" })
+
+    act(() => {
+      result.current.handleSingleImageUpload([firstFile] as unknown as FileList)
+    })
+    act(() => {
+      result.current.handleSingleImageUpload([secondFile] as unknown as FileList)
+    })
+
+    expect(result.current.postImages).toEqual([secondFile])
+    expect(result.current.imagePreviews.map(({ name }) => name)).toEqual(["second-map.png"])
+  })
+
+  it("keeps only the first file from a multi-image single-upload drop", () => {
+    const { result } = renderHook(() => useImageUpload())
+    const firstFile = new File(["first"], "first-map.png", { type: "image/png" })
+    const secondFile = new File(["second"], "second-map.png", { type: "image/png" })
+    const preventDefault = jest.fn()
+
+    act(() => {
+      result.current.handleSingleImageDrop({
+        preventDefault,
+        dataTransfer: { files: [firstFile, secondFile] as unknown as FileList },
+      } as unknown as React.DragEvent)
+    })
+
+    expect(preventDefault).toHaveBeenCalledTimes(1)
+    expect(result.current.postImages).toEqual([firstFile])
+    expect(result.current.imagePreviews.map(({ name }) => name)).toEqual(["first-map.png"])
+  })
+
   it("translates invalid image validation into Russian", async () => {
     window.localStorage.setItem("debetter-locale", "ru")
     const { result } = renderHook(() => useImageUpload(), {

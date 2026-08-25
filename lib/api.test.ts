@@ -463,4 +463,113 @@ describe('api client configuration', () => {
       newImagePositions: [],
     })
   })
+
+  describe('tournament map endpoints', () => {
+    it('loads a tournament map', async () => {
+      process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
+      jest.resetModules()
+      const fetchMock = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+      global.fetch = fetchMock as unknown as typeof fetch
+
+      const { api } = await import('./api')
+
+      await api.getTournamentMap(53)
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.example.com/tournaments/53/map',
+        expect.objectContaining({ credentials: 'include' }),
+      )
+    })
+
+    it('creates a tournament map with JSON data and an image', async () => {
+      process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
+      jest.resetModules()
+      const fetchMock = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+      global.fetch = fetchMock as unknown as typeof fetch
+
+      const { api } = await import('./api')
+      const image = new File(['map'], 'venue.png', { type: 'image/png' })
+      const body = { title: 'Venue map', description: 'Rooms and entrances' }
+
+      await api.createTournamentMap(53, body, image)
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.example.com/tournaments/53/map',
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          body: expect.any(FormData),
+        }),
+      )
+
+      const requestInit = fetchMock.mock.calls[0][1] as RequestInit
+      expect(requestInit.headers).not.toHaveProperty('Content-Type')
+
+      const formData = requestInit.body as FormData
+      expect(formData.get('image')).toBe(image)
+      const data = formData.get('data') as Blob
+      await expect(data.text().then(JSON.parse)).resolves.toEqual(body)
+      expect(data.type).toBe('application/json')
+    })
+
+    it('updates tournament map metadata without adding an image part', async () => {
+      process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
+      jest.resetModules()
+      const fetchMock = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+      global.fetch = fetchMock as unknown as typeof fetch
+
+      const { api } = await import('./api')
+      const body = { title: 'Updated venue map' }
+
+      await api.updateTournamentMap(53, body)
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.example.com/tournaments/53/map',
+        expect.objectContaining({
+          method: 'PATCH',
+          credentials: 'include',
+          body: expect.any(FormData),
+        }),
+      )
+
+      const requestInit = fetchMock.mock.calls[0][1] as RequestInit
+      expect(requestInit.headers).not.toHaveProperty('Content-Type')
+
+      const formData = requestInit.body as FormData
+      expect(formData.has('image')).toBe(false)
+      const data = formData.get('data') as Blob
+      await expect(data.text().then(JSON.parse)).resolves.toEqual(body)
+      expect(data.type).toBe('application/json')
+    })
+
+    it('replaces a tournament map image while preserving an empty metadata part', async () => {
+      process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
+      jest.resetModules()
+      const fetchMock = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+      global.fetch = fetchMock as unknown as typeof fetch
+
+      const { api } = await import('./api')
+      const replacement = new File(['replacement'], 'replacement.png', { type: 'image/png' })
+
+      await api.updateTournamentMap(53, {}, replacement)
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.example.com/tournaments/53/map',
+        expect.objectContaining({
+          method: 'PATCH',
+          credentials: 'include',
+          body: expect.any(FormData),
+        }),
+      )
+
+      const requestInit = fetchMock.mock.calls[0][1] as RequestInit
+      expect(requestInit.headers).not.toHaveProperty('Content-Type')
+
+      const formData = requestInit.body as FormData
+      expect(formData.get('image')).toBe(replacement)
+      const data = formData.get('data') as Blob
+      await expect(data.text().then(JSON.parse)).resolves.toEqual({})
+      expect(data.type).toBe('application/json')
+    })
+  })
 })
