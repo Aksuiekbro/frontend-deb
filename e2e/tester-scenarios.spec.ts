@@ -154,6 +154,63 @@ test.describe.serial("tester regression scenarios", () => {
     await expect(newsModal.locator("select")).toHaveCount(0)
   })
 
+  test("participant can decline an invitation without gaining tournament access", async ({ page, browser }) => {
+    await registerLogin(page)
+    const declineTournamentId = await createTournament(page.request, `Tester Decline ${RUN_ID}`)
+
+    const inviterContext = await browser.newContext({ baseURL: BASE_URL })
+    const inviteeContext = await browser.newContext({ baseURL: BASE_URL })
+    const inviterPage = await inviterContext.newPage()
+    const inviteePage = await inviteeContext.newPage()
+
+    try {
+      const inviteeUsername = await registerParticipant(inviteePage.request, 90)
+      await registerParticipant(inviterPage.request, 91)
+
+      const createdTeam = await inviterPage.request.post(`/api/tournaments/${declineTournamentId}/teams`, {
+        data: {
+          name: "Decline Team",
+          club: "Decline Club",
+          invitedParticipants: [inviteeUsername],
+        },
+      })
+      expect(createdTeam.ok(), `create decline team: ${createdTeam.status()}`).toBe(true)
+
+      // Hide the tournament after the invitation is issued. A declined invite
+      // must not grant a VIEW role or membership that could reopen it.
+      const disabled = await page.request.patch(`/api/tournaments/${declineTournamentId}/disable`)
+      expect(disabled.ok(), `hide decline tournament: ${disabled.status()}`).toBe(true)
+
+      await inviteePage.goto("/dashboard")
+      await expect(inviteePage.getByRole("heading", { name: "Team invitations" })).toBeVisible()
+      const declineButton = inviteePage.getByRole("button", { name: "Decline invitation to Decline Team" })
+      await expect(declineButton).toBeVisible()
+      await declineButton.click()
+
+      await expect(inviteePage.getByText("You declined the invitation to Decline Team.")).toBeVisible()
+      await expect(inviteePage.getByText("No pending team invitations")).toBeVisible()
+
+      const received = await inviteePage.request.get("/api/participant-invitations/received?page=0&size=50")
+      expect(received.ok(), `received invitations after decline: ${received.status()}`).toBe(true)
+      const receivedBody = await received.json()
+      expect(receivedBody.content).toEqual([])
+
+      const hiddenTournament = await inviteePage.request.get(`/api/tournaments/${declineTournamentId}`)
+      expect(hiddenTournament.status(), "declined participant must not gain tournament role/access").toBe(403)
+      const hiddenTeams = await inviteePage.request.get(`/api/tournaments/${declineTournamentId}/teams`)
+      expect(hiddenTeams.status(), "declined participant must not gain team membership/access").toBe(403)
+
+      const organizerParticipants = await page.request.get(
+        `/api/tournaments/${declineTournamentId}/participants?page=0&size=50`,
+      )
+      expect(organizerParticipants.ok(), `organizer participant list: ${organizerParticipants.status()}`).toBe(true)
+      expect(await organizerParticipants.text()).not.toContain(inviteeUsername)
+    } finally {
+      await inviterContext.close()
+      await inviteeContext.close()
+    }
+  })
+
   test("rooms save for every match at once and pairing buttons confirm success", async ({ page, playwright, browser }) => {
     await registerLogin(page)
     const roomsTournamentId = await createTournament(page.request, `Tester Rooms ${RUN_ID}`)

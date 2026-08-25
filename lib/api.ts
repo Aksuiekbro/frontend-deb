@@ -230,7 +230,25 @@ export const api = {
     
     createNews: (body: NewsRequest, thumbnail: File, images: File[]) => postMultipart<NewsResponse>("/news", body, {thumbnail, images}),
 
-    updateNews: (id: number, body: NewsRequest, thumbnail: File, images: File[]) => patchMultipart<NewsResponse>(`/news/${id}`, body, {thumbnail, images}),
+    updateNews: (
+        id: number,
+        body: NewsRequest,
+        thumbnail?: File,
+        images?: File[],
+        retainedImageIds?: number[],
+        newImagePositions?: number[]
+    ) => patchMultipart<NewsResponse>(
+        `/news/${id}`,
+        {
+            ...body,
+            ...(retainedImageIds === undefined ? {} : {retainedImageIds}),
+            ...(newImagePositions === undefined ? {} : {newImagePositions}),
+        },
+        {
+            ...(thumbnail ? {thumbnail} : {}),
+            ...(images && images.length > 0 ? {images} : {}),
+        }
+    ),
 
     deleteNews: (id: number) => deleteReq<void>(`/news/${id}`),
 

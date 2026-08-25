@@ -47,13 +47,16 @@ import type { AnnouncementRequest, AnnouncementResponse } from "@/types/tourname
 import type { ScheduleRequest } from "@/types/tournament/schedule"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType, type RoundGroupResponse } from "@/types/tournament/round/round-group"
+import { displayRoundLabel } from "@/lib/round-label"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
+import type { SimpleUserResponse } from "@/types/user/user"
 
 const catalog: TranslationCatalog = {
   en: {
     preliminary: "Preliminary", teamElimination: "Team elimination", soloElimination: "Solo elimination",
     mapUnavailable: "Map uploads are not supported by the backend yet.", mapUnavailableTitle: "Map upload unavailable",
     requiredPost: "Please add a title and description.", requiredImage: "Please add an image.",
+    tooManyNewsImages: "A News post can contain one cover image and at most 10 gallery photos.",
     permission: "You do not have permission to perform this action.", server: "Server error. Please try again later.",
     missingInfo: "Missing information", judgeFields: "Please fill in name, email, and phone.", tryLater: "Please try again later.",
     selectRound: "Select a round first", loadingRound: "Round data is still loading.", noResults: "No results to submit",
@@ -93,7 +96,8 @@ const catalog: TranslationCatalog = {
   ru: {
     preliminary: "Отборочный этап", teamElimination: "Командная сетка", soloElimination: "Индивидуальная сетка",
     mapUnavailable: "Загрузка карты пока не поддерживается сервером.", mapUnavailableTitle: "Загрузка карты недоступна",
-    requiredPost: "Добавьте заголовок и описание.", requiredImage: "Добавьте изображение.", permission: "У вас нет прав для выполнения этого действия.",
+    requiredPost: "Добавьте заголовок и описание.", requiredImage: "Добавьте изображение.",
+    tooManyNewsImages: "Новостной пост может содержать одну обложку и не более 10 фотографий в галерее.", permission: "У вас нет прав для выполнения этого действия.",
     server: "Ошибка сервера. Повторите попытку позже.", missingInfo: "Недостаточно данных", judgeFields: "Заполните имя, электронную почту и телефон.",
     tryLater: "Повторите попытку позже.", selectRound: "Сначала выберите раунд", loadingRound: "Данные раунда ещё загружаются.",
     noResults: "Нет результатов для отправки", enterScores: "Введите баллы текущего раунда перед отправкой.", startFirst: "Сначала начните турнир",
@@ -127,6 +131,7 @@ const catalog: TranslationCatalog = {
   kk: {
     preliminary: "Іріктеу кезеңі", teamElimination: "Командалық тор", soloElimination: "Жеке тор", mapUnavailable: "Картаны жүктеуге сервер әзірге қолдау көрсетпейді.",
     mapUnavailableTitle: "Картаны жүктеу қолжетімсіз", requiredPost: "Тақырып пен сипаттаманы қосыңыз.", requiredImage: "Сурет қосыңыз.",
+    tooManyNewsImages: "Жаңалық жазбасында бір мұқаба және галереяда ең көбі 10 фотосурет болуы мүмкін.",
     permission: "Бұл әрекетті орындауға құқықтарыңыз жоқ.", server: "Сервер қатесі. Кейінірек қайталап көріңіз.", missingInfo: "Ақпарат жеткіліксіз",
     judgeFields: "Аты-жөнін, электрондық поштаны және телефонды толтырыңыз.", tryLater: "Кейінірек қайталап көріңіз.", selectRound: "Алдымен раундты таңдаңыз",
     loadingRound: "Раунд деректері әлі жүктелуде.", noResults: "Жіберетін нәтиже жоқ", enterScores: "Жібермес бұрын ағымдағы раундтың ұпайларын енгізіңіз.", startFirst: "Алдымен турнирді бастаңыз",
@@ -174,6 +179,24 @@ const PAIRING_STAGE_LABELS: Record<PairingStageId, string> = {
   preliminary: "Preliminary",
   team: "Team elimination",
   solo: "Solo elimination",
+}
+
+function firstConfiguredRoundName(group?: RoundGroupResponse) {
+  return group?.rounds
+    ?.slice()
+    .sort((a, b) => a.roundNumber - b.roundNumber)[0]?.name
+}
+
+function resultsRoundGroup(
+  roundGroups: readonly RoundGroupResponse[] | null | undefined,
+  format: ResultsFormat,
+) {
+  const preliminary = roundGroups?.find(
+    (group) => group.type === RoundGroupType.PRELIMINARY && String(group.format) === format,
+  )
+  return preliminary
+    ?? roundGroups?.find((group) => String(group.format) === format)
+    ?? roundGroups?.find((group) => group.type === RoundGroupType.PRELIMINARY)
 }
 
 function getAvailablePairingStageDescriptors(
@@ -229,8 +252,16 @@ export default function TournamentDetailPage() {
     undefined,
     TOURNAMENT_ROSTER_PAGEABLE
   )
-  const { organizers } = useTournamentOrganizers(tournamentId)
+  const { organizers, isLoading: organizersLoading } = useTournamentOrganizers(tournamentId)
   const { mainOrganizer } = useTournamentMainOrganizer(tournamentId)
+  const inviteExistingOrganizers = useMemo<SimpleUserResponse[]>(() => {
+    const organizersById = new Map<number, SimpleUserResponse>()
+    if (mainOrganizer) organizersById.set(mainOrganizer.id, mainOrganizer)
+    organizers?.forEach((organizer) => {
+      if (organizer) organizersById.set(organizer.id, organizer)
+    })
+    return Array.from(organizersById.values())
+  }, [mainOrganizer, organizers])
   const { feedbacks, isLoading: feedbacksLoading, error: feedbacksError, mutate: mutateFeedbacks } = useTournamentFeedbacks(
     tournamentId,
     undefined,
@@ -300,7 +331,7 @@ export default function TournamentDetailPage() {
   const effectiveStage: PairingStageId = activeTab === 'Results and Statistics'
     ? selectedResultsOption === 'LD'
       ? 'solo'
-      : ELIMINATION_ROUND_NAMES.has(activeResultsSection)
+      : ELIMINATION_ROUND_NAMES.has(displayRoundLabel(activeResultsSection))
         ? 'team'
         : 'preliminary'
     : selectedPairingStage
@@ -351,6 +382,34 @@ export default function TournamentDetailPage() {
   const effectivePairingRound = selectedRoundRecord?.name
     ?? (typeof currentRoundNumber === "number" ? `Round ${currentRoundNumber}` : selectedRound)
 
+  const teamEliminationRounds = roundGroups?.find(
+    (group) => group.type === RoundGroupType.TEAM_ELIMINATION && String(group.format) === selectedResultsOption,
+  )?.rounds ?? []
+  const soloEliminationRounds = roundGroups?.find(
+    (group) => group.type === RoundGroupType.SOLO_ELIMINATION && String(group.format) === "LD",
+  )?.rounds ?? []
+  const resultsEliminationRounds = selectedResultsOption === "LD"
+    ? soloEliminationRounds
+    : teamEliminationRounds
+
+  useEffect(() => {
+    if (activeTab !== "Results and Statistics" || !selectedRoundRecord) return
+
+    if (displayRoundLabel(selectedRound) !== displayRoundLabel(selectedRoundRecord.name)) {
+      setSelectedRound(selectedRoundRecord.name)
+    }
+
+    const isResultsFormatSection =
+      activeResultsSection === `${selectedResultsOption} Results` ||
+      activeResultsSection === `${selectedResultsOption} Speaker Score`
+    if (
+      !isResultsFormatSection &&
+      displayRoundLabel(activeResultsSection) !== displayRoundLabel(selectedRoundRecord.name)
+    ) {
+      setActiveResultsSection(selectedRoundRecord.name)
+    }
+  }, [activeResultsSection, activeTab, selectedResultsOption, selectedRound, selectedRoundRecord])
+
   const resultsFormatOptions = useMemo<ResultsFormat[]>(() => {
     const configuredFormats = new Set(roundGroups?.map((group) => String(group.format)) ?? [])
     return RESULTS_FORMAT_ORDER.filter((format) => configuredFormats.has(format))
@@ -384,6 +443,11 @@ export default function TournamentDetailPage() {
 
     if (!primaryImage && !isEditingAnnouncement) {
       setPostError(t("requiredImage"))
+      return
+    }
+
+    if (isNews && extraImages.length > 10) {
+      setPostError(t("tooManyNewsImages"))
       return
     }
 
@@ -1344,16 +1408,21 @@ export default function TournamentDetailPage() {
     setIsResultsDropdownOpen(false)
     setActiveTab('Results and Statistics')
 
+    const configuredRound = option === "LD"
+      ? firstConfiguredRoundName(roundGroups?.find(
+        (group) => group.type === RoundGroupType.SOLO_ELIMINATION && String(group.format) === "LD",
+      ))
+      : firstConfiguredRoundName(resultsRoundGroup(roundGroups, option))
+    const fallbackRound = `Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`
+    const nextRound = configuredRound ?? fallbackRound
+
     if (option === 'LD') {
-      setActiveResultsSection('1/16')
-      setSelectedRound('1/16')
+      setActiveResultsSection(nextRound)
+      setSelectedRound(nextRound)
     } else {
       setActiveResultsSection(`${option} Speaker Score`)
       setResultsSubTab('Speaker Score')
-      // APF/BPF use the preliminary "Round N" rounds. Reset away from any stale
-      // elimination round (e.g. "1/16" left over from LD) to the active round so the
-      // results table doesn't render empty.
-      setSelectedRound(`Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`)
+      setSelectedRound(nextRound)
     }
   }
 
@@ -1362,17 +1431,24 @@ export default function TournamentDetailPage() {
     if (!nextResultsFormat || resultsFormatOptions.includes(selectedResultsOption)) return
 
     setSelectedResultsOption(nextResultsFormat)
+    const configuredRound = nextResultsFormat === DebateFormat.LD
+      ? firstConfiguredRoundName(roundGroups?.find(
+        (group) => group.type === RoundGroupType.SOLO_ELIMINATION && String(group.format) === "LD",
+      ))
+      : firstConfiguredRoundName(resultsRoundGroup(roundGroups, nextResultsFormat))
+    const fallbackRound = `Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`
+    const nextRound = configuredRound ?? fallbackRound
     if (nextResultsFormat === DebateFormat.LD) {
-      setActiveResultsSection('1/16')
+      setActiveResultsSection(nextRound)
       setResultsSubTab('Results')
-      setSelectedRound('1/16')
+      setSelectedRound(nextRound)
       return
     }
 
     setActiveResultsSection(`${nextResultsFormat} Speaker Score`)
     setResultsSubTab('Speaker Score')
-    setSelectedRound(`Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`)
-  }, [currentRoundNumber, resultsFormatOptions, selectedResultsOption, selectedRoundNumber])
+    setSelectedRound(nextRound)
+  }, [currentRoundNumber, resultsFormatOptions, roundGroups, selectedResultsOption, selectedRoundNumber])
 
   const openContentModal = (context: 'announcements' | 'schedule' | 'map' | 'news') => {
     if (context === 'map') {
@@ -1431,7 +1507,7 @@ export default function TournamentDetailPage() {
         isTournamentEnabled={isTournamentEnabled}
         toggleTournamentLoading={toggleTournamentLoading}
         onToggleTournament={handleTournamentToggle}
-        onOpenInvite={isOrganizer ? () => setIsInviteModalOpen(true) : undefined}
+        onOpenInvite={canControlVisibility ? () => setIsInviteModalOpen(true) : undefined}
         onStartTournament={isOrganizer && !tournament?.started ? handleStartTournament : undefined}
         startTournamentLoading={startingTournament}
       />
@@ -1546,6 +1622,7 @@ export default function TournamentDetailPage() {
             onSelectedRoundChange={setSelectedRound}
             roundGroupType={selectedRoundGroup?.type}
             rounds={rounds}
+            eliminationRounds={resultsEliminationRounds}
             teams={teams}
             teamsLoading={teamsLoading}
             teamsError={teamsError}
@@ -1628,6 +1705,11 @@ export default function TournamentDetailPage() {
         activeTab={inviteModalTab}
         onTabChange={setInviteModalTab}
         onClose={() => setIsInviteModalOpen(false)}
+        tournamentId={tournamentId}
+        currentUserId={currentUser?.id}
+        existingOrganizers={inviteExistingOrganizers}
+        existingOrganizersLoading={organizersLoading}
+        canInviteOrganizers={canControlVisibility}
       />
 
       <AddJudgeModal

@@ -29,6 +29,10 @@ jest.mock("@/components/dashboard/ParticipantInvitationInbox", () => ({
   ParticipantInvitationInbox: () => <div data-testid="participant-invitation-inbox" />,
 }))
 
+jest.mock("@/components/dashboard/OrganizerInvitationInbox", () => ({
+  OrganizerInvitationInbox: () => <div data-testid="organizer-invitation-inbox" />,
+}))
+
 jest.mock("../../hooks/use-api", () => ({
   useCurrentUser: () => mockUseCurrentUser(),
   useUpcomingTournaments: (...args: unknown[]) => mockUseUpcomingTournaments(...args),
@@ -125,10 +129,11 @@ describe("Dashboard", () => {
     }
   })
 
-  it("shows the participant invitation inbox only to participant accounts", () => {
+  it("shows the role-appropriate invitation inbox", () => {
     const participantDashboard = renderDashboard()
 
     expect(screen.getByTestId("participant-invitation-inbox")).toBeInTheDocument()
+    expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
 
     participantDashboard.unmount()
     mockUseCurrentUser.mockReturnValue({
@@ -144,5 +149,6 @@ describe("Dashboard", () => {
     renderDashboard()
 
     expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
+    expect(screen.getByTestId("organizer-invitation-inbox")).toBeInTheDocument()
   })
 })

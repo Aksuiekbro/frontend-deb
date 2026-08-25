@@ -7,6 +7,7 @@ import { ErrorState, EmptyState } from "../../components/ui/error"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations } from "@/lib/i18n"
 import { ParticipantInvitationInbox } from "@/components/dashboard/ParticipantInvitationInbox"
+import { OrganizerInvitationInbox } from "@/components/dashboard/OrganizerInvitationInbox"
 import { Role } from "@/types/user/user"
 
 const translations = {
@@ -303,6 +304,7 @@ export default function Dashboard() {
       {currentUser?.role === Role.PARTICIPANT && (
         <ParticipantInvitationInbox key={currentUser.id} userId={currentUser.id} />
       )}
+      {currentUser?.role === Role.ORGANIZER && <OrganizerInvitationInbox />}
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">

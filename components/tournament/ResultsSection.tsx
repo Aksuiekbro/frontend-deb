@@ -43,6 +43,7 @@ interface ResultsSectionProps {
   onSelectedRoundChange: (round: string) => void
   roundGroupType?: RoundGroupType
   rounds?: SimpleRoundResponse[]
+  eliminationRounds?: SimpleRoundResponse[]
   teams?: PageResult<SimpleTeamResponse>
   teamsLoading: boolean
   teamsError?: Error
@@ -62,7 +63,7 @@ interface ResultsSectionProps {
   preliminaryRoundMatchesError?: Error
 }
 
-const ELIMINATION_ROUNDS = ["1/16", "1/8", "1/4", "1/2", "Final"] as const
+const KNOWN_ELIMINATION_ROUND_LABELS = ["1/16", "1/8", "1/4", "1/2", "Final"] as const
 type ScoreSlotName = string
 type OutcomeSlotName = TeamSlotName | DebaterSlotName
 
@@ -169,6 +170,7 @@ export function ResultsSection({
   onSelectedRoundChange,
   roundGroupType,
   rounds,
+  eliminationRounds,
   teams,
   teamsLoading,
   teamsError,
@@ -213,6 +215,28 @@ export function ResultsSection({
     if (rounds?.length) return rounds.map((round) => round.name)
     return selectedRound ? [selectedRound] : []
   }, [rounds, selectedRound])
+  const configuredEliminationRounds = useMemo(() => {
+    if (eliminationRounds) return eliminationRounds
+    if (
+      roundGroupType === RoundGroupType.TEAM_ELIMINATION ||
+      roundGroupType === RoundGroupType.SOLO_ELIMINATION
+    ) {
+      return rounds ?? []
+    }
+
+    // Keep the component backwards-compatible for callers that pass only a
+    // round list. The page supplies an explicit elimination list, so this
+    // fallback can never mix preliminary rounds into the live navigation.
+    return (rounds ?? []).filter((round) =>
+      KNOWN_ELIMINATION_ROUND_LABELS.includes(displayRoundLabel(round.name) as (typeof KNOWN_ELIMINATION_ROUND_LABELS)[number]),
+    )
+  }, [eliminationRounds, roundGroupType, rounds])
+  const effectiveSelectedRound = useMemo(() => {
+    const matchingRound = roundOptions.find(
+      (round) => displayRoundLabel(round) === displayRoundLabel(selectedRound),
+    )
+    return matchingRound ?? roundOptions[0] ?? selectedRound
+  }, [roundOptions, selectedRound])
 
   const hasRoundProgress =
     typeof selectedRoundNumber === "number" &&
@@ -1392,7 +1416,7 @@ export function ResultsSection({
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h3 className="text-xl font-semibold text-[#0D1321]">
-            {getLocalizedRoundLabel(selectedRound)} {t("resultsWord")}{requiresSpeakerPoints ? t("andSpeakerPoints") : ""}
+            {getLocalizedRoundLabel(effectiveSelectedRound)} {t("resultsWord")}{requiresSpeakerPoints ? t("andSpeakerPoints") : ""}
           </h3>
         </div>
         {roundOptions.length > 1 ? (
@@ -1405,7 +1429,7 @@ export function ResultsSection({
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   // Compare normalized labels: selection state may hold a clean
                   // "1/16" while the round option is a raw backend "1/16.0".
-                  displayRoundLabel(selectedRound) === displayRoundLabel(round)
+                  displayRoundLabel(effectiveSelectedRound) === displayRoundLabel(round)
                     ? "bg-[#0D1321] text-white"
                     : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
                 }`}
@@ -1540,9 +1564,9 @@ export function ResultsSection({
     </tr>
   )
 
-  const isEliminationRound =
-    selectedResultsOption !== "LD" &&
-    ELIMINATION_ROUNDS.includes(activeResultsSection as (typeof ELIMINATION_ROUNDS)[number])
+  const isEliminationRound = configuredEliminationRounds.some(
+    (round) => displayRoundLabel(round.name) === displayRoundLabel(activeResultsSection),
+  )
   const isMatchResultsMode = shouldRenderMatchResults
 
   type TeamWithEliminationResult = SimpleTeamResponse & {
@@ -1767,7 +1791,7 @@ export function ResultsSection({
         )}
 
         <div className="bg-[#0D1321] rounded-lg p-4">
-            <div className="flex items-center justify-start gap-2 overflow-x-auto sm:justify-center">
+            <nav aria-label="Results rounds" className="flex items-center justify-start gap-2 overflow-x-auto sm:justify-center">
               {selectedResultsOption !== "LD" && (
                 <>
                   <button
@@ -1800,22 +1824,24 @@ export function ResultsSection({
                 </>
               )}
 
-              {ELIMINATION_ROUNDS.map((round) => (
+              {configuredEliminationRounds.map((round) => (
                 <button
-                  key={round}
+                  key={round.id}
                   className={`shrink-0 whitespace-nowrap px-3 py-2 ${
-                    activeResultsSection === round ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"
+                    displayRoundLabel(activeResultsSection) === displayRoundLabel(round.name)
+                      ? "bg-white text-[#0D1321]"
+                      : "text-white hover:bg-[#3E5C76]"
                   } rounded text-[14px] font-medium transition-colors`}
                   onClick={() => {
-                    onActiveResultsSectionChange(round)
-                    onSelectedRoundChange(round)
+                    onActiveResultsSectionChange(round.name)
+                    onSelectedRoundChange(round.name)
                     onResultsSubTabChange("Results")
                   }}
                 >
-                  {getLocalizedRoundLabel(round)}
+                  {getLocalizedRoundLabel(round.name)}
                 </button>
               ))}
-            </div>
+            </nav>
           </div>
       </div>
     </div>
