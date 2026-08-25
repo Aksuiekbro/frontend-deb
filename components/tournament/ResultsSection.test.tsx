@@ -1431,6 +1431,37 @@ describe("ResultsSection", () => {
     expect(within(navigation).queryByRole("button", { name: "1/8" })).not.toBeInTheDocument()
   })
 
+  it("sorts configured elimination navigation by round number without mutating the source", () => {
+    const eliminationRounds = [
+      { id: 903, name: "Final", roundNumber: 3, customFormat: "APF" as never },
+      { id: 901, name: "1/4", roundNumber: 1, customFormat: "APF" as never },
+      { id: 902, name: "1/2", roundNumber: 2, customFormat: "APF" as never },
+    ]
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="1/4"
+        selectedRound="1/4"
+        rounds={eliminationRounds}
+        eliminationRounds={eliminationRounds}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+      />,
+    )
+
+    const navigation = screen.getByRole("navigation", { name: "Results rounds" })
+    expect(within(navigation).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "APF Results",
+      "APF Speaker Score",
+      "1/4",
+      "1/2",
+      "Final",
+    ])
+    expect(eliminationRounds.map((round) => round.id)).toEqual([903, 901, 902])
+  })
+
   it("renders a final-only LD navigation without inventing 1/16", () => {
     render(
       <ResultsSection

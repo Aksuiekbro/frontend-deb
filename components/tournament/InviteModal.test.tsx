@@ -157,6 +157,34 @@ describe("InviteModal organizer workflow", () => {
     expect(screen.queryByText("Pending Organizer")).not.toBeInTheDocument()
   })
 
+  it("keeps search closed and safely retries when sent-invitation exclusions fail to load", async () => {
+    const pending = organizer(3, "pending")
+    const eligible = organizer(4, "eligible")
+    apiMock.getSentOrganizerInvitations
+      .mockResolvedValueOnce(response({ message: "Temporary failure" }, 500))
+      .mockResolvedValueOnce(page([invitation(8, pending)]))
+    apiMock.getUsers.mockResolvedValue(page([pending, eligible]))
+
+    render(<InviteModal {...baseProps} />)
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search organizers" }), {
+      target: { value: "organ" },
+    })
+    const searchButton = screen.getByRole("button", { name: "Search" })
+    expect(await screen.findByRole("alert")).toBeInTheDocument()
+    expect(searchButton).toBeDisabled()
+    expect(apiMock.getUsers).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+
+    await waitFor(() => expect(apiMock.getSentOrganizerInvitations).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(searchButton).toBeEnabled())
+    fireEvent.click(searchButton)
+
+    expect(await screen.findByText("Eligible Organizer")).toBeInTheDocument()
+    expect(screen.queryByText("Pending Organizer")).not.toBeInTheDocument()
+  })
+
   it("waits for existing organizers before searching so a late co-organizer stays excluded", async () => {
     const existing = organizer(2, "existing")
     const eligible = organizer(4, "eligible")

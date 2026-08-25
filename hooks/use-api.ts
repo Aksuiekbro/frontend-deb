@@ -493,13 +493,23 @@ export function useNews(params?: NewsGetParams, pageable?: Pageable) {
 }
 
 export function useSingleNews(id: number) {
+  const previewNewsItem = PREVIEW_NEWS_PAGE.content.find((newsItem) => newsItem.id === id)
   const { data, error, isLoading, mutate } = useSWR(
-    ['news-item', id],
+    IS_PREVIEW ? null : ['news-item', id],
     () => fetcher<NewsResponse>(() => api.getNews(id)),
     {
       revalidateOnFocus: false,
     }
   )
+
+  if (IS_PREVIEW) {
+    return {
+      newsItem: previewNewsItem,
+      isLoading: false,
+      error: previewNewsItem ? undefined : new Error('Preview News item not found'),
+      mutate: async () => previewNewsItem,
+    }
+  }
 
   return {
     newsItem: data,

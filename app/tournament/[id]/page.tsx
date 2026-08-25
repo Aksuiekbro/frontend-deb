@@ -191,12 +191,20 @@ function resultsRoundGroup(
   roundGroups: readonly RoundGroupResponse[] | null | undefined,
   format: ResultsFormat,
 ) {
-  const preliminary = roundGroups?.find(
-    (group) => group.type === RoundGroupType.PRELIMINARY && String(group.format) === format,
+  const preferredType = format === "LD"
+    ? RoundGroupType.SOLO_ELIMINATION
+    : RoundGroupType.PRELIMINARY
+  const preferred = roundGroups?.find(
+    (group) => group.type === preferredType && String(group.format) === format,
   )
-  return preliminary
+  return preferred
     ?? roundGroups?.find((group) => String(group.format) === format)
     ?? roundGroups?.find((group) => group.type === RoundGroupType.PRELIMINARY)
+}
+
+function resultsStageForRoundGroup(group: RoundGroupResponse | undefined, format: ResultsFormat): PairingStageId {
+  return (group ? STAGE_BY_ROUND_GROUP_TYPE[group.type] : undefined)
+    ?? (format === "LD" ? "solo" : "preliminary")
 }
 
 function getAvailablePairingStageDescriptors(
@@ -1430,22 +1438,20 @@ export default function TournamentDetailPage() {
     setIsResultsDropdownOpen(false)
     setActiveTab('Results and Statistics')
 
-    const configuredRound = option === "LD"
-      ? firstConfiguredRoundName(roundGroups?.find(
-        (group) => group.type === RoundGroupType.SOLO_ELIMINATION && String(group.format) === "LD",
-      ))
-      : firstConfiguredRoundName(resultsRoundGroup(roundGroups, option))
+    const configuredRoundGroup = resultsRoundGroup(roundGroups, option)
+    const configuredRound = firstConfiguredRoundName(configuredRoundGroup)
     const fallbackRound = `Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`
     const nextRound = configuredRound ?? fallbackRound
+    const nextStage = resultsStageForRoundGroup(configuredRoundGroup, option)
 
     if (option === 'LD') {
       setActiveResultsSection(nextRound)
-      setSelectedResultsStage('solo')
+      setSelectedResultsStage(nextStage)
       setSelectedResultsRound(nextRound)
     } else {
       setActiveResultsSection(`${option} Speaker Score`)
       setResultsSubTab('Speaker Score')
-      setSelectedResultsStage('preliminary')
+      setSelectedResultsStage(nextStage)
       setSelectedResultsRound(nextRound)
     }
   }
@@ -1455,24 +1461,22 @@ export default function TournamentDetailPage() {
     if (!nextResultsFormat || resultsFormatOptions.includes(selectedResultsOption)) return
 
     setSelectedResultsOption(nextResultsFormat)
-    const configuredRound = nextResultsFormat === DebateFormat.LD
-      ? firstConfiguredRoundName(roundGroups?.find(
-        (group) => group.type === RoundGroupType.SOLO_ELIMINATION && String(group.format) === "LD",
-      ))
-      : firstConfiguredRoundName(resultsRoundGroup(roundGroups, nextResultsFormat))
+    const configuredRoundGroup = resultsRoundGroup(roundGroups, nextResultsFormat)
+    const configuredRound = firstConfiguredRoundName(configuredRoundGroup)
     const fallbackRound = `Round ${currentRoundNumber ?? selectedRoundNumber ?? 1}`
     const nextRound = configuredRound ?? fallbackRound
+    const nextStage = resultsStageForRoundGroup(configuredRoundGroup, nextResultsFormat)
     if (nextResultsFormat === DebateFormat.LD) {
       setActiveResultsSection(nextRound)
       setResultsSubTab('Results')
-      setSelectedResultsStage('solo')
+      setSelectedResultsStage(nextStage)
       setSelectedResultsRound(nextRound)
       return
     }
 
     setActiveResultsSection(`${nextResultsFormat} Speaker Score`)
     setResultsSubTab('Speaker Score')
-    setSelectedResultsStage('preliminary')
+    setSelectedResultsStage(nextStage)
     setSelectedResultsRound(nextRound)
   }, [currentRoundNumber, resultsFormatOptions, roundGroups, selectedResultsOption, selectedRoundNumber])
 

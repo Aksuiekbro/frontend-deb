@@ -216,20 +216,24 @@ export function ResultsSection({
     return selectedRound ? [selectedRound] : []
   }, [rounds, selectedRound])
   const configuredEliminationRounds = useMemo(() => {
-    if (eliminationRounds) return eliminationRounds
+    if (eliminationRounds) {
+      return [...eliminationRounds].sort((a, b) => a.roundNumber - b.roundNumber)
+    }
     if (
       roundGroupType === RoundGroupType.TEAM_ELIMINATION ||
       roundGroupType === RoundGroupType.SOLO_ELIMINATION
     ) {
-      return rounds ?? []
+      return [...(rounds ?? [])].sort((a, b) => a.roundNumber - b.roundNumber)
     }
 
     // Keep the component backwards-compatible for callers that pass only a
     // round list. The page supplies an explicit elimination list, so this
     // fallback can never mix preliminary rounds into the live navigation.
-    return (rounds ?? []).filter((round) =>
-      KNOWN_ELIMINATION_ROUND_LABELS.includes(displayRoundLabel(round.name) as (typeof KNOWN_ELIMINATION_ROUND_LABELS)[number]),
-    )
+    return (rounds ?? [])
+      .filter((round) =>
+        KNOWN_ELIMINATION_ROUND_LABELS.includes(displayRoundLabel(round.name) as (typeof KNOWN_ELIMINATION_ROUND_LABELS)[number]),
+      )
+      .sort((a, b) => a.roundNumber - b.roundNumber)
   }, [eliminationRounds, roundGroupType, rounds])
   const effectiveSelectedRound = useMemo(() => {
     const matchingRound = roundOptions.find(

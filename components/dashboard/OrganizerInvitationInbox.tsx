@@ -3,6 +3,7 @@
 import { Check, LoaderCircle, Mail, RefreshCw, X } from "lucide-react"
 import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useSWRConfig } from "swr"
 
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
@@ -60,6 +61,7 @@ function inviterLabel(invitation: OrganizerInvitationRecord, fallback: string) {
 
 export function OrganizerInvitationInbox() {
   const t = useTranslations(translations)
+  const { mutate: mutateCache } = useSWRConfig()
   const [invitations, setInvitations] = useState<OrganizerInvitationRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -130,6 +132,19 @@ export function OrganizerInvitationInbox() {
         ? await api.acceptOrganizerInvitation(invitation.id)
         : await api.rejectOrganizerInvitation(invitation.id)
       if (!response.ok) throw new Error(await readResponseError(response, { fallback: t("actionFailed") }))
+
+      if (action === "accept") {
+        const inviteeId = invitation.invitee.id
+        const tournamentId = invitation.tournament.id
+        await mutateCache(
+          (key) => Array.isArray(key) && (
+            (key[0] === "my-tournaments" && key[1] === inviteeId)
+            || (key[0] === "tournament-organizers" && key[1] === tournamentId)
+          ),
+          undefined,
+          { revalidate: true },
+        ).catch(() => undefined)
+      }
 
       if (!mountedRef.current) return
       const nextStatus = action === "accept" ? "ACCEPTED" : "DECLINED"

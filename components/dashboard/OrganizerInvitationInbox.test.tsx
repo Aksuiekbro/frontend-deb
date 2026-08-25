@@ -4,11 +4,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import type { ComponentPropsWithoutRef } from "react"
+import { useSWRConfig } from "swr"
 
 import { api } from "@/lib/api"
 import { Role } from "@/types/user/user"
 import type { OrganizerInvitationResponse } from "@/types/util/request/invitation"
 import { OrganizerInvitationInbox } from "./OrganizerInvitationInbox"
+
+jest.mock("swr", () => ({
+  useSWRConfig: jest.fn(),
+}))
 
 type MockLinkProps = Omit<ComponentPropsWithoutRef<"a">, "href"> & { href: string }
 
@@ -26,6 +31,8 @@ jest.mock("@/lib/api", () => ({
 }))
 
 const apiMock = api as jest.Mocked<typeof api>
+const useSWRConfigMock = useSWRConfig as jest.MockedFunction<typeof useSWRConfig>
+const mutateCacheMock = jest.fn()
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -75,6 +82,8 @@ function invitationPage(content: OrganizerInvitationResponse[]) {
 describe("OrganizerInvitationInbox", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mutateCacheMock.mockResolvedValue(undefined)
+    useSWRConfigMock.mockReturnValue({ mutate: mutateCacheMock } as unknown as ReturnType<typeof useSWRConfig>)
     apiMock.getReceivedOrganizerInvitations.mockResolvedValue(invitationPage([]))
     apiMock.acceptOrganizerInvitation.mockResolvedValue(response({}, 204))
     apiMock.rejectOrganizerInvitation.mockResolvedValue(response({}, 204))
@@ -103,6 +112,50 @@ describe("OrganizerInvitationInbox", () => {
     await waitFor(() => expect(apiMock.acceptOrganizerInvitation).toHaveBeenCalledWith(11))
     expect(await screen.findByText("Accepted")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Accept invitation to Autumn Open" })).not.toBeInTheDocument()
+  })
+
+  it("invalidates the invitee membership and tournament organizer caches after acceptance", async () => {
+    apiMock.getReceivedOrganizerInvitations
+      .mockResolvedValueOnce(invitationPage([invitation()]))
+      .mockResolvedValueOnce(invitationPage([invitation("ACCEPTED")]))
+
+    render(<OrganizerInvitationInbox />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Autumn Open" }))
+
+    await waitFor(() => expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    ))
+    const matchesMembershipChanges = mutateCacheMock.mock.calls[0][0] as (key: unknown) => boolean
+    expect(matchesMembershipChanges(["my-tournaments", 22, undefined, { page: 0 }])).toBe(true)
+    expect(matchesMembershipChanges(["my-tournaments", 23, undefined, { page: 0 }])).toBe(false)
+    expect(matchesMembershipChanges(["tournament-organizers", 31])).toBe(true)
+    expect(matchesMembershipChanges(["tournament-organizers", 32])).toBe(false)
+    expect(matchesMembershipChanges(["tournament", 31])).toBe(false)
+  })
+
+  it("still invalidates membership caches when acceptance finishes after unmount", async () => {
+    const acceptRequest = deferred<Response>()
+    apiMock.getReceivedOrganizerInvitations.mockResolvedValueOnce(invitationPage([invitation()]))
+    apiMock.acceptOrganizerInvitation.mockReturnValueOnce(acceptRequest.promise)
+
+    const view = render(<OrganizerInvitationInbox />)
+    fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Autumn Open" }))
+    await waitFor(() => expect(apiMock.acceptOrganizerInvitation).toHaveBeenCalledWith(11))
+
+    view.unmount()
+    await act(async () => {
+      acceptRequest.resolve(response({}, 204))
+      await acceptRequest.promise
+    })
+
+    expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
   })
 
   it("declines and then shows the refreshed declined status", async () => {

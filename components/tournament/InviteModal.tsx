@@ -18,21 +18,21 @@ const catalog: TranslationCatalog = {
     organizerHeading: "Invite a co-organizer", organizerDescription: "Search organizer accounts by username.", searchLabel: "Search organizers", searchPlaceholder: "Organizer username",
     search: "Search", searching: "Searching…", noResults: "No eligible organizers found.", inviteUser: "Invite @{username}", inviting: "Inviting…",
     sentHeading: "Organizer invitations", noSent: "No organizer invitations for this tournament.", loading: "Loading invitations…", pending: "Pending", accepted: "Accepted", declined: "Declined",
-    loadFailed: "We couldn't load organizer invitations.", searchFailed: "We couldn't search organizers.", sendFailed: "We couldn't send this invitation.",
+    loadFailed: "We couldn't load organizer invitations.", retryLoad: "Try again", searchFailed: "We couldn't search organizers.", sendFailed: "We couldn't send this invitation.",
   },
   ru: {
     invite: "Пригласить", copy: "Скопировать ссылку", access: "У кого есть доступ", participant: "Участник", empty: "У турнира пока нет участников", close: "Закрыть приглашение",
     organizerHeading: "Пригласить соорганизатора", organizerDescription: "Найдите аккаунт организатора по имени пользователя.", searchLabel: "Поиск организаторов", searchPlaceholder: "Имя пользователя организатора",
     search: "Найти", searching: "Поиск…", noResults: "Подходящие организаторы не найдены.", inviteUser: "Пригласить @{username}", inviting: "Отправка…",
     sentHeading: "Приглашения организаторам", noSent: "Для этого турнира приглашений нет.", loading: "Загрузка приглашений…", pending: "Ожидает", accepted: "Принято", declined: "Отклонено",
-    loadFailed: "Не удалось загрузить приглашения организаторам.", searchFailed: "Не удалось найти организаторов.", sendFailed: "Не удалось отправить приглашение.",
+    loadFailed: "Не удалось загрузить приглашения организаторам.", retryLoad: "Попробовать снова", searchFailed: "Не удалось найти организаторов.", sendFailed: "Не удалось отправить приглашение.",
   },
   kk: {
     invite: "Шақыру", copy: "Сілтемені көшіру", access: "Кімнің қолы жетімді", participant: "Қатысушы", empty: "Турнирде әзірге мүше жоқ", close: "Шақыруды жабу",
     organizerHeading: "Бірлескен ұйымдастырушыны шақыру", organizerDescription: "Ұйымдастырушы аккаунтын пайдаланушы атымен іздеңіз.", searchLabel: "Ұйымдастырушыларды іздеу", searchPlaceholder: "Ұйымдастырушының пайдаланушы аты",
     search: "Іздеу", searching: "Ізделуде…", noResults: "Сәйкес ұйымдастырушылар табылмады.", inviteUser: "@{username} шақыру", inviting: "Шақырылуда…",
     sentHeading: "Ұйымдастырушы шақырулары", noSent: "Бұл турнирге ұйымдастырушы шақырулары жоқ.", loading: "Шақырулар жүктелуде…", pending: "Күтуде", accepted: "Қабылданды", declined: "Қабылданбады",
-    loadFailed: "Ұйымдастырушы шақыруларын жүктеу мүмкін болмады.", searchFailed: "Ұйымдастырушыларды іздеу мүмкін болмады.", sendFailed: "Шақыруды жіберу мүмкін болмады.",
+    loadFailed: "Ұйымдастырушы шақыруларын жүктеу мүмкін болмады.", retryLoad: "Қайталап көру", searchFailed: "Ұйымдастырушыларды іздеу мүмкін болмады.", sendFailed: "Шақыруды жіберу мүмкін болмады.",
   },
 }
 
@@ -91,6 +91,7 @@ export function InviteModal({
   const [isSearching, setIsSearching] = useState(false)
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false)
   const [invitationsLoaded, setInvitationsLoaded] = useState(false)
+  const [invitationLoadError, setInvitationLoadError] = useState<string | null>(null)
   const [invitingUsername, setInvitingUsername] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const mountedRef = useRef(true)
@@ -126,6 +127,7 @@ export function InviteModal({
       setInvitationsScope(null)
       setInvitationsLoaded(false)
     }
+    setInvitationLoadError(null)
     setIsLoadingInvitations(true)
     try {
       const invitationsById = new Map<number, OrganizerInvitationRecord>()
@@ -161,7 +163,7 @@ export function InviteModal({
       return loaded
     } catch (loadError) {
       if (isCurrentRequest()) {
-        setError(loadError instanceof Error ? loadError.message : t("loadFailed"))
+        setInvitationLoadError(loadError instanceof Error ? loadError.message : t("loadFailed"))
       }
       return []
     } finally {
@@ -188,6 +190,7 @@ export function InviteModal({
     setInvitations([])
     setInvitationsScope(null)
     setInvitationsLoaded(false)
+    setInvitationLoadError(null)
     setIsLoadingInvitations(false)
     setQuery("")
     setResults([])
@@ -349,6 +352,19 @@ export function InviteModal({
             </form>
 
             {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+            {invitationLoadError && (
+              <div role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
+                <p>{invitationLoadError}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadInvitations(true)}
+                  disabled={isLoadingInvitations}
+                  className="mt-3 rounded-lg bg-[#3E5C76] px-3 py-2 font-medium text-white hover:bg-[#0D1321] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t("retryLoad")}
+                </button>
+              </div>
+            )}
 
             {results.length > 0 ? (
               <ul className="mt-4 space-y-2">
@@ -379,7 +395,7 @@ export function InviteModal({
               <p className="mt-3 flex items-center gap-2 text-sm text-[#4A5568]" role="status">
                 <LoaderCircle className="h-5 w-5 motion-safe:animate-spin" aria-hidden="true" />{t("loading")}
               </p>
-            ) : scopedInvitations.length === 0 ? (
+            ) : invitationLoadError && !invitationsLoaded ? null : scopedInvitations.length === 0 ? (
               <p className="mt-2 text-sm text-[#4A5568]">{t("noSent")}</p>
             ) : (
               <ul className="mt-3 space-y-2">

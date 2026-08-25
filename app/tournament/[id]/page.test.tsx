@@ -996,7 +996,7 @@ describe("TournamentDetailPage mutations", () => {
     expect(screen.getAllByRole("button", { name: "Format LD" })).toHaveLength(1)
   })
 
-  it("passes the selected result stage type into the results workspace", async () => {
+  it("selects the round-group stage that owns each results format", async () => {
     configureRoundSelectionGroups([
       {
         id: 351,
@@ -1026,8 +1026,11 @@ describe("TournamentDetailPage mutations", () => {
     expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.PRELIMINARY)
 
     fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
-    fireEvent.click(screen.getByRole("button", { name: "Select Elimination Results" }))
     await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedStage: "team",
+        selectedRoundLabel: "Final",
+      }))
       expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
     })
 
