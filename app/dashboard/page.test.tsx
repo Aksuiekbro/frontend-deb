@@ -21,6 +21,7 @@ const mockUseCurrentUser = jest.fn()
 const mockUseUpcomingTournaments = jest.fn()
 const mockUseTournaments = jest.fn()
 const mockOrganizerMountSequence = { current: 0 }
+const previousPreviewMode = process.env.NEXT_PUBLIC_PREVIEW_MODE
 
 jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
@@ -104,6 +105,11 @@ describe("Dashboard", () => {
 
   afterEach(() => {
     jest.useRealTimers()
+    if (previousPreviewMode === undefined) {
+      delete process.env.NEXT_PUBLIC_PREVIEW_MODE
+    } else {
+      process.env.NEXT_PUBLIC_PREVIEW_MODE = previousPreviewMode
+    }
     jest.clearAllMocks()
   })
 
@@ -193,5 +199,33 @@ describe("Dashboard", () => {
     )
 
     expect(screen.getByTestId("organizer-invitation-inbox")).toHaveTextContent("organizer-inbox-2")
+  })
+
+  it("keeps invitation inboxes offline in preview mode", () => {
+    process.env.NEXT_PUBLIC_PREVIEW_MODE = "true"
+
+    const dashboard = renderDashboard()
+
+    expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
+
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    dashboard.rerender(
+      <LocaleProvider>
+        <Dashboard />
+      </LocaleProvider>,
+    )
+
+    expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
   })
 })

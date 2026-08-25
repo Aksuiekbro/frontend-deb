@@ -140,6 +140,7 @@ export function OrganizerInvitationInbox() {
           (key) => Array.isArray(key) && (
             (key[0] === "my-tournaments" && key[1] === inviteeId)
             || (key[0] === "tournament-organizers" && key[1] === tournamentId)
+            || (key[0] === "tournament-judges" && key[1] === tournamentId && key[2] === inviteeId)
           ),
           undefined,
           { revalidate: true },

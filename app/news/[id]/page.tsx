@@ -144,6 +144,13 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
   return reorderedItems
 }
 
+function hasResponseStatus(error: unknown, status: number): boolean {
+  return typeof error === "object"
+    && error !== null
+    && "status" in error
+    && error.status === status
+}
+
 export default function NewsDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
@@ -281,11 +288,11 @@ export default function NewsDetailPage() {
     return <p role="status" className="min-h-screen bg-[#F1F1F1] px-8 py-20 text-center text-[#4a4e69]">{t("loading")}</p>
   }
 
-  if (error) {
+  if (error && !hasResponseStatus(error, 404)) {
     return <p role="alert" className="min-h-screen bg-[#F1F1F1] px-8 py-20 text-center text-red-600">{t("loadFailed")}</p>
   }
 
-  if (!newsItem) {
+  if (hasResponseStatus(error, 404) || !newsItem) {
     return <p className="min-h-screen bg-[#F1F1F1] px-8 py-20 text-center text-[#4a4e69]">{t("notFound")}</p>
   }
 

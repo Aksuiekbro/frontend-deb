@@ -244,8 +244,10 @@ export function ParticipantInvitationInbox({ userId }: { userId: number }) {
       if (action === "accept") {
         await mutateCache(
           (key) => Array.isArray(key)
-            && key[0] === "my-tournaments"
-            && key[1] === userId,
+            && (
+              (key[0] === "my-tournaments" && key[1] === userId)
+              || (key[0] === "tournament-teams" && key[1] === invitation.tournament?.id)
+            ),
           undefined,
           { revalidate: true },
         ).catch(() => undefined)

@@ -260,7 +260,12 @@ export default function TournamentDetailPage() {
     undefined,
     TOURNAMENT_ROSTER_PAGEABLE
   )
-  const { organizers, isLoading: organizersLoading } = useTournamentOrganizers(tournamentId)
+  const {
+    organizers,
+    isLoading: organizersLoading,
+    error: organizersError,
+    mutate: mutateOrganizers,
+  } = useTournamentOrganizers(tournamentId)
   const { mainOrganizer } = useTournamentMainOrganizer(tournamentId)
   const inviteExistingOrganizers = useMemo<SimpleUserResponse[]>(() => {
     const organizersById = new Map<number, SimpleUserResponse>()
@@ -1748,6 +1753,8 @@ export default function TournamentDetailPage() {
         currentUserId={currentUser?.id}
         existingOrganizers={inviteExistingOrganizers}
         existingOrganizersLoading={organizersLoading}
+        existingOrganizersError={organizersError}
+        onRetryExistingOrganizers={() => void mutateOrganizers()}
         canInviteOrganizers={canControlVisibility}
       />
 

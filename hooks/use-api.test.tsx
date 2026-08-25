@@ -7,7 +7,7 @@ import "@testing-library/jest-dom"
 import { SWRConfig, useSWRConfig } from "swr"
 import { api } from "@/lib/api"
 import type { UserResponse } from "@/types/user/user"
-import { useCurrentUser, useMyTournaments, useTournamentJudges, useTournamentMainOrganizer } from "./use-api"
+import { useCurrentUser, useMyTournaments, useSingleNews, useTournamentJudges, useTournamentMainOrganizer } from "./use-api"
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -15,6 +15,7 @@ jest.mock("@/lib/api", () => ({
     getMyTournaments: jest.fn(),
     getJudges: jest.fn(),
     getMainOrganizer: jest.fn(),
+    getNews: jest.fn(),
   },
 }))
 
@@ -22,6 +23,7 @@ const getMeMock = api.getMe as jest.MockedFunction<typeof api.getMe>
 const getMyTournamentsMock = api.getMyTournaments as jest.MockedFunction<typeof api.getMyTournaments>
 const getJudgesMock = api.getJudges as jest.MockedFunction<typeof api.getJudges>
 const getMainOrganizerMock = api.getMainOrganizer as jest.MockedFunction<typeof api.getMainOrganizer>
+const getNewsMock = api.getNews as jest.MockedFunction<typeof api.getNews>
 
 function response(body: unknown, status = 200) {
   return {
@@ -95,6 +97,19 @@ function JudgesConsumer({ tournamentId }: { tournamentId: number }) {
   return (
     <output data-testid="judge-contact">
       {isLoading ? "loading" : judge?.email ?? "redacted"}
+    </output>
+  )
+}
+
+function SingleNewsConsumer({ newsId }: { newsId: number }) {
+  const { newsItem, isLoading, error } = useSingleNews(newsId)
+  const status = error && typeof error === "object" && "status" in error
+    ? String(error.status)
+    : "missing"
+
+  return (
+    <output data-testid="single-news">
+      {isLoading ? "loading" : newsItem?.title ?? `${status}:${error?.message}`}
     </output>
   )
 }
@@ -273,5 +288,25 @@ describe("principal-scoped tournament hooks", () => {
       expect(screen.getByTestId("main-organizer")).toHaveTextContent("authenticated-user")
     })
     expect(getMainOrganizerMock).toHaveBeenCalledWith(42)
+  })
+})
+
+describe("single News errors", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("preserves the response status so callers can distinguish a missing post", async () => {
+    getNewsMock.mockResolvedValue(response({ message: "News not found" }, 404))
+
+    render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <SingleNewsConsumer newsId={404} />
+      </SWRConfig>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("single-news")).toHaveTextContent("404:API Error: 404")
+    })
   })
 })

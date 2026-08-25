@@ -308,6 +308,7 @@ jest.mock("@/components/tournament/InviteModal", () => ({
     currentUserId,
     existingOrganizers,
     existingOrganizersLoading,
+    existingOrganizersError,
     canInviteOrganizers,
   }: {
     isOpen: boolean
@@ -315,6 +316,7 @@ jest.mock("@/components/tournament/InviteModal", () => ({
     currentUserId?: number
     existingOrganizers?: SimpleUserResponse[]
     existingOrganizersLoading?: boolean
+    existingOrganizersError?: unknown
     canInviteOrganizers?: boolean
   }) => isOpen ? (
     <div data-testid="invite-modal">
@@ -324,6 +326,7 @@ jest.mock("@/components/tournament/InviteModal", () => ({
         {existingOrganizers?.map(({ id }) => id).join(",")}
       </output>
       <output data-testid="invite-existing-organizers-loading">{String(existingOrganizersLoading)}</output>
+      <output data-testid="invite-existing-organizers-error">{String(Boolean(existingOrganizersError))}</output>
       <output data-testid="can-invite-organizers">{String(canInviteOrganizers)}</output>
     </div>
   ) : null,
@@ -475,6 +478,7 @@ let mockCurrentUserPresent = true
 let mockTournamentStarted = true
 let mockTournamentOrganizerIds: Array<number | null> = [1]
 let mockTournamentOrganizersLoading = false
+let mockTournamentOrganizersError: Error | undefined
 let mockMainOrganizerId: number | null = 1
 let mockTeamsContent: Array<{ id: number; name: string; club: { id: number; name: string }; checkedIn: boolean }> = []
 
@@ -550,7 +554,7 @@ jest.mock("@/hooks/use-api", () => ({
       role: Role.ORGANIZER,
     })),
     isLoading: mockTournamentOrganizersLoading,
-    error: undefined,
+    error: mockTournamentOrganizersError,
     mutate: jest.fn(),
   }),
   useTournamentMainOrganizer: () => ({
@@ -700,6 +704,7 @@ beforeEach(() => {
   mockTournamentStarted = true
   mockTournamentOrganizerIds = [1]
   mockTournamentOrganizersLoading = false
+  mockTournamentOrganizersError = undefined
   mockMainOrganizerId = 1
   mockPostImages = [mockPrimaryImage, mockExtraImage]
   mockTeamsContent = [{ id: 7, name: "Old Team", club: { id: 3, name: "Old Club" }, checkedIn: false }]
@@ -816,6 +821,15 @@ describe("TournamentDetailPage mutations", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
 
     expect(screen.getByTestId("invite-existing-organizers-loading")).toHaveTextContent("true")
+  })
+
+  it("forwards organizer-load errors so invitation search stays closed until exclusions recover", () => {
+    mockTournamentOrganizersError = new Error("Organizer roster unavailable")
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
+
+    expect(screen.getByTestId("invite-existing-organizers-error")).toHaveTextContent("true")
   })
 
   it("ignores null organizer entries while resolving tournament access", () => {

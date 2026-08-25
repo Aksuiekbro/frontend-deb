@@ -15,21 +15,21 @@ import type { OrganizerInvitationResponse } from "@/types/util/request/invitatio
 const catalog: TranslationCatalog = {
   en: {
     invite: "Invite", copy: "Copy link", access: "Who Has Access", participant: "Participant", empty: "No tournament members yet", close: "Close invite",
-    organizerHeading: "Invite a co-organizer", organizerDescription: "Search organizer accounts by username.", searchLabel: "Search organizers", searchPlaceholder: "Organizer username",
+    organizerHeading: "Invite a co-organizer", organizerDescription: "Search organizer accounts by username.", organizersLoadFailed: "We couldn't load the tournament's organizers.", searchLabel: "Search organizers", searchPlaceholder: "Organizer username",
     search: "Search", searching: "Searching…", noResults: "No eligible organizers found.", inviteUser: "Invite @{username}", inviting: "Inviting…",
     sentHeading: "Organizer invitations", noSent: "No organizer invitations for this tournament.", loading: "Loading invitations…", pending: "Pending", accepted: "Accepted", declined: "Declined",
     loadFailed: "We couldn't load organizer invitations.", retryLoad: "Try again", searchFailed: "We couldn't search organizers.", sendFailed: "We couldn't send this invitation.",
   },
   ru: {
     invite: "Пригласить", copy: "Скопировать ссылку", access: "У кого есть доступ", participant: "Участник", empty: "У турнира пока нет участников", close: "Закрыть приглашение",
-    organizerHeading: "Пригласить соорганизатора", organizerDescription: "Найдите аккаунт организатора по имени пользователя.", searchLabel: "Поиск организаторов", searchPlaceholder: "Имя пользователя организатора",
+    organizerHeading: "Пригласить соорганизатора", organizerDescription: "Найдите аккаунт организатора по имени пользователя.", organizersLoadFailed: "Не удалось загрузить организаторов турнира.", searchLabel: "Поиск организаторов", searchPlaceholder: "Имя пользователя организатора",
     search: "Найти", searching: "Поиск…", noResults: "Подходящие организаторы не найдены.", inviteUser: "Пригласить @{username}", inviting: "Отправка…",
     sentHeading: "Приглашения организаторам", noSent: "Для этого турнира приглашений нет.", loading: "Загрузка приглашений…", pending: "Ожидает", accepted: "Принято", declined: "Отклонено",
     loadFailed: "Не удалось загрузить приглашения организаторам.", retryLoad: "Попробовать снова", searchFailed: "Не удалось найти организаторов.", sendFailed: "Не удалось отправить приглашение.",
   },
   kk: {
     invite: "Шақыру", copy: "Сілтемені көшіру", access: "Кімнің қолы жетімді", participant: "Қатысушы", empty: "Турнирде әзірге мүше жоқ", close: "Шақыруды жабу",
-    organizerHeading: "Бірлескен ұйымдастырушыны шақыру", organizerDescription: "Ұйымдастырушы аккаунтын пайдаланушы атымен іздеңіз.", searchLabel: "Ұйымдастырушыларды іздеу", searchPlaceholder: "Ұйымдастырушының пайдаланушы аты",
+    organizerHeading: "Бірлескен ұйымдастырушыны шақыру", organizerDescription: "Ұйымдастырушы аккаунтын пайдаланушы атымен іздеңіз.", organizersLoadFailed: "Турнир ұйымдастырушыларын жүктеу мүмкін болмады.", searchLabel: "Ұйымдастырушыларды іздеу", searchPlaceholder: "Ұйымдастырушының пайдаланушы аты",
     search: "Іздеу", searching: "Ізделуде…", noResults: "Сәйкес ұйымдастырушылар табылмады.", inviteUser: "@{username} шақыру", inviting: "Шақырылуда…",
     sentHeading: "Ұйымдастырушы шақырулары", noSent: "Бұл турнирге ұйымдастырушы шақырулары жоқ.", loading: "Шақырулар жүктелуде…", pending: "Күтуде", accepted: "Қабылданды", declined: "Қабылданбады",
     loadFailed: "Ұйымдастырушы шақыруларын жүктеу мүмкін болмады.", retryLoad: "Қайталап көру", searchFailed: "Ұйымдастырушыларды іздеу мүмкін болмады.", sendFailed: "Шақыруды жіберу мүмкін болмады.",
@@ -53,6 +53,8 @@ interface InviteModalProps {
   currentUserId?: number
   existingOrganizers?: SimpleUserResponse[]
   existingOrganizersLoading?: boolean
+  existingOrganizersError?: unknown
+  onRetryExistingOrganizers?: () => void
   canInviteOrganizers?: boolean
 }
 
@@ -79,6 +81,8 @@ export function InviteModal({
   currentUserId,
   existingOrganizers = [],
   existingOrganizersLoading = false,
+  existingOrganizersError,
+  onRetryExistingOrganizers,
   canInviteOrganizers = false,
 }: InviteModalProps) {
   const t = useTranslations(catalog)
@@ -204,10 +208,13 @@ export function InviteModal({
   const exclusionDataReady = invitationScope !== null
     && invitationsScope === invitationScope
     && !existingOrganizersLoading
+    && !existingOrganizersError
     && invitationsLoaded
 
   useEffect(() => {
     if (exclusionDataReady) return
+    searchRequestSequenceRef.current += 1
+    setIsSearching(false)
     setResults([])
     setHasSearched(false)
   }, [exclusionDataReady])
@@ -261,7 +268,7 @@ export function InviteModal({
   }
 
   const sendInvitation = async (user: UserResponse) => {
-    if (!tournamentId || !invitationScope) return
+    if (!tournamentId || !invitationScope || !exclusionDataReady) return
 
     const requestSequence = ++sendRequestSequenceRef.current
     const requestScope = invitationScope
@@ -331,6 +338,22 @@ export function InviteModal({
             <h3 id="organizer-invite-heading" className="text-lg font-semibold text-[#0D1321]">{t("organizerHeading")}</h3>
             <p className="mt-1 text-sm text-[#4A5568]">{t("organizerDescription")}</p>
 
+            {Boolean(existingOrganizersError) ? (
+              <div role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
+                <p>{existingOrganizersError instanceof Error ? existingOrganizersError.message : t("organizersLoadFailed")}</p>
+                {onRetryExistingOrganizers && (
+                  <button
+                    type="button"
+                    onClick={onRetryExistingOrganizers}
+                    disabled={existingOrganizersLoading}
+                    className="mt-3 rounded-lg bg-[#3E5C76] px-3 py-2 font-medium text-white hover:bg-[#0D1321] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {t("retryLoad")}
+                  </button>
+                )}
+              </div>
+            ) : null}
+
             <form onSubmit={searchOrganizers} className="mt-4 flex gap-2">
               <label className="sr-only" htmlFor="organizer-search">{t("searchLabel")}</label>
               <input
@@ -377,7 +400,7 @@ export function InviteModal({
                     <button
                       type="button"
                       onClick={() => void sendInvitation(user)}
-                      disabled={invitingUsername !== null}
+                      disabled={invitingUsername !== null || !exclusionDataReady}
                       aria-label={t("inviteUser", { username: user.username })}
                       className="rounded-lg bg-[#3E5C76] px-3 py-2 text-sm font-medium text-white hover:bg-[#0D1321] disabled:opacity-60"
                     >

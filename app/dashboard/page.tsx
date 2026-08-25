@@ -141,6 +141,7 @@ const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string
 export default function Dashboard() {
   const { locale } = useLocale()
   const t = useTranslations(translations)
+  const isPreview = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_PREVIEW_MODE === "true"
   const formatTournamentDate = (value?: string) =>
     value ? new Date(value).toLocaleDateString(localeTags[locale]) : t("dateTba")
 
@@ -301,10 +302,10 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {currentUser?.role === Role.PARTICIPANT && (
+      {!isPreview && currentUser?.role === Role.PARTICIPANT && (
         <ParticipantInvitationInbox key={currentUser.id} userId={currentUser.id} />
       )}
-      {currentUser?.role === Role.ORGANIZER && (
+      {!isPreview && currentUser?.role === Role.ORGANIZER && (
         <OrganizerInvitationInbox key={currentUser.id} />
       )}
 

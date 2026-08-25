@@ -133,6 +133,9 @@ describe("OrganizerInvitationInbox", () => {
     expect(matchesMembershipChanges(["my-tournaments", 23, undefined, { page: 0 }])).toBe(false)
     expect(matchesMembershipChanges(["tournament-organizers", 31])).toBe(true)
     expect(matchesMembershipChanges(["tournament-organizers", 32])).toBe(false)
+    expect(matchesMembershipChanges(["tournament-judges", 31, 22, undefined, { page: 0, size: 100 }])).toBe(true)
+    expect(matchesMembershipChanges(["tournament-judges", 31, 23, undefined, { page: 0, size: 100 }])).toBe(false)
+    expect(matchesMembershipChanges(["tournament-judges", 32, 22, undefined, { page: 0, size: 100 }])).toBe(false)
     expect(matchesMembershipChanges(["tournament", 31])).toBe(false)
   })
 

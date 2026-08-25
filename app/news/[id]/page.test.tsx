@@ -153,6 +153,20 @@ describe("NewsDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
   })
 
+  it("shows the not-found state when the News request returns 404", () => {
+    mockUseSingleNews.mockReturnValue({
+      newsItem: undefined,
+      isLoading: false,
+      error: Object.assign(new Error("API Error: 404"), { status: 404 }),
+      mutate: mockMutateNews,
+    } as ReturnType<typeof useSingleNews>)
+
+    render(<NewsDetailPage />)
+
+    expect(screen.getByText("News post not found.")).toBeInTheDocument()
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+  })
+
   it("retains selected existing photos, uploads new photos, and leaves tags to the backend", async () => {
     render(<NewsDetailPage />)
 

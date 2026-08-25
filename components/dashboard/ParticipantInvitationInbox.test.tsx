@@ -209,6 +209,8 @@ describe("ParticipantInvitationInbox", () => {
     const matchesCurrentMembership = mutateCacheMock.mock.calls[0][0] as (key: unknown) => boolean
     expect(matchesCurrentMembership(["my-tournaments", 22, undefined, { page: 0 }])).toBe(true)
     expect(matchesCurrentMembership(["my-tournaments", 23, undefined, { page: 0 }])).toBe(false)
+    expect(matchesCurrentMembership(["tournament-teams", 31, { page: 0, size: 100 }])).toBe(true)
+    expect(matchesCurrentMembership(["tournament-teams", 32, { page: 0, size: 100 }])).toBe(false)
     expect(matchesCurrentMembership(["tournaments", 22])).toBe(false)
   })
 

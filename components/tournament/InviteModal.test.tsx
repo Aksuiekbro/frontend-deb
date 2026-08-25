@@ -222,6 +222,72 @@ describe("InviteModal organizer workflow", () => {
     expect(screen.queryByText("Existing Organizer")).not.toBeInTheDocument()
   })
 
+  it("keeps search closed and offers a retry when existing-organizer exclusions fail", async () => {
+    const onRetryExistingOrganizers = jest.fn()
+
+    render(
+      <InviteModal
+        {...baseProps}
+        existingOrganizersError={new Error("Organizer roster unavailable")}
+        onRetryExistingOrganizers={onRetryExistingOrganizers}
+      />,
+    )
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search organizers" }), {
+      target: { value: "organ" },
+    })
+    const searchButton = screen.getByRole("button", { name: "Search" })
+    expect(searchButton).toBeDisabled()
+    expect(screen.getByRole("alert")).toHaveTextContent("Organizer roster unavailable")
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+
+    expect(onRetryExistingOrganizers).toHaveBeenCalledTimes(1)
+    expect(apiMock.getUsers).not.toHaveBeenCalled()
+    await waitFor(() => expect(apiMock.getSentOrganizerInvitations).toHaveBeenCalled())
+  })
+
+  it("discards an in-flight search when existing-organizer exclusions fail", async () => {
+    const eligible = organizer(4, "eligible")
+    const searchRequest = deferred<Response>()
+    const onRetryExistingOrganizers = jest.fn()
+    apiMock.getUsers.mockReturnValue(searchRequest.promise)
+
+    const view = render(
+      <InviteModal
+        {...baseProps}
+        onRetryExistingOrganizers={onRetryExistingOrganizers}
+      />,
+    )
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search organizers" }), {
+      target: { value: "organ" },
+    })
+    const searchButton = screen.getByRole("button", { name: "Search" })
+    await waitFor(() => expect(searchButton).toBeEnabled())
+    fireEvent.click(searchButton)
+    await waitFor(() => expect(apiMock.getUsers).toHaveBeenCalledTimes(1))
+
+    view.rerender(
+      <InviteModal
+        {...baseProps}
+        existingOrganizersError={new Error("Organizer roster unavailable")}
+        onRetryExistingOrganizers={onRetryExistingOrganizers}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Search" })).toBeDisabled()
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+    expect(onRetryExistingOrganizers).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      searchRequest.resolve(page([eligible]))
+      await searchRequest.promise
+    })
+
+    expect(screen.queryByText("Eligible Organizer")).not.toBeInTheDocument()
+    expect(apiMock.createOrganizerInvitation).not.toHaveBeenCalled()
+  })
+
   it("sends a tournament-specific invitation and shows its pending status", async () => {
     const eligible = organizer(4, "eligible")
     const created = invitation(12, eligible)

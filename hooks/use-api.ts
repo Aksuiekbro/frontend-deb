@@ -312,11 +312,13 @@ const PREVIEW_FEEDBACKS_PAGE = previewPage(PREVIEW_FEEDBACKS)
 async function fetcher<T>(fetchFn: () => Promise<Response>): Promise<T> {
   const response = await fetchFn()
   if (!response.ok) {
-    throw new Error(await readResponseError(response, {
+    const error = new Error(await readResponseError(response, {
       fallback: `API Error: ${response.status}`,
       unauthorized: 'Please sign in to continue.',
       serverError: 'Server error. Please try again later.',
     }))
+    Object.assign(error, { status: response.status })
+    throw error
   }
   return response.json()
 }
@@ -506,7 +508,9 @@ export function useSingleNews(id: number) {
     return {
       newsItem: previewNewsItem,
       isLoading: false,
-      error: previewNewsItem ? undefined : new Error('Preview News item not found'),
+      error: previewNewsItem
+        ? undefined
+        : Object.assign(new Error('Preview News item not found'), { status: 404 }),
       mutate: async () => previewNewsItem,
     }
   }
