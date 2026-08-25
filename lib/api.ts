@@ -1,4 +1,4 @@
-import { NewsGetParams, NewsRequest, NewsResponse } from "@/types/news";
+import { NewsGetParams, NewsRequest, NewsResponse, NewsUpdateRequest } from "@/types/news";
 import { Pageable } from "@/types/page";
 import { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/announcement/announcement";
 import { CommentRequest, CommentResponse } from "@/types/tournament/announcement/comment";
@@ -230,12 +230,31 @@ export const api = {
     
     createNews: (body: NewsRequest, thumbnail: File, images: File[]) => postMultipart<NewsResponse>("/news", body, {thumbnail, images}),
 
-    updateNews: (id: number, body: NewsRequest, thumbnail: File, images: File[]) => patchMultipart<NewsResponse>(`/news/${id}`, body, {thumbnail, images}),
+    updateNews: (
+        id: number,
+        body: NewsUpdateRequest,
+        thumbnail?: File,
+        images?: File[],
+        retainedImageIds?: number[],
+        newImagePositions?: number[]
+    ) => patchMultipart<NewsResponse>(
+        `/news/${id}`,
+        {
+            ...body,
+            ...(retainedImageIds === undefined ? {} : {retainedImageIds}),
+            ...(newImagePositions === undefined ? {} : {newImagePositions}),
+        },
+        {
+            ...(thumbnail ? {thumbnail} : {}),
+            ...(images && images.length > 0 ? {images} : {}),
+        }
+    ),
 
     deleteNews: (id: number) => deleteReq<void>(`/news/${id}`),
 
     //TOURNAMENTS
     getTournaments: (params?: TournamentGetParams, pageable?: Pageable) => getPageable<SimpleTournamentResponse>("/tournaments", params, pageable),
+    getMyTournaments: (params?: TournamentGetParams, pageable?: Pageable) => getPageable<SimpleTournamentResponse>("/tournaments/mine", params, pageable),
     getTournament: (id: number) => get<TournamentResponse>(`/tournaments/${id}`),
 
     createTournament: (body: TournamentRequest, image: File) => postMultipart<TournamentResponse>("/tournaments", body, {image}),

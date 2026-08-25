@@ -10,6 +10,7 @@ const baseProps = {
   tournamentName: "Climate Cup",
   tournamentLoading: false,
   tournamentError: undefined,
+  canControlVisibility: false,
   isTournamentEnabled: true,
   toggleTournamentLoading: false,
   onToggleTournament: jest.fn(),
@@ -29,5 +30,17 @@ describe("TournamentHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: "Invite" }))
 
     expect(onOpenInvite).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows the visibility control only with explicit permission", () => {
+    const { rerender } = render(
+      <TournamentHeader {...baseProps} isOrganizer canControlVisibility={false} />,
+    )
+
+    expect(screen.queryByRole("switch", { name: "Toggle participant visibility" })).not.toBeInTheDocument()
+
+    rerender(<TournamentHeader {...baseProps} isOrganizer canControlVisibility />)
+
+    expect(screen.getByRole("switch", { name: "Toggle participant visibility" })).toBeInTheDocument()
   })
 })

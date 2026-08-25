@@ -1,7 +1,7 @@
 "use client"
 
 import { Search, MapPin, Calendar, Users, Filter, X } from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { api } from "@/lib/api"
 import { useCurrentUser } from "@/hooks/use-api"
@@ -45,6 +45,7 @@ const translations: TranslationCatalog = {
     joinDebates: "Join Debates",
     loadingMore: "Loading more debates...",
     loadMore: "Load More Debates",
+    retry: "Try again",
     contactUs: "Contact us: debetter@gmail.com",
     allRightsReserved: "© 2025 all rights reserved",
     privacyPolicy: "Privacy Policy",
@@ -111,6 +112,7 @@ const translations: TranslationCatalog = {
     joinDebates: "Присоединиться к дебатам",
     loadingMore: "Загрузка дополнительных дебатов...",
     loadMore: "Загрузить ещё дебаты",
+    retry: "Попробовать снова",
     contactUs: "Свяжитесь с нами: debetter@gmail.com",
     allRightsReserved: "© 2025 все права защищены",
     privacyPolicy: "Политика конфиденциальности",
@@ -177,6 +179,7 @@ const translations: TranslationCatalog = {
     joinDebates: "Пікірсайысқа қосылу",
     loadingMore: "Қосымша пікірсайыстар жүктелуде...",
     loadMore: "Қосымша пікірсайыстарды жүктеу",
+    retry: "Қайталап көру",
     contactUs: "Бізбен байланысыңыз: debetter@gmail.com",
     allRightsReserved: "© 2025 барлық құқықтар қорғалған",
     privacyPolicy: "Құпиялылық саясаты",
@@ -223,9 +226,11 @@ export default function JoinDebatesPage() {
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null)
   const [tournaments, setTournaments] = useState<SimpleTournamentResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
+  const [hasMore, setHasMore] = useState(false)
   const [tournamentError, setTournamentError] = useState<string | null>(null)
+  const nextPageRef = useRef(0)
+  const activeRequestRef = useRef(0)
+  const requestInFlightRef = useRef(false)
 
   // Registration form state
   const [teamName, setTeamName] = useState('')
@@ -259,11 +264,21 @@ export default function JoinDebatesPage() {
   const getLeagueLabel = (league: TournamentLeague) =>
     league === TournamentLeague.SCHOOL ? t("school") : t("university")
 
-  // Fetch tournaments with all filter parameters
-  const fetchTournaments = useCallback(async (reset = false) => {
+  // Fetch an explicit page so pagination state cannot retrigger the filter-reset effect.
+  const fetchTournamentPage = useCallback(async (pageToLoad: number, replace: boolean) => {
+    const requestId = activeRequestRef.current + 1
+    activeRequestRef.current = requestId
+    requestInFlightRef.current = true
     setLoading(true)
+    setTournamentError(null)
+
+    if (replace) {
+      nextPageRef.current = 0
+      setTournaments([])
+      setHasMore(false)
+    }
+
     try {
-      const currentPage = reset ? 0 : page;
       const params: TournamentGetParams = {
         searchName: searchName || undefined,
         searchLocation: searchLocation || undefined,
@@ -276,7 +291,7 @@ export default function JoinDebatesPage() {
         nonFull: nonFull || undefined,
       }
       
-      const response = await api.getTournaments(params, { page: currentPage, size: 10, sort: sortBy }) // Pass all params directly
+      const response = await api.getTournaments(params, { page: pageToLoad, size: 10, sort: sortBy }) // Pass all params directly
       if (!response.ok) {
         throw new Error(await readResponseError(response, {
           fallback: t("failedToLoadDebates"),
@@ -285,33 +300,70 @@ export default function JoinDebatesPage() {
         }))
       }
       const data: PageResult<SimpleTournamentResponse> = await response.json()
-      setTournamentError(null)
 
-      if (reset) {
-        setTournaments(data.content)
-      } else {
-        setTournaments((prevTournaments) => [...prevTournaments, ...data.content])
+      if (requestId !== activeRequestRef.current) {
+        return
       }
-      setHasMore(currentPage + 1 < data.totalPages)
-      setPage(currentPage + 1)
+
+      setTournaments((previousTournaments) => {
+        if (replace) {
+          return data.content
+        }
+
+        const knownIds = new Set(previousTournaments.map((tournament) => tournament.id))
+        const newTournaments = data.content.filter((tournament) => {
+          if (knownIds.has(tournament.id)) {
+            return false
+          }
+          knownIds.add(tournament.id)
+          return true
+        })
+        return [...previousTournaments, ...newTournaments]
+      })
+      nextPageRef.current = pageToLoad + 1
+      setHasMore(pageToLoad + 1 < data.totalPages)
     } catch (error) {
+      if (requestId !== activeRequestRef.current) {
+        return
+      }
       setTournamentError(error instanceof Error ? error.message : t("failedToLoadDebates"))
       console.error("Failed to fetch tournaments:", error)
     } finally {
-      setLoading(false)
+      if (requestId === activeRequestRef.current) {
+        requestInFlightRef.current = false
+        setLoading(false)
+      }
     }
   }, [
-      page, sortBy, searchName, searchLocation, startDateFrom, startDateTo,
+      sortBy, searchName, searchLocation, startDateFrom, startDateTo,
       registrationDeadlineFrom, registrationDeadlineTo, selectedLeagues, nonFull, t
   ])
 
+  const fetchKey = JSON.stringify({
+    sortBy,
+    searchName,
+    searchLocation,
+    startDateFrom,
+    startDateTo,
+    registrationDeadlineFrom,
+    registrationDeadlineTo,
+    selectedLeagues,
+    nonFull,
+  })
+  const lastFetchKeyRef = useRef<string | null>(null)
+
   useEffect(() => {
-    fetchTournaments(true) // Initial load and when filters change
-  }, [fetchTournaments]) // Depend on fetchTournaments to re-run when its dependencies change
+    if (lastFetchKeyRef.current === fetchKey) {
+      return
+    }
+
+    lastFetchKeyRef.current = fetchKey
+    void fetchTournamentPage(0, true)
+  }, [fetchKey, fetchTournamentPage])
 
   const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      fetchTournaments()
+    if (hasMore && !requestInFlightRef.current) {
+      void fetchTournamentPage(nextPageRef.current, false)
     }
   }
 
@@ -560,9 +612,19 @@ export default function JoinDebatesPage() {
             {/* Debate Cards */}
             <div className="space-y-6">
               {tournamentError && (
-                <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[16px] text-red-600">
-                  {tournamentError}
-                </p>
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[16px] text-red-600">
+                  <p>{tournamentError}</p>
+                  {tournaments.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void fetchTournamentPage(0, true)}
+                      disabled={loading}
+                      className="mt-3 rounded-lg bg-[#3E5C76] px-5 py-2 text-sm font-medium text-white hover:bg-[#22223b] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {t("retry")}
+                    </button>
+                  )}
+                </div>
               )}
               {tournaments.length === 0 && !loading && !tournamentError && (
                 <p className="text-[#0D1321] text-center text-[20px]">{t("noDebates")}</p>

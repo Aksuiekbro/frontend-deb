@@ -6,6 +6,9 @@ import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/
 import { ErrorState, EmptyState } from "../../components/ui/error"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations } from "@/lib/i18n"
+import { ParticipantInvitationInbox } from "@/components/dashboard/ParticipantInvitationInbox"
+import { OrganizerInvitationInbox } from "@/components/dashboard/OrganizerInvitationInbox"
+import { Role } from "@/types/user/user"
 
 const translations = {
   en: {
@@ -138,6 +141,7 @@ const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string
 export default function Dashboard() {
   const { locale } = useLocale()
   const t = useTranslations(translations)
+  const isPreview = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_PREVIEW_MODE === "true"
   const formatTournamentDate = (value?: string) =>
     value ? new Date(value).toLocaleDateString(localeTags[locale]) : t("dateTba")
 
@@ -297,6 +301,13 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      {!isPreview && currentUser?.role === Role.PARTICIPANT && (
+        <ParticipantInvitationInbox key={currentUser.id} userId={currentUser.id} />
+      )}
+      {!isPreview && currentUser?.role === Role.ORGANIZER && (
+        <OrganizerInvitationInbox key={currentUser.id} />
+      )}
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">

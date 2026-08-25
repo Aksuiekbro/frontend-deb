@@ -20,9 +20,26 @@ jest.mock("next/link", () => ({
 const mockUseCurrentUser = jest.fn()
 const mockUseUpcomingTournaments = jest.fn()
 const mockUseTournaments = jest.fn()
+const mockOrganizerMountSequence = { current: 0 }
+const previousPreviewMode = process.env.NEXT_PUBLIC_PREVIEW_MODE
 
 jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
+})
+
+jest.mock("@/components/dashboard/ParticipantInvitationInbox", () => ({
+  ParticipantInvitationInbox: () => <div data-testid="participant-invitation-inbox" />,
+}))
+
+jest.mock("@/components/dashboard/OrganizerInvitationInbox", () => {
+  const React = jest.requireActual<typeof import("react")>("react")
+
+  return {
+    OrganizerInvitationInbox: () => {
+      const [mountId] = React.useState(() => ++mockOrganizerMountSequence.current)
+      return <div data-testid="organizer-invitation-inbox">organizer-inbox-{mountId}</div>
+    },
+  }
 })
 
 jest.mock("../../hooks/use-api", () => ({
@@ -60,11 +77,13 @@ describe("Dashboard", () => {
   beforeEach(() => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date("2026-06-19T12:34:56.000Z"))
+    mockOrganizerMountSequence.current = 0
     mockUseCurrentUser.mockReturnValue({
       user: {
         id: 1,
         firstName: "Dauren",
         lastName: "Zhunussov",
+        role: "PARTICIPANT",
         imageUrl: undefined,
         tournamentsParticipated: 4,
         rating: 1200,
@@ -86,6 +105,11 @@ describe("Dashboard", () => {
 
   afterEach(() => {
     jest.useRealTimers()
+    if (previousPreviewMode === undefined) {
+      delete process.env.NEXT_PUBLIC_PREVIEW_MODE
+    } else {
+      process.env.NEXT_PUBLIC_PREVIEW_MODE = previousPreviewMode
+    }
     jest.clearAllMocks()
   })
 
@@ -118,5 +142,90 @@ describe("Dashboard", () => {
     for (const link of screen.getAllByRole("link", { name: "Join Debates" })) {
       expect(link).toHaveAttribute("data-prefetch", "default")
     }
+  })
+
+  it("shows the role-appropriate invitation inbox", () => {
+    const participantDashboard = renderDashboard()
+
+    expect(screen.getByTestId("participant-invitation-inbox")).toBeInTheDocument()
+    expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
+
+    participantDashboard.unmount()
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    renderDashboard()
+
+    expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
+    expect(screen.getByTestId("organizer-invitation-inbox")).toBeInTheDocument()
+  })
+
+  it("remounts the organizer invitation inbox when the organizer account changes", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    const dashboard = renderDashboard()
+
+    expect(screen.getByTestId("organizer-invitation-inbox")).toHaveTextContent("organizer-inbox-1")
+
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 3,
+        firstName: "Oscar",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    dashboard.rerender(
+      <LocaleProvider>
+        <Dashboard />
+      </LocaleProvider>,
+    )
+
+    expect(screen.getByTestId("organizer-invitation-inbox")).toHaveTextContent("organizer-inbox-2")
+  })
+
+  it("keeps invitation inboxes offline in preview mode", () => {
+    process.env.NEXT_PUBLIC_PREVIEW_MODE = "true"
+
+    const dashboard = renderDashboard()
+
+    expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
+
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    dashboard.rerender(
+      <LocaleProvider>
+        <Dashboard />
+      </LocaleProvider>,
+    )
+
+    expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
   })
 })

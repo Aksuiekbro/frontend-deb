@@ -10,6 +10,9 @@ import { Role } from "@/types/user/user"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
 import { LocaleProvider } from "@/lib/i18n"
+import { displayRoundLabel } from "@/lib/round-label"
+import type { SimpleUserResponse } from "@/types/user/user"
+import type { OrganizerInvitationResponse } from "@/types/util/request/invitation"
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({ id: "53" }),
@@ -20,8 +23,18 @@ jest.mock("@/components/Header", () => function Header() {
 })
 
 jest.mock("@/components/tournament/TournamentHeader", () => ({
-  TournamentHeader: ({ onStartTournament }: { onStartTournament?: () => void }) => (
+  TournamentHeader: ({
+    canControlVisibility,
+    onOpenInvite,
+    onStartTournament,
+  }: {
+    canControlVisibility: boolean
+    onOpenInvite?: () => void
+    onStartTournament?: () => void
+  }) => (
     <div data-testid="tournament-header">
+      <output data-testid="can-control-visibility">{String(canControlVisibility)}</output>
+      {onOpenInvite ? <button type="button" onClick={onOpenInvite}>Open Organizer Invite</button> : null}
       {onStartTournament ? <button type="button" onClick={onStartTournament}>Start Tournament</button> : null}
     </div>
   ),
@@ -117,18 +130,21 @@ jest.mock("@/components/tournament/NewsSection", () => ({
 jest.mock("@/components/tournament/JudgesSection", () => ({
   JudgesSection: ({
     judges,
+    showContactDetails,
     onAddJudge,
     onToggleJudgeCheckIn,
     onEditJudge,
     onDeleteJudge,
   }: {
     judges?: { content: Array<{ id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }> }
+    showContactDetails?: boolean
     onAddJudge?: () => void
     onToggleJudgeCheckIn?: (judge: { id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }) => void
     onEditJudge?: (judge: { id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }) => void
     onDeleteJudge?: (judge: { id: number; fullName: string; email?: string; phoneNumber?: string; checkedIn: boolean }) => void
   }) => (
     <div>
+      <output data-testid="show-judge-contacts">{String(showContactDetails)}</output>
       {onAddJudge ? <button type="button" onClick={onAddJudge}>Open Judge</button> : null}
       {judges?.content.map((judge) => (
         <div key={judge.id}>
@@ -286,7 +302,34 @@ jest.mock("@/components/tournament/FeedbackSection", () => ({
   FeedbackSection: () => <div data-testid="feedback" />,
 }))
 jest.mock("@/components/tournament/InviteModal", () => ({
-  InviteModal: () => <div data-testid="invite-modal" />,
+  InviteModal: ({
+    isOpen,
+    tournamentId,
+    currentUserId,
+    existingOrganizers,
+    existingOrganizersLoading,
+    existingOrganizersError,
+    canInviteOrganizers,
+  }: {
+    isOpen: boolean
+    tournamentId?: number
+    currentUserId?: number
+    existingOrganizers?: SimpleUserResponse[]
+    existingOrganizersLoading?: boolean
+    existingOrganizersError?: unknown
+    canInviteOrganizers?: boolean
+  }) => isOpen ? (
+    <div data-testid="invite-modal">
+      <output data-testid="invite-tournament-id">{tournamentId}</output>
+      <output data-testid="invite-current-user-id">{currentUserId}</output>
+      <output data-testid="invite-existing-organizer-ids">
+        {existingOrganizers?.map(({ id }) => id).join(",")}
+      </output>
+      <output data-testid="invite-existing-organizers-loading">{String(existingOrganizersLoading)}</output>
+      <output data-testid="invite-existing-organizers-error">{String(Boolean(existingOrganizersError))}</output>
+      <output data-testid="can-invite-organizers">{String(canInviteOrganizers)}</output>
+    </div>
+  ) : null,
 }))
 jest.mock("@/components/tournament/PairingsSection", () => ({
   PairingsSection: ({
@@ -329,6 +372,12 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
       }}>
         Select Team Elim
       </button>
+      <button type="button" onClick={() => {
+        onSelectStage("team")
+        onSelectRound("Final")
+      }}>
+        Select Pairing Final
+      </button>
       <button type="button" onClick={() => onProceedToNextRound?.()}>Proceed Round</button>
       <button type="button" onClick={() => onRandomizePairings?.()}>Randomize Pairings</button>
       <button type="button" onClick={() => onSubmitPairings?.()}>Submit Pairings</button>
@@ -348,20 +397,49 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
     onSubmitResults,
     selectedResultsOption,
     roundGroupType,
+    activeResultsSection,
+    selectedRound,
+    rounds,
+    eliminationRounds,
     onActiveResultsSectionChange,
+    onSelectedRoundChange,
   }: {
     selectedResultsOption: string
     roundGroupType?: RoundGroupType
+    activeResultsSection?: string
+    selectedRound?: string
+    rounds?: Array<{ name: string }>
+    eliminationRounds?: Array<{ name: string }>
     onActiveResultsSectionChange?: (section: string) => void
+    onSelectedRoundChange?: (round: string) => void
     onSubmitResults?: (results: Array<{
       matchId: number
       teamResults: Array<{ teamId: number; won: boolean; participantScores: Array<{ participantId: number; score: number }> }>
     }>) => void
   }) => (
-    <div data-testid="results">
+      <div data-testid="results">
       <div data-testid="selected-results-option">{selectedResultsOption}</div>
       <div data-testid="results-round-group-type">{roundGroupType ?? "unknown"}</div>
-      <button type="button" onClick={() => onActiveResultsSectionChange?.("Final")}>Select Elimination Results</button>
+      <div data-testid="active-results-section">{activeResultsSection}</div>
+      <div data-testid="selected-results-round">{selectedRound}</div>
+      <div data-testid="results-rounds">{rounds?.map(({ name }) => name).join("|")}</div>
+      <div data-testid="elimination-results-rounds">{eliminationRounds?.map(({ name }) => name).join("|")}</div>
+      <button
+        type="button"
+        onClick={() => onActiveResultsSectionChange?.(`${selectedResultsOption} Results`)}
+      >Select Format Results</button>
+      <button type="button" onClick={() => {
+        onActiveResultsSectionChange?.("Final")
+        onSelectedRoundChange?.("Final")
+      }}>Select Elimination Results</button>
+      <button type="button" onClick={() => {
+        onActiveResultsSectionChange?.("1/16")
+        onSelectedRoundChange?.("1/16")
+      }}>Select Stale Elimination Results</button>
+      <button type="button" onClick={() => {
+        onActiveResultsSectionChange?.("Semifinal")
+        onSelectedRoundChange?.("Semifinal")
+      }}>Select Custom Elimination Results</button>
       <button
         type="button"
         onClick={() => onSubmitResults?.([
@@ -394,10 +472,14 @@ const mockUseTournamentJudges = jest.fn()
 const mockUseRoundSelection = jest.fn()
 const mockPrimaryImage = new File(["primary"], "primary.png", { type: "image/png" })
 const mockExtraImage = new File(["extra"], "extra.png", { type: "image/png" })
+let mockPostImages = [mockPrimaryImage, mockExtraImage]
 let mockCurrentRole: Role = Role.ORGANIZER
 let mockCurrentUserPresent = true
 let mockTournamentStarted = true
 let mockTournamentOrganizerIds: Array<number | null> = [1]
+let mockTournamentOrganizersLoading = false
+let mockTournamentOrganizersError: Error | undefined
+let mockMainOrganizerId: number | null = 1
 let mockTeamsContent: Array<{ id: number; name: string; club: { id: number; name: string }; checkedIn: boolean }> = []
 
 jest.mock("@/hooks/use-toast", () => ({
@@ -408,7 +490,7 @@ jest.mock("@/hooks/tournament/useImageUpload", () => ({
   useImageUpload: () => ({
     imagePreviews: [],
     uploadErrors: [],
-    postImages: [mockPrimaryImage, mockExtraImage],
+    postImages: mockPostImages,
     dzAnimate: false,
     formatBytes: (bytes: number) => `${bytes} B`,
     handleImageUpload: jest.fn(),
@@ -471,6 +553,18 @@ jest.mock("@/hooks/use-api", () => ({
       lastName: "User",
       role: Role.ORGANIZER,
     })),
+    isLoading: mockTournamentOrganizersLoading,
+    error: mockTournamentOrganizersError,
+    mutate: jest.fn(),
+  }),
+  useTournamentMainOrganizer: () => ({
+    mainOrganizer: mockMainOrganizerId === null ? undefined : {
+      id: mockMainOrganizerId,
+      username: `organizer${mockMainOrganizerId}`,
+      firstName: "Org",
+      lastName: "User",
+      role: Role.ORGANIZER,
+    },
     isLoading: false,
     error: undefined,
     mutate: jest.fn(),
@@ -569,7 +663,10 @@ type FixtureRoundGroup = {
 function configureRoundSelectionGroups(
   roundGroups: FixtureRoundGroup[] | (() => FixtureRoundGroup[]),
 ) {
-  mockUseRoundSelection.mockImplementation((args: { selectedStage?: "preliminary" | "team" | "solo" }) => {
+  mockUseRoundSelection.mockImplementation((args: {
+    selectedStage?: "preliminary" | "team" | "solo"
+    selectedRoundLabel?: string
+  }) => {
     const currentRoundGroups = typeof roundGroups === "function" ? roundGroups() : roundGroups
     const preferredType = args?.selectedStage === "team"
       ? RoundGroupType.TEAM_ELIMINATION
@@ -577,7 +674,9 @@ function configureRoundSelectionGroups(
         ? RoundGroupType.SOLO_ELIMINATION
         : RoundGroupType.PRELIMINARY
     const selectedGroup = currentRoundGroups.find(({ type }) => type === preferredType) ?? currentRoundGroups[0]
-    const selectedRound = selectedGroup?.rounds[0]
+    const selectedRound = selectedGroup?.rounds.find(
+      ({ name }) => displayRoundLabel(name) === displayRoundLabel(args.selectedRoundLabel ?? ""),
+    ) ?? selectedGroup?.rounds[0]
 
     return {
       selectedRoundGroupId: selectedGroup?.id ?? null,
@@ -604,6 +703,10 @@ beforeEach(() => {
   mockCurrentUserPresent = true
   mockTournamentStarted = true
   mockTournamentOrganizerIds = [1]
+  mockTournamentOrganizersLoading = false
+  mockTournamentOrganizersError = undefined
+  mockMainOrganizerId = 1
+  mockPostImages = [mockPrimaryImage, mockExtraImage]
   mockTeamsContent = [{ id: 7, name: "Old Team", club: { id: 3, name: "Old Club" }, checkedIn: false }]
   mockUseTournamentTeams.mockImplementation(() => ({
     teams: {
@@ -673,10 +776,102 @@ afterEach(() => {
 })
 
 describe("TournamentDetailPage mutations", () => {
+  it("models declined organizer invitations as a durable handled status", () => {
+    const declined: Pick<OrganizerInvitationResponse, "accepted" | "status"> = {
+      accepted: null,
+      status: "DECLINED",
+    }
+
+    expect(declined).toEqual({ accepted: null, status: "DECLINED" })
+  })
+
+  it("opens Invite for assigned organizers but only exposes co-organizer controls to the main/FULL organizer", () => {
+    mockTournamentOrganizerIds = [1, 2, null]
+    const mainOrganizerPage = render(<TournamentDetailPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
+
+    expect(screen.getByTestId("invite-tournament-id")).toHaveTextContent("53")
+    expect(screen.getByTestId("invite-current-user-id")).toHaveTextContent("1")
+    expect(screen.getByTestId("invite-existing-organizer-ids")).toHaveTextContent("1,2")
+    expect(screen.getByTestId("invite-existing-organizers-loading")).toHaveTextContent("false")
+    expect(screen.getByTestId("can-invite-organizers")).toHaveTextContent("true")
+
+    mainOrganizerPage.unmount()
+    mockMainOrganizerId = 99
+    mockTournamentOrganizerIds = [1, 2]
+    const editOrganizerPage = render(<TournamentDetailPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
+    expect(screen.getByTestId("invite-modal")).toBeInTheDocument()
+    expect(screen.getByTestId("can-invite-organizers")).toHaveTextContent("false")
+
+    editOrganizerPage.unmount()
+    mockTournamentOrganizerIds = [99]
+    render(<TournamentDetailPage />)
+
+    expect(screen.queryByRole("button", { name: "Open Organizer Invite" })).not.toBeInTheDocument()
+    expect(screen.queryByTestId("invite-modal")).not.toBeInTheDocument()
+  })
+
+  it("forwards organizer loading state so invitation search waits for complete exclusions", () => {
+    mockTournamentOrganizersLoading = true
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
+
+    expect(screen.getByTestId("invite-existing-organizers-loading")).toHaveTextContent("true")
+  })
+
+  it("forwards organizer-load errors so invitation search stays closed until exclusions recover", () => {
+    mockTournamentOrganizersError = new Error("Organizer roster unavailable")
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
+
+    expect(screen.getByTestId("invite-existing-organizers-error")).toHaveTextContent("true")
+  })
+
   it("ignores null organizer entries while resolving tournament access", () => {
     mockTournamentOrganizerIds = [null, 1]
 
     expect(() => render(<TournamentDetailPage />)).not.toThrow()
+  })
+
+  it("lets only the main organizer control tournament visibility", () => {
+    const { rerender } = render(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("true")
+
+    // Assigned co-organizers may edit the tournament, but FULL ownership stays
+    // with the main organizer.
+    mockMainOrganizerId = 99
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("false")
+
+    mockTournamentOrganizerIds = [99]
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("false")
+
+    mockCurrentUserPresent = false
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("can-control-visibility")).toHaveTextContent("false")
+  })
+
+  it("shows judge contacts to assigned organizers but not unrelated users", () => {
+    mockMainOrganizerId = 99
+    const { rerender } = render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Judges"))
+
+    expect(screen.getByTestId("show-judge-contacts")).toHaveTextContent("true")
+
+    mockTournamentOrganizerIds = [99]
+    rerender(<TournamentDetailPage />)
+
+    expect(screen.getByTestId("show-judge-contacts")).toHaveTextContent("false")
   })
 
   it("requests enough teams to render a full tournament roster", () => {
@@ -819,7 +1014,7 @@ describe("TournamentDetailPage mutations", () => {
     expect(screen.getAllByRole("button", { name: "Format LD" })).toHaveLength(1)
   })
 
-  it("passes the selected result stage type into the results workspace", async () => {
+  it("selects the round-group stage that owns each results format", async () => {
     configureRoundSelectionGroups([
       {
         id: 351,
@@ -848,14 +1043,156 @@ describe("TournamentDetailPage mutations", () => {
     fireEvent.click(screen.getByText("Results and Statistics"))
     expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.PRELIMINARY)
 
-    fireEvent.click(screen.getByRole("button", { name: "Select Elimination Results" }))
+    fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
     await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedStage: "team",
+        selectedRoundLabel: "Final",
+      }))
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Format Results" }))
+    await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedStage: "team",
+        selectedRoundLabel: "Final",
+      }))
       expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
     })
 
     fireEvent.click(screen.getByRole("button", { name: "Format LD" }))
     await waitFor(() => {
       expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.SOLO_ELIMINATION)
+    })
+  })
+
+  it("selects configured team elimination rounds with custom legacy labels", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 354,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 454, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 355,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.BPF,
+        rounds: [{ id: 455, name: "Semifinal", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
+    fireEvent.click(screen.getByRole("button", { name: "Select Custom Elimination Results" }))
+
+    await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedStage: "team",
+        selectedRoundLabel: "Semifinal",
+      }))
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
+      expect(screen.getByTestId("selected-results-round")).toHaveTextContent("Semifinal")
+    })
+  })
+
+  it("keeps the Pairings round when Results repairs its own selection", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 356,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 456, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 357,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.APF,
+        rounds: [
+          { id: 457, name: "Semifinal", roundNumber: 1 },
+          { id: 458, name: "Final", roundNumber: 2 },
+        ],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    fireEvent.click(screen.getByRole("button", { name: "Select Pairing Final" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:Final")
+    })
+
+    fireEvent.click(screen.getByText("Results and Statistics"))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-round")).toHaveTextContent("Round 1")
+    })
+
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:Final")
+    })
+  })
+
+  it("derives result navigation from configured elimination rounds and repairs stale selections", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 371,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 471, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 372,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.BPF,
+        rounds: [
+          { id: 472, name: "1/4", roundNumber: 1 },
+          { id: 473, name: "1/2", roundNumber: 2 },
+          { id: 474, name: "Final", roundNumber: 3 },
+        ],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 373,
+        type: RoundGroupType.SOLO_ELIMINATION,
+        format: DebateFormat.LD,
+        rounds: [{ id: 475, name: "Final", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Results and Statistics"))
+
+    expect(screen.getByTestId("elimination-results-rounds")).toHaveTextContent(/^$/)
+    expect(screen.getByTestId("elimination-results-rounds")).not.toHaveTextContent("1/16")
+
+    fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-option")).toHaveTextContent("BPF")
+      expect(screen.getByTestId("elimination-results-rounds")).toHaveTextContent("1/4|1/2|Final")
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Stale Elimination Results" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
+      expect(screen.getByTestId("selected-results-round")).toHaveTextContent("1/4")
+      expect(screen.getByTestId("active-results-section")).toHaveTextContent("1/4")
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Format LD" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-option")).toHaveTextContent("LD")
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.SOLO_ELIMINATION)
+      expect(screen.getByTestId("elimination-results-rounds")).toHaveTextContent("Final")
+      expect(screen.getByTestId("selected-results-round")).toHaveTextContent("Final")
+      expect(screen.getByTestId("active-results-section")).toHaveTextContent("Final")
     })
   })
 
@@ -1137,6 +1474,50 @@ describe("TournamentDetailPage mutations", () => {
       )
     })
     expect(mockMutateNews).toHaveBeenCalledTimes(1)
+  })
+
+  it("rejects News posts with more than ten gallery images before calling the backend", async () => {
+    mockPostImages = Array.from(
+      { length: 12 },
+      (_, index) => new File([`image-${index}`], `image-${index}.png`, { type: "image/png" }),
+    )
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("News"))
+    fireEvent.click(screen.getByText("Open News"))
+    fillPostForm("Round highlights", "The first round finished.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("at most 10 gallery photos")
+    expect(screen.getByTestId("add-post-modal")).toBeInTheDocument()
+    expect(apiMock.createNews).not.toHaveBeenCalled()
+  })
+
+  it("accepts the exact News limit of one cover and ten gallery images", async () => {
+    mockPostImages = Array.from(
+      { length: 11 },
+      (_, index) => new File([`image-${index}`], `image-${index}.png`, { type: "image/png" }),
+    )
+    apiMock.createNews.mockResolvedValue(okResponse())
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("News"))
+    fireEvent.click(screen.getByText("Open News"))
+    fillPostForm("Round highlights", "The first round finished.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    await waitFor(() => {
+      expect(apiMock.createNews).toHaveBeenCalledWith(
+        {
+          title: "Round highlights",
+          content: "The first round finished.",
+          tags: ["tournament:53"],
+        },
+        mockPostImages[0],
+        mockPostImages.slice(1),
+      )
+    })
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
   })
 
   it("adds a judge through the backend and refreshes judges", async () => {
@@ -1489,13 +1870,29 @@ describe("TournamentDetailPage mutations", () => {
   })
 
   it("re-selects the active round when returning to APF after LD so the results table is not stranded", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 501,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 601, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 502,
+        type: RoundGroupType.SOLO_ELIMINATION,
+        format: DebateFormat.LD,
+        rounds: [{ id: 602, name: "Final", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
     render(<TournamentDetailPage />)
 
-    // Switching to LD parks the selection on the elimination round "1/16".
+    // Switching to LD parks the selection on its first configured round.
     fireEvent.click(screen.getByText("Format LD"))
     await waitFor(() => {
       expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
-        selectedRoundLabel: "1/16",
+        selectedRoundLabel: "Final",
       }))
     })
 
