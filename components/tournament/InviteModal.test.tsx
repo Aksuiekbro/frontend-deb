@@ -54,12 +54,13 @@ function invitation(
   id: number,
   invitee: SimpleUserResponse,
   status: "PENDING" | "ACCEPTED" | "DECLINED" = "PENDING",
+  tournamentId = 42,
 ) {
   return {
     id,
     inviter: organizer(1, "main"),
     invitee,
-    tournament: { id: 42, name: "Autumn Open" },
+    tournament: { id: tournamentId, name: tournamentId === 42 ? "Autumn Open" : "Winter Open" },
     timestamp: "2026-08-24T09:30:00",
     accepted: status === "ACCEPTED" ? true : status === "DECLINED" ? null : false,
     status,
@@ -229,6 +230,35 @@ describe("InviteModal organizer workflow", () => {
 
     expect(await screen.findByText("Accepted")).toBeInTheDocument()
     expect(screen.getByText("Declined")).toBeInTheDocument()
+  })
+
+  it("ignores stale invitation loads after the account and tournament scope change", async () => {
+    const previousScopeRequest = deferred<Response>()
+    const nextScopeRequest = deferred<Response>()
+    apiMock.getSentOrganizerInvitations
+      .mockReturnValueOnce(previousScopeRequest.promise)
+      .mockReturnValueOnce(nextScopeRequest.promise)
+
+    const { rerender } = render(<InviteModal {...baseProps} />)
+    await waitFor(() => expect(apiMock.getSentOrganizerInvitations).toHaveBeenCalledTimes(1))
+
+    rerender(<InviteModal {...baseProps} tournamentId={43} currentUserId={9} />)
+    await waitFor(() => expect(apiMock.getSentOrganizerInvitations).toHaveBeenCalledTimes(2))
+
+    await act(async () => {
+      nextScopeRequest.resolve(page([invitation(16, organizer(7, "newscope"), "PENDING", 43)]))
+      await nextScopeRequest.promise
+    })
+
+    expect(await screen.findByText("@newscope")).toBeInTheDocument()
+
+    await act(async () => {
+      previousScopeRequest.resolve(page([invitation(15, organizer(6, "oldscope"))]))
+      await previousScopeRequest.promise
+    })
+
+    expect(screen.queryByText("@oldscope")).not.toBeInTheDocument()
+    expect(screen.getByText("@newscope")).toBeInTheDocument()
   })
 
   it("does not expose organizer invitation controls without FULL permission", async () => {

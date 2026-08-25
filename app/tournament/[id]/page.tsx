@@ -275,7 +275,9 @@ export default function TournamentDetailPage() {
   const [selectedResultsOption, setSelectedResultsOption] = useState<'APF' | 'BPF' | 'LD'>('APF')
   const [resultsSubTab, setResultsSubTab] = useState<'Speaker Score' | 'Results'>('Speaker Score')
   const [selectedPairingStage, setSelectedPairingStage] = useState<PairingStageId>('preliminary')
-  const [selectedRound, setSelectedRound] = useState('Round 1')
+  const [selectedPairingRound, setSelectedPairingRound] = useState('Round 1')
+  const [selectedResultsStage, setSelectedResultsStage] = useState<PairingStageId>('preliminary')
+  const [selectedResultsRound, setSelectedResultsRound] = useState('Round 1')
   const [bpfSubTab] = useState('BPF Results')
   const [activeResultsSection, setActiveResultsSection] = useState('APF Speaker Score')
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -327,14 +329,12 @@ export default function TournamentDetailPage() {
     toast,
   })
 
-  const ELIMINATION_ROUND_NAMES = new Set(['1/16', '1/8', '1/4', '1/2', 'Final'])
   const effectiveStage: PairingStageId = activeTab === 'Results and Statistics'
-    ? selectedResultsOption === 'LD'
-      ? 'solo'
-      : ELIMINATION_ROUND_NAMES.has(displayRoundLabel(activeResultsSection))
-        ? 'team'
-        : 'preliminary'
+    ? selectedResultsStage
     : selectedPairingStage
+  const effectiveSelectedRound = activeTab === 'Results and Statistics'
+    ? selectedResultsRound
+    : selectedPairingRound
 
   const {
     selectedRoundGroupId,
@@ -354,7 +354,7 @@ export default function TournamentDetailPage() {
   } = useRoundSelection({
     tournamentId,
     selectedStage: effectiveStage,
-    selectedRoundLabel: selectedRound,
+    selectedRoundLabel: effectiveSelectedRound,
     pageable: { page: 0, size: 50 },
   })
   const {
@@ -380,7 +380,7 @@ export default function TournamentDetailPage() {
     ? STAGE_BY_ROUND_GROUP_TYPE[selectedRoundGroup.type] ?? selectedPairingStage
     : selectedPairingStage
   const effectivePairingRound = selectedRoundRecord?.name
-    ?? (typeof currentRoundNumber === "number" ? `Round ${currentRoundNumber}` : selectedRound)
+    ?? (typeof currentRoundNumber === "number" ? `Round ${currentRoundNumber}` : selectedPairingRound)
 
   const teamEliminationRounds = roundGroups?.find(
     (group) => group.type === RoundGroupType.TEAM_ELIMINATION && String(group.format) === selectedResultsOption,
@@ -392,11 +392,33 @@ export default function TournamentDetailPage() {
     ? soloEliminationRounds
     : teamEliminationRounds
 
+  const stageForResultsSection = (section: string): PairingStageId => {
+    if (selectedResultsOption === "LD") return "solo"
+
+    const sectionLabel = displayRoundLabel(section)
+    const isConfiguredTeamRound = teamEliminationRounds.some(
+      (round) => displayRoundLabel(round.name) === sectionLabel,
+    )
+    const isLegacyEliminationRound = new Set(["1/16", "1/8", "1/4", "1/2", "Final"]).has(sectionLabel)
+    return isConfiguredTeamRound || (teamEliminationRounds.length > 0 && isLegacyEliminationRound)
+      ? "team"
+      : "preliminary"
+  }
+
+  const handleActiveResultsSectionChange = (section: string) => {
+    setActiveResultsSection(section)
+    setSelectedResultsStage(stageForResultsSection(section))
+  }
+
+  const handleSelectedResultsRoundChange = (round: string) => {
+    setSelectedResultsRound(round)
+  }
+
   useEffect(() => {
     if (activeTab !== "Results and Statistics" || !selectedRoundRecord) return
 
-    if (displayRoundLabel(selectedRound) !== displayRoundLabel(selectedRoundRecord.name)) {
-      setSelectedRound(selectedRoundRecord.name)
+    if (displayRoundLabel(selectedResultsRound) !== displayRoundLabel(selectedRoundRecord.name)) {
+      setSelectedResultsRound(selectedRoundRecord.name)
     }
 
     const isResultsFormatSection =
@@ -408,7 +430,7 @@ export default function TournamentDetailPage() {
     ) {
       setActiveResultsSection(selectedRoundRecord.name)
     }
-  }, [activeResultsSection, activeTab, selectedResultsOption, selectedRound, selectedRoundRecord])
+  }, [activeResultsSection, activeTab, selectedResultsOption, selectedResultsRound, selectedRoundRecord])
 
   const resultsFormatOptions = useMemo<ResultsFormat[]>(() => {
     const configuredFormats = new Set(roundGroups?.map((group) => String(group.format)) ?? [])
@@ -942,7 +964,7 @@ export default function TournamentDetailPage() {
       ])
 
       if (nextRound) {
-        setSelectedRound(nextRound.name)
+        setSelectedPairingRound(nextRound.name)
       }
 
       toast({
@@ -1418,11 +1440,13 @@ export default function TournamentDetailPage() {
 
     if (option === 'LD') {
       setActiveResultsSection(nextRound)
-      setSelectedRound(nextRound)
+      setSelectedResultsStage('solo')
+      setSelectedResultsRound(nextRound)
     } else {
       setActiveResultsSection(`${option} Speaker Score`)
       setResultsSubTab('Speaker Score')
-      setSelectedRound(nextRound)
+      setSelectedResultsStage('preliminary')
+      setSelectedResultsRound(nextRound)
     }
   }
 
@@ -1441,13 +1465,15 @@ export default function TournamentDetailPage() {
     if (nextResultsFormat === DebateFormat.LD) {
       setActiveResultsSection(nextRound)
       setResultsSubTab('Results')
-      setSelectedRound(nextRound)
+      setSelectedResultsStage('solo')
+      setSelectedResultsRound(nextRound)
       return
     }
 
     setActiveResultsSection(`${nextResultsFormat} Speaker Score`)
     setResultsSubTab('Speaker Score')
-    setSelectedRound(nextRound)
+    setSelectedResultsStage('preliminary')
+    setSelectedResultsRound(nextRound)
   }, [currentRoundNumber, resultsFormatOptions, roundGroups, selectedResultsOption, selectedRoundNumber])
 
   const openContentModal = (context: 'announcements' | 'schedule' | 'map' | 'news') => {
@@ -1507,7 +1533,7 @@ export default function TournamentDetailPage() {
         isTournamentEnabled={isTournamentEnabled}
         toggleTournamentLoading={toggleTournamentLoading}
         onToggleTournament={handleTournamentToggle}
-        onOpenInvite={canControlVisibility ? () => setIsInviteModalOpen(true) : undefined}
+        onOpenInvite={isOrganizer ? () => setIsInviteModalOpen(true) : undefined}
         onStartTournament={isOrganizer && !tournament?.started ? handleStartTournament : undefined}
         startTournamentLoading={startingTournament}
       />
@@ -1597,7 +1623,7 @@ export default function TournamentDetailPage() {
             selectedRoundNumber={selectedRoundNumber}
             currentRoundNumber={currentRoundNumber}
             onSelectStage={setSelectedPairingStage}
-            onSelectRound={setSelectedRound}
+            onSelectRound={setSelectedPairingRound}
             onProceedToNextRound={isOrganizer ? handleProceedToNextRound : undefined}
             onRandomizePairings={isOrganizer ? handleRandomizePairings : undefined}
             onSubmitPairings={isOrganizer ? handleSubmitPairings : undefined}
@@ -1617,9 +1643,9 @@ export default function TournamentDetailPage() {
             onResultsSubTabChange={setResultsSubTab}
             bpfSubTab={bpfSubTab}
             activeResultsSection={activeResultsSection}
-            onActiveResultsSectionChange={setActiveResultsSection}
-            selectedRound={selectedRound}
-            onSelectedRoundChange={setSelectedRound}
+            onActiveResultsSectionChange={handleActiveResultsSectionChange}
+            selectedRound={selectedResultsRound}
+            onSelectedRoundChange={handleSelectedResultsRoundChange}
             roundGroupType={selectedRoundGroup?.type}
             rounds={rounds}
             eliminationRounds={resultsEliminationRounds}

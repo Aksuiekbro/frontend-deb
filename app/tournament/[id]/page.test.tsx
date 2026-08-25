@@ -10,6 +10,7 @@ import { Role } from "@/types/user/user"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType } from "@/types/tournament/round/round-group"
 import { LocaleProvider } from "@/lib/i18n"
+import { displayRoundLabel } from "@/lib/round-label"
 import type { SimpleUserResponse } from "@/types/user/user"
 import type { OrganizerInvitationResponse } from "@/types/util/request/invitation"
 
@@ -368,6 +369,12 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
       }}>
         Select Team Elim
       </button>
+      <button type="button" onClick={() => {
+        onSelectStage("team")
+        onSelectRound("Final")
+      }}>
+        Select Pairing Final
+      </button>
       <button type="button" onClick={() => onProceedToNextRound?.()}>Proceed Round</button>
       <button type="button" onClick={() => onRandomizePairings?.()}>Randomize Pairings</button>
       <button type="button" onClick={() => onSubmitPairings?.()}>Submit Pairings</button>
@@ -422,6 +429,10 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
         onActiveResultsSectionChange?.("1/16")
         onSelectedRoundChange?.("1/16")
       }}>Select Stale Elimination Results</button>
+      <button type="button" onClick={() => {
+        onActiveResultsSectionChange?.("Semifinal")
+        onSelectedRoundChange?.("Semifinal")
+      }}>Select Custom Elimination Results</button>
       <button
         type="button"
         onClick={() => onSubmitResults?.([
@@ -644,7 +655,10 @@ type FixtureRoundGroup = {
 function configureRoundSelectionGroups(
   roundGroups: FixtureRoundGroup[] | (() => FixtureRoundGroup[]),
 ) {
-  mockUseRoundSelection.mockImplementation((args: { selectedStage?: "preliminary" | "team" | "solo" }) => {
+  mockUseRoundSelection.mockImplementation((args: {
+    selectedStage?: "preliminary" | "team" | "solo"
+    selectedRoundLabel?: string
+  }) => {
     const currentRoundGroups = typeof roundGroups === "function" ? roundGroups() : roundGroups
     const preferredType = args?.selectedStage === "team"
       ? RoundGroupType.TEAM_ELIMINATION
@@ -652,7 +666,9 @@ function configureRoundSelectionGroups(
         ? RoundGroupType.SOLO_ELIMINATION
         : RoundGroupType.PRELIMINARY
     const selectedGroup = currentRoundGroups.find(({ type }) => type === preferredType) ?? currentRoundGroups[0]
-    const selectedRound = selectedGroup?.rounds[0]
+    const selectedRound = selectedGroup?.rounds.find(
+      ({ name }) => displayRoundLabel(name) === displayRoundLabel(args.selectedRoundLabel ?? ""),
+    ) ?? selectedGroup?.rounds[0]
 
     return {
       selectedRoundGroupId: selectedGroup?.id ?? null,
@@ -760,7 +776,7 @@ describe("TournamentDetailPage mutations", () => {
     expect(declined).toEqual({ accepted: null, status: "DECLINED" })
   })
 
-  it("opens organizer invitations only for the main/FULL organizer and passes tournament context", () => {
+  it("opens Invite for assigned organizers but only exposes co-organizer controls to the main/FULL organizer", () => {
     mockTournamentOrganizerIds = [1, 2, null]
     const mainOrganizerPage = render(<TournamentDetailPage />)
 
@@ -775,6 +791,14 @@ describe("TournamentDetailPage mutations", () => {
     mainOrganizerPage.unmount()
     mockMainOrganizerId = 99
     mockTournamentOrganizerIds = [1, 2]
+    const editOrganizerPage = render(<TournamentDetailPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Organizer Invite" }))
+    expect(screen.getByTestId("invite-modal")).toBeInTheDocument()
+    expect(screen.getByTestId("can-invite-organizers")).toHaveTextContent("false")
+
+    editOrganizerPage.unmount()
+    mockTournamentOrganizerIds = [99]
     render(<TournamentDetailPage />)
 
     expect(screen.queryByRole("button", { name: "Open Organizer Invite" })).not.toBeInTheDocument()
@@ -1001,6 +1025,7 @@ describe("TournamentDetailPage mutations", () => {
     fireEvent.click(screen.getByText("Results and Statistics"))
     expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.PRELIMINARY)
 
+    fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
     fireEvent.click(screen.getByRole("button", { name: "Select Elimination Results" }))
     await waitFor(() => {
       expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
@@ -1009,6 +1034,77 @@ describe("TournamentDetailPage mutations", () => {
     fireEvent.click(screen.getByRole("button", { name: "Format LD" }))
     await waitFor(() => {
       expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.SOLO_ELIMINATION)
+    })
+  })
+
+  it("selects configured team elimination rounds with custom legacy labels", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 354,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 454, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 355,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.BPF,
+        rounds: [{ id: 455, name: "Semifinal", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
+    fireEvent.click(screen.getByRole("button", { name: "Select Custom Elimination Results" }))
+
+    await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedStage: "team",
+        selectedRoundLabel: "Semifinal",
+      }))
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
+      expect(screen.getByTestId("selected-results-round")).toHaveTextContent("Semifinal")
+    })
+  })
+
+  it("keeps the Pairings round when Results repairs its own selection", async () => {
+    configureRoundSelectionGroups([
+      {
+        id: 356,
+        type: RoundGroupType.PRELIMINARY,
+        format: DebateFormat.APF,
+        rounds: [{ id: 456, name: "Round 1", roundNumber: 1 }],
+        currentRoundNumber: 1,
+      },
+      {
+        id: 357,
+        type: RoundGroupType.TEAM_ELIMINATION,
+        format: DebateFormat.APF,
+        rounds: [
+          { id: 457, name: "Semifinal", roundNumber: 1 },
+          { id: 458, name: "Final", roundNumber: 2 },
+        ],
+        currentRoundNumber: 1,
+      },
+    ])
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    fireEvent.click(screen.getByRole("button", { name: "Select Pairing Final" }))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:Final")
+    })
+
+    fireEvent.click(screen.getByText("Results and Statistics"))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-results-round")).toHaveTextContent("Round 1")
+    })
+
+    fireEvent.click(screen.getByText("Pairing and Matches"))
+    await waitFor(() => {
+      expect(screen.getByTestId("selected-pairing-state")).toHaveTextContent("team:Final")
     })
   })
 

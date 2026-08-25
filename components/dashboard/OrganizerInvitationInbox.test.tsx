@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import type { ComponentPropsWithoutRef } from "react"
 
@@ -26,6 +26,14 @@ jest.mock("@/lib/api", () => ({
 }))
 
 const apiMock = api as jest.Mocked<typeof api>
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
+}
 
 function response(body: unknown, status = 200) {
   return {
@@ -118,5 +126,41 @@ describe("OrganizerInvitationInbox", () => {
 
     expect(await screen.findByText("Accepted")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /invitation to Autumn Open/ })).not.toBeInTheDocument()
+  })
+
+  it("keeps the optimistic handled status when the follow-up refresh fails", async () => {
+    apiMock.getReceivedOrganizerInvitations
+      .mockResolvedValueOnce(invitationPage([invitation()]))
+      .mockResolvedValueOnce(response({ message: "Refresh failed" }, 500))
+
+    render(<OrganizerInvitationInbox />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Autumn Open" }))
+
+    expect(await screen.findByText("Accepted")).toBeInTheDocument()
+    expect(await screen.findByRole("alert")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Accept invitation to Autumn Open" })).not.toBeInTheDocument()
+  })
+
+  it("disables invitation actions while a manual refresh is in flight", async () => {
+    const refreshRequest = deferred<Response>()
+    apiMock.getReceivedOrganizerInvitations
+      .mockResolvedValueOnce(invitationPage([invitation()]))
+      .mockReturnValueOnce(refreshRequest.promise)
+
+    render(<OrganizerInvitationInbox />)
+
+    const acceptButton = await screen.findByRole("button", { name: "Accept invitation to Autumn Open" })
+    fireEvent.click(screen.getByRole("button", { name: "Refresh organizer invitations" }))
+
+    expect(acceptButton).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Decline invitation to Autumn Open" })).toBeDisabled()
+
+    await act(async () => {
+      refreshRequest.resolve(invitationPage([invitation()]))
+      await refreshRequest.promise
+    })
+
+    await waitFor(() => expect(acceptButton).toBeEnabled())
   })
 })

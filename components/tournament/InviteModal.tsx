@@ -85,6 +85,7 @@ export function InviteModal({
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<UserResponse[]>([])
   const [invitations, setInvitations] = useState<OrganizerInvitationRecord[]>([])
+  const [invitationsScope, setInvitationsScope] = useState<string | null>(null)
   const invitationsRef = useRef<OrganizerInvitationRecord[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
@@ -92,16 +93,39 @@ export function InviteModal({
   const [invitationsLoaded, setInvitationsLoaded] = useState(false)
   const [invitingUsername, setInvitingUsername] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+  const invitationRequestSequenceRef = useRef(0)
+  const searchRequestSequenceRef = useRef(0)
+  const sendRequestSequenceRef = useRef(0)
+
+  const invitationScope = isOpen && canInviteOrganizers && tournamentId
+    ? `${currentUserId ?? "anonymous"}:${tournamentId}`
+    : null
+  const invitationScopeRef = useRef(invitationScope)
+  const scopedInvitations = invitationsScope === invitationScope ? invitations : []
 
   const existingOrganizerIds = useMemo(
     () => new Set(existingOrganizers.map(({ id }) => id)),
     [existingOrganizers],
   )
 
-  const loadInvitations = useCallback(async () => {
-    if (!canInviteOrganizers || !tournamentId) return []
+  const loadInvitations = useCallback(async (reset = false) => {
+    if (!invitationScope || !tournamentId) return []
 
-    setInvitationsLoaded(false)
+    const requestSequence = ++invitationRequestSequenceRef.current
+    const requestScope = invitationScope
+    const isCurrentRequest = () => (
+      mountedRef.current
+      && invitationRequestSequenceRef.current === requestSequence
+      && invitationScopeRef.current === requestScope
+    )
+
+    if (reset) {
+      invitationsRef.current = []
+      setInvitations([])
+      setInvitationsScope(null)
+      setInvitationsLoaded(false)
+    }
     setIsLoadingInvitations(true)
     try {
       const invitationsById = new Map<number, OrganizerInvitationRecord>()
@@ -119,36 +143,65 @@ export function InviteModal({
         }
 
         const page = await response.json() as PageResult<OrganizerInvitationRecord>
+        if (!isCurrentRequest()) return []
         page.content?.forEach((invitation) => {
           if (invitation.tournament?.id === tournamentId) invitationsById.set(invitation.id, invitation)
         })
-        totalPages = Number.isInteger(page.totalPages) && page.totalPages > 0 ? page.totalPages : 1
+        const reportedTotalPages = Number.isInteger(page.totalPages) && page.totalPages > 0 ? page.totalPages : 1
+        totalPages = Math.max(totalPages, reportedTotalPages)
         pageNumber += 1
       }
 
+      if (!isCurrentRequest()) return []
       const loaded = Array.from(invitationsById.values())
       invitationsRef.current = loaded
       setInvitations(loaded)
+      setInvitationsScope(requestScope)
       setInvitationsLoaded(true)
       return loaded
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : t("loadFailed"))
+      if (isCurrentRequest()) {
+        setError(loadError instanceof Error ? loadError.message : t("loadFailed"))
+      }
       return []
     } finally {
-      setIsLoadingInvitations(false)
+      if (isCurrentRequest()) setIsLoadingInvitations(false)
     }
-  }, [canInviteOrganizers, t, tournamentId])
+  }, [invitationScope, t, tournamentId])
 
   useEffect(() => {
-    if (!isOpen || !canInviteOrganizers || !tournamentId) {
-      setInvitationsLoaded(false)
-      return
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      invitationRequestSequenceRef.current += 1
+      searchRequestSequenceRef.current += 1
+      sendRequestSequenceRef.current += 1
     }
-    setError(null)
-    void loadInvitations()
-  }, [canInviteOrganizers, isOpen, loadInvitations, tournamentId])
+  }, [])
 
-  const exclusionDataReady = !existingOrganizersLoading && invitationsLoaded
+  useEffect(() => {
+    invitationScopeRef.current = invitationScope
+    invitationRequestSequenceRef.current += 1
+    searchRequestSequenceRef.current += 1
+    sendRequestSequenceRef.current += 1
+    invitationsRef.current = []
+    setInvitations([])
+    setInvitationsScope(null)
+    setInvitationsLoaded(false)
+    setIsLoadingInvitations(false)
+    setQuery("")
+    setResults([])
+    setHasSearched(false)
+    setIsSearching(false)
+    setInvitingUsername(null)
+    setError(null)
+    if (invitationScope) void loadInvitations(true)
+  }, [invitationScope, loadInvitations])
+
+  const exclusionDataReady = invitationScope !== null
+    && invitationsScope === invitationScope
+    && !existingOrganizersLoading
+    && invitationsLoaded
 
   useEffect(() => {
     if (exclusionDataReady) return
@@ -159,7 +212,15 @@ export function InviteModal({
   const searchOrganizers = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedQuery = query.trim()
-    if (!trimmedQuery || !exclusionDataReady) return
+    if (!trimmedQuery || !exclusionDataReady || !invitationScope) return
+
+    const requestSequence = ++searchRequestSequenceRef.current
+    const requestScope = invitationScope
+    const isCurrentRequest = () => (
+      mountedRef.current
+      && searchRequestSequenceRef.current === requestSequence
+      && invitationScopeRef.current === requestScope
+    )
 
     setIsSearching(true)
     setHasSearched(true)
@@ -174,6 +235,7 @@ export function InviteModal({
       }
 
       const page = await response.json() as PageResult<UserResponse>
+      if (!isCurrentRequest()) return
       const pendingInviteeIds = new Set(
         invitationsRef.current
           .filter((invitation) => invitationStatus(invitation) === "PENDING")
@@ -186,28 +248,40 @@ export function InviteModal({
         && !pendingInviteeIds.has(user.id)
       )))
     } catch (searchError) {
-      setResults([])
-      setError(searchError instanceof Error ? searchError.message : t("searchFailed"))
+      if (isCurrentRequest()) {
+        setResults([])
+        setError(searchError instanceof Error ? searchError.message : t("searchFailed"))
+      }
     } finally {
-      setIsSearching(false)
+      if (isCurrentRequest()) setIsSearching(false)
     }
   }
 
   const sendInvitation = async (user: UserResponse) => {
-    if (!tournamentId || !canInviteOrganizers) return
+    if (!tournamentId || !invitationScope) return
+
+    const requestSequence = ++sendRequestSequenceRef.current
+    const requestScope = invitationScope
+    const requestTournamentId = tournamentId
+    const isCurrentRequest = () => (
+      mountedRef.current
+      && sendRequestSequenceRef.current === requestSequence
+      && invitationScopeRef.current === requestScope
+    )
 
     setInvitingUsername(user.username)
     setError(null)
     try {
       const response = await api.createOrganizerInvitation({
         inviteeUsername: user.username,
-        tournamentId,
+        tournamentId: requestTournamentId,
       })
       if (!response.ok) {
         throw new Error(await readResponseError(response, { fallback: t("sendFailed") }))
       }
 
       const created = await response.json() as OrganizerInvitationRecord
+      if (!isCurrentRequest()) return
       if (created?.id) {
         setInvitations((current) => {
           const next = [created, ...current.filter(({ id }) => id !== created.id)]
@@ -218,9 +292,11 @@ export function InviteModal({
       setResults((current) => current.filter(({ id }) => id !== user.id))
       await loadInvitations()
     } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : t("sendFailed"))
+      if (isCurrentRequest()) {
+        setError(sendError instanceof Error ? sendError.message : t("sendFailed"))
+      }
     } finally {
-      setInvitingUsername(null)
+      if (isCurrentRequest()) setInvitingUsername(null)
     }
   }
 
@@ -299,15 +375,15 @@ export function InviteModal({
             ) : null}
 
             <h4 className="mt-6 font-semibold text-[#0D1321]">{t("sentHeading")}</h4>
-            {isLoadingInvitations && invitations.length === 0 ? (
+            {isLoadingInvitations && scopedInvitations.length === 0 ? (
               <p className="mt-3 flex items-center gap-2 text-sm text-[#4A5568]" role="status">
                 <LoaderCircle className="h-5 w-5 motion-safe:animate-spin" aria-hidden="true" />{t("loading")}
               </p>
-            ) : invitations.length === 0 ? (
+            ) : scopedInvitations.length === 0 ? (
               <p className="mt-2 text-sm text-[#4A5568]">{t("noSent")}</p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {invitations.map((invitation) => {
+                {scopedInvitations.map((invitation) => {
                   const status = invitationStatus(invitation)
                   return (
                     <li key={invitation.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2">

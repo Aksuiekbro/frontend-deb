@@ -2,7 +2,7 @@
 
 import { Check, LoaderCircle, Mail, RefreshCw, X } from "lucide-react"
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
@@ -65,8 +65,13 @@ export function OrganizerInvitationInbox() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pendingAction, setPendingAction] = useState<{ id: number; action: InvitationAction } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+  const invitationRequestSequenceRef = useRef(0)
 
   const loadInvitations = useCallback(async (initial = false) => {
+    const requestSequence = ++invitationRequestSequenceRef.current
+    const isCurrentRequest = () => mountedRef.current && invitationRequestSequenceRef.current === requestSequence
+
     if (initial) setIsLoading(true)
     else setIsRefreshing(true)
     setError(null)
@@ -85,22 +90,36 @@ export function OrganizerInvitationInbox() {
         if (!response.ok) throw new Error(await readResponseError(response, { fallback: t("loadFailed") }))
 
         const page = await response.json() as PageResult<OrganizerInvitationRecord>
+        if (!isCurrentRequest()) return false
         page.content?.forEach((invitation) => invitationsById.set(invitation.id, invitation))
-        totalPages = Number.isInteger(page.totalPages) && page.totalPages > 0 ? page.totalPages : 1
+        const reportedTotalPages = Number.isInteger(page.totalPages) && page.totalPages > 0 ? page.totalPages : 1
+        totalPages = Math.max(totalPages, reportedTotalPages)
         pageNumber += 1
       }
 
+      if (!isCurrentRequest()) return false
       setInvitations(Array.from(invitationsById.values()))
+      return true
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : t("loadFailed"))
+      if (isCurrentRequest()) {
+        setError(loadError instanceof Error ? loadError.message : t("loadFailed"))
+      }
+      return false
     } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
+      if (isCurrentRequest()) {
+        setIsLoading(false)
+        setIsRefreshing(false)
+      }
     }
   }, [t])
 
   useEffect(() => {
+    mountedRef.current = true
     void loadInvitations(true)
+    return () => {
+      mountedRef.current = false
+      invitationRequestSequenceRef.current += 1
+    }
   }, [loadInvitations])
 
   const handleInvitation = async (invitation: OrganizerInvitationRecord, action: InvitationAction) => {
@@ -111,11 +130,29 @@ export function OrganizerInvitationInbox() {
         ? await api.acceptOrganizerInvitation(invitation.id)
         : await api.rejectOrganizerInvitation(invitation.id)
       if (!response.ok) throw new Error(await readResponseError(response, { fallback: t("actionFailed") }))
+
+      if (!mountedRef.current) return
+      const nextStatus = action === "accept" ? "ACCEPTED" : "DECLINED"
+      setInvitations((current) => current.map((currentInvitation) => (
+        currentInvitation.id === invitation.id
+          ? {
+              ...currentInvitation,
+              accepted: action === "accept" ? true : null,
+              status: nextStatus,
+            }
+          : currentInvitation
+      )))
       await loadInvitations()
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : t("actionFailed"))
+      if (mountedRef.current) {
+        setError(actionError instanceof Error ? actionError.message : t("actionFailed"))
+      }
     } finally {
-      setPendingAction(null)
+      if (mountedRef.current) {
+        setPendingAction((current) => (
+          current?.id === invitation.id && current.action === action ? null : current
+        ))
+      }
     }
   }
 
@@ -149,6 +186,7 @@ export function OrganizerInvitationInbox() {
               const status = invitationStatus(invitation)
               const tournamentName = invitation.tournament?.name || t("unknownTournament")
               const busy = pendingAction?.id === invitation.id
+              const actionsDisabled = pendingAction !== null || isRefreshing
               return (
                 <li key={invitation.id} className="rounded-xl border border-[#D7DCE5] bg-white p-5 shadow-sm" aria-busy={busy}>
                   <div className="flex items-start justify-between gap-4">
@@ -168,7 +206,7 @@ export function OrganizerInvitationInbox() {
                       <Button
                         type="button"
                         onClick={() => void handleInvitation(invitation, "accept")}
-                        disabled={busy}
+                        disabled={actionsDisabled}
                         aria-label={t("acceptInvitation", { tournament: tournamentName })}
                         className="bg-[#3E5C76] text-white hover:bg-[#0D1321]"
                       >
@@ -178,7 +216,7 @@ export function OrganizerInvitationInbox() {
                         type="button"
                         variant="outline"
                         onClick={() => void handleInvitation(invitation, "decline")}
-                        disabled={busy}
+                        disabled={actionsDisabled}
                         aria-label={t("declineInvitation", { tournament: tournamentName })}
                       >
                         {busy && pendingAction.action === "decline" ? <LoaderCircle className="motion-safe:animate-spin" aria-hidden="true" /> : <X aria-hidden="true" />}{t("decline")}
