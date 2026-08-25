@@ -421,6 +421,10 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
       <div data-testid="selected-results-round">{selectedRound}</div>
       <div data-testid="results-rounds">{rounds?.map(({ name }) => name).join("|")}</div>
       <div data-testid="elimination-results-rounds">{eliminationRounds?.map(({ name }) => name).join("|")}</div>
+      <button
+        type="button"
+        onClick={() => onActiveResultsSectionChange?.(`${selectedResultsOption} Results`)}
+      >Select Format Results</button>
       <button type="button" onClick={() => {
         onActiveResultsSectionChange?.("Final")
         onSelectedRoundChange?.("Final")
@@ -1026,6 +1030,15 @@ describe("TournamentDetailPage mutations", () => {
     expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.PRELIMINARY)
 
     fireEvent.click(screen.getByRole("button", { name: "Format BPF" }))
+    await waitFor(() => {
+      expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
+        selectedStage: "team",
+        selectedRoundLabel: "Final",
+      }))
+      expect(screen.getByTestId("results-round-group-type")).toHaveTextContent(RoundGroupType.TEAM_ELIMINATION)
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Format Results" }))
     await waitFor(() => {
       expect(mockUseRoundSelection).toHaveBeenLastCalledWith(expect.objectContaining({
         selectedStage: "team",

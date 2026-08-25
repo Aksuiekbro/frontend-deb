@@ -403,6 +403,15 @@ export default function TournamentDetailPage() {
   const stageForResultsSection = (section: string): PairingStageId => {
     if (selectedResultsOption === "LD") return "solo"
 
+    const isFormatSection = section === `${selectedResultsOption} Results`
+      || section === `${selectedResultsOption} Speaker Score`
+    if (isFormatSection) {
+      return resultsStageForRoundGroup(
+        resultsRoundGroup(roundGroups, selectedResultsOption),
+        selectedResultsOption,
+      )
+    }
+
     const sectionLabel = displayRoundLabel(section)
     const isConfiguredTeamRound = teamEliminationRounds.some(
       (round) => displayRoundLabel(round.name) === sectionLabel,
