@@ -304,7 +304,9 @@ export default function Dashboard() {
       {currentUser?.role === Role.PARTICIPANT && (
         <ParticipantInvitationInbox key={currentUser.id} userId={currentUser.id} />
       )}
-      {currentUser?.role === Role.ORGANIZER && <OrganizerInvitationInbox />}
+      {currentUser?.role === Role.ORGANIZER && (
+        <OrganizerInvitationInbox key={currentUser.id} />
+      )}
 
       {/* Upcoming Debates */}
       <section className="px-8 py-12">

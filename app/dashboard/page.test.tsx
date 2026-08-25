@@ -20,6 +20,7 @@ jest.mock("next/link", () => ({
 const mockUseCurrentUser = jest.fn()
 const mockUseUpcomingTournaments = jest.fn()
 const mockUseTournaments = jest.fn()
+const mockOrganizerMountSequence = { current: 0 }
 
 jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
@@ -29,9 +30,16 @@ jest.mock("@/components/dashboard/ParticipantInvitationInbox", () => ({
   ParticipantInvitationInbox: () => <div data-testid="participant-invitation-inbox" />,
 }))
 
-jest.mock("@/components/dashboard/OrganizerInvitationInbox", () => ({
-  OrganizerInvitationInbox: () => <div data-testid="organizer-invitation-inbox" />,
-}))
+jest.mock("@/components/dashboard/OrganizerInvitationInbox", () => {
+  const React = jest.requireActual<typeof import("react")>("react")
+
+  return {
+    OrganizerInvitationInbox: () => {
+      const [mountId] = React.useState(() => ++mockOrganizerMountSequence.current)
+      return <div data-testid="organizer-invitation-inbox">organizer-inbox-{mountId}</div>
+    },
+  }
+})
 
 jest.mock("../../hooks/use-api", () => ({
   useCurrentUser: () => mockUseCurrentUser(),
@@ -68,6 +76,7 @@ describe("Dashboard", () => {
   beforeEach(() => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date("2026-06-19T12:34:56.000Z"))
+    mockOrganizerMountSequence.current = 0
     mockUseCurrentUser.mockReturnValue({
       user: {
         id: 1,
@@ -150,5 +159,39 @@ describe("Dashboard", () => {
 
     expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
     expect(screen.getByTestId("organizer-invitation-inbox")).toBeInTheDocument()
+  })
+
+  it("remounts the organizer invitation inbox when the organizer account changes", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    const dashboard = renderDashboard()
+
+    expect(screen.getByTestId("organizer-invitation-inbox")).toHaveTextContent("organizer-inbox-1")
+
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 3,
+        firstName: "Oscar",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    dashboard.rerender(
+      <LocaleProvider>
+        <Dashboard />
+      </LocaleProvider>,
+    )
+
+    expect(screen.getByTestId("organizer-invitation-inbox")).toHaveTextContent("organizer-inbox-2")
   })
 })
