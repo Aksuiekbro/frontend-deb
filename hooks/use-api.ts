@@ -25,6 +25,7 @@ import { MatchResponse } from '@/types/tournament/match'
 import { TeamResponse, SimpleTeamResponse } from '@/types/tournament/team'
 import { JudgeGetParams, JudgeResponse } from '@/types/tournament/judge'
 import { ScheduleResponse } from '@/types/tournament/schedule'
+import { TournamentMapResponse } from '@/types/tournament/map'
 import { FeedbackGetParams, FeedbackResponse } from '@/types/tournament/feedback'
 import { UrlResponse } from '@/types/util/url'
 import { TagResponse } from '@/types/tag'
@@ -237,6 +238,13 @@ const PREVIEW_SCHEDULES: ScheduleResponse[] = [
     imageUrl: PREVIEW_IMAGE,
   },
 ]
+
+const PREVIEW_TOURNAMENT_MAP: TournamentMapResponse = {
+  id: 10002,
+  title: 'Preview venue map',
+  description: 'Use this map to find tournament rooms in preview mode.',
+  imageUrl: PREVIEW_IMAGE,
+}
 
 const PREVIEW_NEWS: NewsResponse[] = [
   {
@@ -771,6 +779,50 @@ export function useTournamentSchedules(tournamentId: number) {
 
   return {
     schedules: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export function useTournamentMap(tournamentId: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-map', tournamentId],
+    () => fetcher<TournamentMapResponse>(() => api.getTournamentMap(tournamentId))
+      .catch((fetchError: unknown) => {
+        if (
+          fetchError
+          && typeof fetchError === 'object'
+          && 'status' in fetchError
+          && fetchError.status === 404
+        ) {
+          return null
+        }
+        throw fetchError
+      }),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      map: PREVIEW_TOURNAMENT_MAP,
+      isLoading: false,
+      error: undefined,
+      mutate: async (
+        nextMap?: TournamentMapResponse | null,
+        options?: { revalidate?: boolean },
+      ) => {
+        void options
+        return nextMap ?? PREVIEW_TOURNAMENT_MAP
+      },
+    }
+  }
+
+  return {
+    map: data,
     isLoading,
     error,
     mutate,

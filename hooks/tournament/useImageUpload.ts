@@ -51,14 +51,15 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
   }, [])
 
-  const handleImageUpload = useCallback((files: FileList | null) => {
+  const processImageUpload = useCallback((files: FileList | null, replaceWithSingleImage: boolean) => {
     if (!files) return
 
     const nextErrors: string[] = []
     const validSelections: ImageSelection[] = []
     const nextPreviews: ImagePreview[] = []
+    const selectedFiles = replaceWithSingleImage ? Array.from(files).slice(0, 1) : Array.from(files)
 
-    Array.from(files).forEach((file) => {
+    selectedFiles.forEach((file) => {
       const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
 
       if (!file.type.startsWith("image/") || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
@@ -96,12 +97,20 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
 
     setUploadErrors(nextErrors)
     if (nextPreviews.length) {
-      setImagePreviews((prev) => [...prev, ...nextPreviews])
+      setImagePreviews((prev) => replaceWithSingleImage ? nextPreviews : [...prev, ...nextPreviews])
     }
     if (validSelections.length) {
-      setImageSelections((prev) => [...prev, ...validSelections])
+      setImageSelections((prev) => replaceWithSingleImage ? validSelections : [...prev, ...validSelections])
     }
   }, [formatBytes, maxSize, t])
+
+  const handleImageUpload = useCallback((files: FileList | null) => {
+    processImageUpload(files, false)
+  }, [processImageUpload])
+
+  const handleSingleImageUpload = useCallback((files: FileList | null) => {
+    processImageUpload(files, true)
+  }, [processImageUpload])
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault()
@@ -112,6 +121,11 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     const { files } = event.dataTransfer
     handleImageUpload(files)
   }, [handleImageUpload])
+
+  const handleSingleImageDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault()
+    handleSingleImageUpload(event.dataTransfer.files)
+  }, [handleSingleImageUpload])
 
   const removeImageByKey = useCallback((key: string) => {
     setImagePreviews((prev) => prev.filter((preview) => preview.key !== key))
@@ -134,8 +148,10 @@ export function useImageUpload(maxSize = DEFAULT_MAX_SIZE) {
     dzAnimate,
     formatBytes,
     handleImageUpload,
+    handleSingleImageUpload,
     handleDragOver,
     handleDrop,
+    handleSingleImageDrop,
     removeImageByKey,
     resetUploads,
   }

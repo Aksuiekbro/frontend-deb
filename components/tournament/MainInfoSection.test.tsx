@@ -49,7 +49,17 @@ const baseProps = {
   schedules: [],
   schedulesLoading: false,
   schedulesError: undefined,
+  map: null,
+  mapLoading: false,
+  mapError: undefined,
   onOpenModal: jest.fn(),
+}
+
+const tournamentMap = {
+  id: 7,
+  title: "Tournament venue",
+  description: "Registration is beside the east entrance.",
+  imageUrl: { id: 17, url: "/uploads/maps/venue.png" },
 }
 
 describe("MainInfoSection announcement comments", () => {
@@ -132,5 +142,88 @@ describe("MainInfoSection announcement comments", () => {
     render(<MainInfoSection {...readOnlyProps} />)
 
     expect(screen.queryByRole("button", { name: "Add announcement" })).not.toBeInTheDocument()
+  })
+
+  it("renders a saved map and lets an organizer edit it", () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://backend.test/api/"
+    const onEditMap = jest.fn()
+
+    render(
+      <MainInfoSection
+        {...baseProps}
+        selectedOption="Map"
+        map={tournamentMap}
+        onEditMap={onEditMap}
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Tournament venue" })).toBeInTheDocument()
+    expect(screen.getByText("Registration is beside the east entrance.")).toBeInTheDocument()
+    expect(screen.getByAltText("Tournament venue")).toHaveAttribute(
+      "src",
+      "https://backend.test/api/uploads/maps/venue.png",
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit map" }))
+    expect(onEditMap).toHaveBeenCalledWith(tournamentMap)
+    expect(screen.queryByRole("button", { name: "Add map" })).not.toBeInTheDocument()
+  })
+
+  it("renders the empty map state and lets an organizer add a map", () => {
+    const onOpenModal = jest.fn()
+
+    render(
+      <MainInfoSection
+        {...baseProps}
+        selectedOption="Map"
+        map={null}
+        onOpenModal={onOpenModal}
+      />,
+    )
+
+    expect(screen.getByText("No map has been added yet")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Add map" }))
+    expect(onOpenModal).toHaveBeenCalledWith("map")
+    expect(screen.queryByRole("button", { name: "Edit map" })).not.toBeInTheDocument()
+  })
+
+  it("does not render map management controls for guests", () => {
+    render(
+      <MainInfoSection
+        {...baseProps}
+        selectedOption="Map"
+        map={tournamentMap}
+        onOpenModal={undefined}
+      />,
+    )
+
+    expect(screen.getByAltText("Tournament venue")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Add map" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Edit map" })).not.toBeInTheDocument()
+  })
+
+  it("distinguishes map loading and load failures from the empty state", () => {
+    const { rerender } = render(
+      <MainInfoSection
+        {...baseProps}
+        selectedOption="Map"
+        mapLoading
+        onOpenModal={undefined}
+      />,
+    )
+
+    expect(screen.queryByText("No map has been added yet")).not.toBeInTheDocument()
+
+    rerender(
+      <MainInfoSection
+        {...baseProps}
+        selectedOption="Map"
+        mapError={new Error("network unavailable")}
+        onOpenModal={undefined}
+      />,
+    )
+
+    expect(screen.getByText("Unable to load the tournament map")).toBeInTheDocument()
+    expect(screen.queryByText("No map has been added yet")).not.toBeInTheDocument()
   })
 })

@@ -13,6 +13,7 @@ import { LocaleProvider } from "@/lib/i18n"
 import { displayRoundLabel } from "@/lib/round-label"
 import type { SimpleUserResponse } from "@/types/user/user"
 import type { OrganizerInvitationResponse } from "@/types/util/request/invitation"
+import type { TournamentMapResponse } from "@/types/tournament/map"
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({ id: "53" }),
@@ -67,10 +68,13 @@ jest.mock("@/components/tournament/TournamentTabs", () => ({
 
 jest.mock("@/components/tournament/MainInfoSection", () => ({
   MainInfoSection: ({
+    map,
     onOpenModal,
     onEditAnnouncement,
+    onEditMap,
     onAddAnnouncementComment,
   }: {
+    map?: TournamentMapResponse | null
     onOpenModal?: (context: "announcements" | "schedule" | "map" | "news") => void
     onEditAnnouncement?: (announcement: {
       id: number
@@ -83,11 +87,18 @@ jest.mock("@/components/tournament/MainInfoSection", () => ({
       comments: unknown[]
       tags: unknown[]
     }) => void
+    onEditMap?: (map: TournamentMapResponse) => void
     onAddAnnouncementComment?: (announcementId: number, content: string) => void
   }) => (
     <div>
       <button type="button" onClick={() => onOpenModal?.("announcements")}>Open Announcement</button>
       <button type="button" onClick={() => onOpenModal?.("schedule")}>Open Schedule</button>
+      {onOpenModal && !map ? (
+        <button type="button" onClick={() => onOpenModal("map")}>Open Map</button>
+      ) : null}
+      {onEditMap && map ? (
+        <button type="button" onClick={() => onEditMap(map)}>Edit Map</button>
+      ) : null}
       {onEditAnnouncement ? (
         <button
           type="button"
@@ -204,6 +215,8 @@ jest.mock("@/components/tournament/AddPostModal", () => ({
     postDescription,
     selectedNewsCategory,
     errorMessage,
+    onImageUpload,
+    onDrop,
     onSubmit,
     onTitleChange,
     onDescriptionChange,
@@ -215,6 +228,8 @@ jest.mock("@/components/tournament/AddPostModal", () => ({
     postDescription: string
     selectedNewsCategory: string
     errorMessage?: string | null
+    onImageUpload: (files: FileList | null) => void
+    onDrop: (event: React.DragEvent) => void
     onSubmit: () => void
     onTitleChange: (value: string) => void
     onDescriptionChange: (value: string) => void
@@ -224,6 +239,13 @@ jest.mock("@/components/tournament/AddPostModal", () => ({
     return (
       <div data-testid="add-post-modal">
         <div>{modalContext}</div>
+        <output data-testid="single-map-upload-wiring">
+          {String(
+            modalContext === "map"
+            && onImageUpload === mockHandleSingleImageUpload
+            && onDrop === mockHandleSingleImageDrop
+          )}
+        </output>
         <input aria-label="Post title" value={postTitle} onChange={(event) => onTitleChange(event.target.value)} />
         <textarea aria-label="Post description" value={postDescription} onChange={(event) => onDescriptionChange(event.target.value)} />
         <select
@@ -459,6 +481,7 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
 
 const mockMutateAnnouncements = jest.fn()
 const mockMutateSchedules = jest.fn()
+const mockMutateMap = jest.fn()
 const mockMutateNews = jest.fn()
 const mockMutateJudges = jest.fn()
 const mockMutateTeams = jest.fn()
@@ -470,9 +493,14 @@ const mockToast = jest.fn()
 const mockUseTournamentTeams = jest.fn()
 const mockUseTournamentJudges = jest.fn()
 const mockUseRoundSelection = jest.fn()
+const mockHandleImageUpload = jest.fn()
+const mockHandleSingleImageUpload = jest.fn()
+const mockHandleDrop = jest.fn()
+const mockHandleSingleImageDrop = jest.fn()
 const mockPrimaryImage = new File(["primary"], "primary.png", { type: "image/png" })
 const mockExtraImage = new File(["extra"], "extra.png", { type: "image/png" })
 let mockPostImages = [mockPrimaryImage, mockExtraImage]
+let mockTournamentMap: TournamentMapResponse | null = null
 let mockCurrentRole: Role = Role.ORGANIZER
 let mockCurrentUserPresent = true
 let mockTournamentStarted = true
@@ -493,9 +521,11 @@ jest.mock("@/hooks/tournament/useImageUpload", () => ({
     postImages: mockPostImages,
     dzAnimate: false,
     formatBytes: (bytes: number) => `${bytes} B`,
-    handleImageUpload: jest.fn(),
+    handleImageUpload: mockHandleImageUpload,
+    handleSingleImageUpload: mockHandleSingleImageUpload,
     handleDragOver: jest.fn(),
-    handleDrop: jest.fn(),
+    handleDrop: mockHandleDrop,
+    handleSingleImageDrop: mockHandleSingleImageDrop,
     removeImageByKey: jest.fn(),
     resetUploads: jest.fn(),
   }),
@@ -543,6 +573,12 @@ jest.mock("@/hooks/use-api", () => ({
     isLoading: false,
     error: undefined,
     mutate: mockMutateSchedules,
+  }),
+  useTournamentMap: () => ({
+    map: mockTournamentMap,
+    isLoading: false,
+    error: undefined,
+    mutate: mockMutateMap,
   }),
   useTournamentJudges: (...args: unknown[]) => mockUseTournamentJudges(...args),
   useTournamentOrganizers: () => ({
@@ -594,6 +630,8 @@ jest.mock("@/lib/api", () => ({
     createAnnouncement: jest.fn(),
     updateAnnouncement: jest.fn(),
     addSchedule: jest.fn(),
+    createTournamentMap: jest.fn(),
+    updateTournamentMap: jest.fn(),
     createNews: jest.fn(),
     addJudge: jest.fn(),
     updateJudge: jest.fn(),
@@ -620,12 +658,12 @@ jest.mock("@/lib/api", () => ({
 
 const apiMock = api as jest.Mocked<typeof api>
 
-function okResponse() {
+function okResponse(body: unknown = {}) {
   return {
     ok: true,
     status: 200,
     text: async () => "",
-    json: async () => ({}),
+    json: async () => body,
   } as Response
 }
 
@@ -707,6 +745,7 @@ beforeEach(() => {
   mockTournamentOrganizersError = undefined
   mockMainOrganizerId = 1
   mockPostImages = [mockPrimaryImage, mockExtraImage]
+  mockTournamentMap = null
   mockTeamsContent = [{ id: 7, name: "Old Team", club: { id: 3, name: "Old Club" }, checkedIn: false }]
   mockUseTournamentTeams.mockImplementation(() => ({
     teams: {
@@ -836,6 +875,15 @@ describe("TournamentDetailPage mutations", () => {
     mockTournamentOrganizerIds = [null, 1]
 
     expect(() => render(<TournamentDetailPage />)).not.toThrow()
+  })
+
+  it("does not grant map editing to a participant who appears in the organizer list", () => {
+    mockCurrentRole = Role.PARTICIPANT
+    mockTournamentOrganizerIds = [1]
+
+    render(<TournamentDetailPage />)
+
+    expect(screen.queryByRole("button", { name: "Open Map" })).not.toBeInTheDocument()
   })
 
   it("lets only the main organizer control tournament visibility", () => {
@@ -1451,6 +1499,152 @@ describe("TournamentDetailPage mutations", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("You are not an organizer")
     expect(screen.getByTestId("add-post-modal")).toBeInTheDocument()
     expect(mockMutateAnnouncements).not.toHaveBeenCalled()
+  })
+
+  it("creates a tournament map and refreshes the map view", async () => {
+    mockPostImages = [mockPrimaryImage]
+    const savedMap: TournamentMapResponse = {
+      id: 71,
+      title: "Venue map",
+      description: "Use the east entrance.",
+      imageUrl: { id: 72, url: "/uploads/maps/venue.png" },
+    }
+    apiMock.createTournamentMap.mockResolvedValue(okResponse(savedMap))
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Open Map"))
+    expect(screen.getByTestId("single-map-upload-wiring")).toHaveTextContent("true")
+    fillPostForm("Venue map", "Use the east entrance.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    await waitFor(() => {
+      expect(apiMock.createTournamentMap).toHaveBeenCalledWith(
+        53,
+        { title: "Venue map", description: "Use the east entrance." },
+        mockPrimaryImage,
+      )
+    })
+    expect(mockMutateMap).toHaveBeenCalledWith(savedMap, { revalidate: false })
+    await waitFor(() => {
+      expect(screen.queryByTestId("add-post-modal")).not.toBeInTheDocument()
+    })
+  })
+
+  it("updates map metadata without requiring a replacement image", async () => {
+    mockTournamentMap = {
+      id: 71,
+      title: "Old venue map",
+      description: "Use the west entrance.",
+      imageUrl: { id: 72, url: "/uploads/maps/old.png" },
+    }
+    mockPostImages = []
+    const savedMap: TournamentMapResponse = {
+      ...mockTournamentMap,
+      title: "Updated venue map",
+      description: "Use the north entrance.",
+    }
+    apiMock.updateTournamentMap.mockResolvedValue(okResponse(savedMap))
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Edit Map"))
+
+    expect(screen.getByLabelText("Post title")).toHaveValue("Old venue map")
+    expect(screen.getByLabelText("Post description")).toHaveValue("Use the west entrance.")
+
+    fillPostForm("Updated venue map", "Use the north entrance.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    await waitFor(() => {
+      expect(apiMock.updateTournamentMap).toHaveBeenCalledWith(
+        53,
+        { title: "Updated venue map", description: "Use the north entrance." },
+        undefined,
+      )
+    })
+    expect(mockMutateMap).toHaveBeenCalledWith(savedMap, { revalidate: false })
+    await waitFor(() => {
+      expect(screen.queryByTestId("add-post-modal")).not.toBeInTheDocument()
+    })
+  })
+
+  it("passes a replacement image when updating a tournament map", async () => {
+    mockTournamentMap = {
+      id: 71,
+      title: "Venue map",
+      description: "Use the east entrance.",
+      imageUrl: { id: 72, url: "/uploads/maps/old.png" },
+    }
+    mockPostImages = [mockPrimaryImage]
+    apiMock.updateTournamentMap.mockResolvedValue(okResponse())
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Edit Map"))
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    await waitFor(() => {
+      expect(apiMock.updateTournamentMap).toHaveBeenCalledWith(
+        53,
+        { title: "Venue map", description: "Use the east entrance." },
+        mockPrimaryImage,
+      )
+    })
+  })
+
+  it("keeps the map modal open and shows backend map errors", async () => {
+    mockPostImages = [mockPrimaryImage]
+    apiMock.createTournamentMap.mockResolvedValue(errorResponse("Only organizers can edit this map", 403))
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Open Map"))
+    fillPostForm("Venue map", "Use the east entrance.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("You do not have permission to perform this action.")
+    expect(screen.getByTestId("add-post-modal")).toBeInTheDocument()
+    expect(mockMutateMap).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["ru", 409, "Карта для этого турнира уже существует. Обновите страницу и измените её."],
+    ["kk", 413, "Карта суретінің өлшемі 5 МБ-тан аспауы керек."],
+  ] as const)("localizes known map errors for %s", async (locale, status, message) => {
+    mockPostImages = [mockPrimaryImage]
+    apiMock.createTournamentMap.mockResolvedValue(errorResponse("English backend error", status))
+
+    renderWithLocale(locale)
+    await waitFor(() => expect(document.documentElement.lang).toBe(locale))
+    fireEvent.click(screen.getByText("Open Map"))
+    fillPostForm("Venue map", "Use the east entrance.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message)
+    expect(screen.getByTestId("add-post-modal")).toBeInTheDocument()
+    expect(mockMutateMap).not.toHaveBeenCalled()
+  })
+
+  it("does not report a persisted map as failed when the local cache update rejects", async () => {
+    const savedMap: TournamentMapResponse = {
+      id: 71,
+      title: "Venue map",
+      description: "Use the east entrance.",
+      imageUrl: { id: 72, url: "/uploads/maps/venue.png" },
+    }
+    mockPostImages = [mockPrimaryImage]
+    apiMock.createTournamentMap.mockResolvedValue(okResponse(savedMap))
+    mockMutateMap.mockRejectedValueOnce(new Error("cache unavailable"))
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByText("Open Map"))
+    fillPostForm("Venue map", "Use the east entrance.")
+    fireEvent.click(screen.getByText("Submit Post"))
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("add-post-modal")).not.toBeInTheDocument()
+    })
+    expect(apiMock.createTournamentMap).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Map added" }))
+    expect(mockToast).not.toHaveBeenCalledWith(expect.objectContaining({ variant: "destructive" }))
   })
 
   it("adds tournament news with a tournament tag and extra gallery images", async () => {

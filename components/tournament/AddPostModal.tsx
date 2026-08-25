@@ -2,13 +2,13 @@
 
 import type { ImagePreview } from "@/hooks/tournament/useImageUpload"
 import { resolveMediaUrl } from "@/lib/media"
-import { useId } from "react"
+import { useEffect, useId, useRef } from "react"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 const catalog: TranslationCatalog = {
-  en: { addAnnouncement: "Add Announcement", addSchedule: "Add Schedule Item", addMap: "Add Map Item", addNews: "Add News", addContent: "Add Content", editAnnouncement: "Edit Announcement", replace: "Replace Image", attach: "Attach Images", drag: "Drag and Drop here", or: "or", browse: "Browse files", current: "Current announcement", currentImage: "Current image", noPhoto: "No photo saved", remove: "Remove", title: "Title", titlePlaceholder: "Enter post title", description: "Description", descriptionPlaceholder: "Enter post description", category: "Category", important: "Important", update: "Update", info: "Info", submitting: "Submitting...", submit: "Submit", save: "Save changes" },
-  ru: { addAnnouncement: "Добавить объявление", addSchedule: "Добавить пункт расписания", addMap: "Добавить пункт карты", addNews: "Добавить новость", addContent: "Добавить материал", editAnnouncement: "Изменить объявление", replace: "Заменить изображение", attach: "Прикрепить изображения", drag: "Перетащите файлы сюда", or: "или", browse: "Выбрать файлы", current: "Текущее объявление", currentImage: "Текущее изображение", noPhoto: "Фото не сохранено", remove: "Удалить", title: "Заголовок", titlePlaceholder: "Введите заголовок публикации", description: "Описание", descriptionPlaceholder: "Введите описание публикации", category: "Категория", important: "Важно", update: "Обновление", info: "Информация", submitting: "Отправка...", submit: "Отправить", save: "Сохранить изменения" },
-  kk: { addAnnouncement: "Хабарландыру қосу", addSchedule: "Кесте тармағын қосу", addMap: "Карта тармағын қосу", addNews: "Жаңалық қосу", addContent: "Материал қосу", editAnnouncement: "Хабарландыруды өзгерту", replace: "Суретті ауыстыру", attach: "Суреттерді тіркеу", drag: "Файлдарды осында сүйреп әкеліңіз", or: "немесе", browse: "Файлдарды шолу", current: "Ағымдағы хабарландыру", currentImage: "Ағымдағы сурет", noPhoto: "Фото сақталмаған", remove: "Жою", title: "Тақырып", titlePlaceholder: "Жазба тақырыбын енгізіңіз", description: "Сипаттама", descriptionPlaceholder: "Жазба сипаттамасын енгізіңіз", category: "Санат", important: "Маңызды", update: "Жаңарту", info: "Ақпарат", submitting: "Жіберілуде...", submit: "Жіберу", save: "Өзгерістерді сақтау" },
+  en: { addAnnouncement: "Add Announcement", addSchedule: "Add Schedule Item", addMap: "Add Map", addNews: "Add News", addContent: "Add Content", editAnnouncement: "Edit Announcement", editMap: "Edit Map", close: "Close", replace: "Replace Image", attach: "Attach Images", drag: "Drag and Drop here", or: "or", browse: "Browse files", current: "Current announcement", currentMap: "Current map", currentImage: "Current image", noPhoto: "No photo saved", remove: "Remove", title: "Title", titlePlaceholder: "Enter post title", description: "Description", descriptionPlaceholder: "Enter post description", category: "Category", important: "Important", update: "Update", info: "Info", submitting: "Submitting...", submit: "Submit", save: "Save changes" },
+  ru: { addAnnouncement: "Добавить объявление", addSchedule: "Добавить пункт расписания", addMap: "Добавить карту", addNews: "Добавить новость", addContent: "Добавить материал", editAnnouncement: "Изменить объявление", editMap: "Изменить карту", close: "Закрыть", replace: "Заменить изображение", attach: "Прикрепить изображения", drag: "Перетащите файлы сюда", or: "или", browse: "Выбрать файлы", current: "Текущее объявление", currentMap: "Текущая карта", currentImage: "Текущее изображение", noPhoto: "Фото не сохранено", remove: "Удалить", title: "Заголовок", titlePlaceholder: "Введите заголовок публикации", description: "Описание", descriptionPlaceholder: "Введите описание публикации", category: "Категория", important: "Важно", update: "Обновление", info: "Информация", submitting: "Отправка...", submit: "Отправить", save: "Сохранить изменения" },
+  kk: { addAnnouncement: "Хабарландыру қосу", addSchedule: "Кесте тармағын қосу", addMap: "Карта қосу", addNews: "Жаңалық қосу", addContent: "Материал қосу", editAnnouncement: "Хабарландыруды өзгерту", editMap: "Картаны өзгерту", close: "Жабу", replace: "Суретті ауыстыру", attach: "Суреттерді тіркеу", drag: "Файлдарды осында сүйреп әкеліңіз", or: "немесе", browse: "Файлдарды шолу", current: "Ағымдағы хабарландыру", currentMap: "Ағымдағы карта", currentImage: "Ағымдағы сурет", noPhoto: "Фото сақталмаған", remove: "Жою", title: "Тақырып", titlePlaceholder: "Жазба тақырыбын енгізіңіз", description: "Сипаттама", descriptionPlaceholder: "Жазба сипаттамасын енгізіңіз", category: "Санат", important: "Маңызды", update: "Жаңарту", info: "Ақпарат", submitting: "Жіберілуде...", submit: "Жіберу", save: "Өзгерістерді сақтау" },
 }
 
 type NewsCategory = "Important" | "Update" | "Info"
@@ -68,21 +68,64 @@ export function AddPostModal({
 }: AddPostModalProps) {
   const t = useTranslations(catalog)
   const inputId = useId()
+  const dialogTitleId = useId()
+  const postTitleId = useId()
+  const postDescriptionId = useId()
+  const categoryId = useId()
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null)
   const isEditMode = mode === "edit"
+  const addModalTitles: Record<ModalContext, string> = {
+    announcements: t("addAnnouncement"),
+    schedule: t("addSchedule"),
+    map: t("addMap"),
+    news: t("addNews"),
+    "": t("addContent"),
+  }
   const modalTitle = isEditMode && modalContext === "announcements"
     ? t("editAnnouncement")
-    : ({ announcements: t("addAnnouncement"), schedule: t("addSchedule"), map: t("addMap"), news: t("addNews"), "": t("addContent") }[modalContext])
+    : isEditMode && modalContext === "map"
+      ? t("editMap")
+      : addModalTitles[modalContext]
   const resolvedSubmitLabel = submitLabel === "Save changes" ? t("save") : submitLabel === "Submit" ? t("submit") : submitLabel
   const resolvedCurrentImageUrl = resolveMediaUrl(currentImageUrl)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+    closeButtonRef.current?.focus()
+
+    return () => {
+      previouslyFocusedElementRef.current?.focus()
+      previouslyFocusedElementRef.current = null
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={dialogTitleId}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onClose()
+        }}
+        className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+      >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[#0D1321] text-[32px] font-bold">{modalTitle}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
+          <h2 id={dialogTitleId} className="text-[#0D1321] text-[32px] font-bold">{modalTitle}</h2>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label={t("close")}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
             ×
           </button>
         </div>
@@ -95,43 +138,45 @@ export function AddPostModal({
           className="space-y-6"
         >
           <div>
-            <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">
+            <p className="block text-[#9a8c98] text-[18px] font-medium mb-4">
               {isEditMode ? t("replace") : t("attach")}
-            </label>
+            </p>
             <div className="md:flex md:items-start md:gap-6">
-              <div
+              <button
+                type="button"
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 className={`relative border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#3E5C76] transition-colors cursor-pointer w-full md:flex-1 md:min-h-[360px] ${dzAnimate ? "dz-animate" : ""}`}
                 onClick={() => document.getElementById(inputId)?.click()}
+                aria-label={isEditMode ? t("replace") : t("attach")}
               >
-                <div className="flex flex-col items-center space-y-4">
+                <span className="flex flex-col items-center space-y-4">
                   <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <div className="text-[#4a4e69]">
-                    <p className="text-[18px] font-medium mb-2">{t("drag")}</p>
-                    <p className="text-[16px] mb-2">{t("or")}</p>
-                    <p className="text-[#3E5C76] text-[16px] font-medium hover:underline">{t("browse")}</p>
-                  </div>
-                </div>
-                <input
-                  id={inputId}
-                  type="file"
-                  multiple={!isEditMode}
-                  accept="image/*"
-                  onChange={(event) => {
-                    onImageUpload(event.currentTarget.files)
-                    event.currentTarget.value = ""
-                  }}
-                  className="hidden"
-                />
-              </div>
+                  <span className="text-[#4a4e69]">
+                    <span className="mb-2 block text-[18px] font-medium">{t("drag")}</span>
+                    <span className="mb-2 block text-[16px]">{t("or")}</span>
+                    <span className="block text-[16px] font-medium text-[#3E5C76] hover:underline">{t("browse")}</span>
+                  </span>
+                </span>
+              </button>
+              <input
+                id={inputId}
+                type="file"
+                multiple={!isEditMode && modalContext !== "map"}
+                accept="image/jpeg,image/png"
+                onChange={(event) => {
+                  onImageUpload(event.currentTarget.files)
+                  event.currentTarget.value = ""
+                }}
+                className="hidden"
+              />
 
               {isEditMode && resolvedCurrentImageUrl && imagePreviews.length === 0 ? (
                 <div className="mt-4 md:mt-0 md:w-[260px]">
                   <div className="overflow-hidden rounded-lg border border-gray-300 bg-white">
-                    <img src={resolvedCurrentImageUrl} alt={t("current")} className="h-40 w-full bg-[#F7F9FF] object-contain" />
+                    <img src={resolvedCurrentImageUrl} alt={modalContext === "map" ? t("currentMap") : t("current")} className="h-40 w-full bg-[#F7F9FF] object-contain" />
                     <div className="px-3 py-2 text-sm font-medium text-[#4a4e69]">{t("currentImage")}</div>
                   </div>
                 </div>
@@ -199,34 +244,39 @@ export function AddPostModal({
             )}
           </div>
 
-          {(modalContext === "announcements" || modalContext === "schedule" || modalContext === "news") && (
+          {(modalContext === "announcements" || modalContext === "schedule" || modalContext === "map" || modalContext === "news") && (
             <div className="space-y-6">
               <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("title")}</label>
+                <label htmlFor={postTitleId} className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("title")}</label>
                 <input
+                  id={postTitleId}
                   type="text"
                   value={postTitle}
                   onChange={(event) => onTitleChange(event.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
                   placeholder={t("titlePlaceholder")}
+                  maxLength={modalContext === "map" ? 120 : undefined}
                   required
                 />
               </div>
               <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("description")}</label>
+                <label htmlFor={postDescriptionId} className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("description")}</label>
                 <textarea
+                  id={postDescriptionId}
                   value={postDescription}
                   onChange={(event) => onDescriptionChange(event.target.value)}
                   rows={6}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
                   placeholder={t("descriptionPlaceholder")}
+                  maxLength={modalContext === "map" ? 5000 : undefined}
                   required
                 />
               </div>
               {modalContext === "announcements" && (
                 <div>
-                  <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("category")}</label>
+                  <label htmlFor={categoryId} className="block text-[#4a4e69] text-[16px] font-medium mb-3">{t("category")}</label>
                   <select
+                    id={categoryId}
                     value={selectedNewsCategory}
                     onChange={(event) => onCategoryChange(event.target.value as NewsCategory)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"

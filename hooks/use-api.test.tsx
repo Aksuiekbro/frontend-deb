@@ -7,7 +7,14 @@ import "@testing-library/jest-dom"
 import { SWRConfig, useSWRConfig } from "swr"
 import { api } from "@/lib/api"
 import type { UserResponse } from "@/types/user/user"
-import { useCurrentUser, useMyTournaments, useSingleNews, useTournamentJudges, useTournamentMainOrganizer } from "./use-api"
+import {
+  useCurrentUser,
+  useMyTournaments,
+  useSingleNews,
+  useTournamentJudges,
+  useTournamentMainOrganizer,
+  useTournamentMap,
+} from "./use-api"
 
 jest.mock("@/lib/api", () => ({
   api: {
@@ -16,6 +23,7 @@ jest.mock("@/lib/api", () => ({
     getJudges: jest.fn(),
     getMainOrganizer: jest.fn(),
     getNews: jest.fn(),
+    getTournamentMap: jest.fn(),
   },
 }))
 
@@ -24,6 +32,7 @@ const getMyTournamentsMock = api.getMyTournaments as jest.MockedFunction<typeof 
 const getJudgesMock = api.getJudges as jest.MockedFunction<typeof api.getJudges>
 const getMainOrganizerMock = api.getMainOrganizer as jest.MockedFunction<typeof api.getMainOrganizer>
 const getNewsMock = api.getNews as jest.MockedFunction<typeof api.getNews>
+const getTournamentMapMock = api.getTournamentMap as jest.MockedFunction<typeof api.getTournamentMap>
 
 function response(body: unknown, status = 200) {
   return {
@@ -111,6 +120,28 @@ function SingleNewsConsumer({ newsId }: { newsId: number }) {
     <output data-testid="single-news">
       {isLoading ? "loading" : newsItem?.title ?? `${status}:${error?.message}`}
     </output>
+  )
+}
+
+function TournamentMapConsumer({ tournamentId }: { tournamentId: number }) {
+  const { map, isLoading, error } = useTournamentMap(tournamentId)
+  const status = error && typeof error === "object" && "status" in error
+    ? String(error.status)
+    : "missing"
+  const mapState = map === null ? "no-map" : map === undefined ? "undefined-map" : map.title
+
+  return (
+    <output data-testid="tournament-map">
+      {isLoading ? "loading" : error ? `${status}:${error.message}` : mapState}
+    </output>
+  )
+}
+
+function renderTournamentMap(tournamentId = 53) {
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <TournamentMapConsumer tournamentId={tournamentId} />
+    </SWRConfig>,
   )
 }
 
@@ -307,6 +338,49 @@ describe("single News errors", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("single-news")).toHaveTextContent("404:API Error: 404")
+    })
+  })
+})
+
+describe("useTournamentMap", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("exposes the map returned by the backend", async () => {
+    getTournamentMapMock.mockResolvedValue(response({
+      id: 71,
+      title: "Campus map",
+      description: "Use the north entrance.",
+      imageUrl: { id: 72, url: "/uploads/maps/campus.png" },
+    }))
+
+    renderTournamentMap()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tournament-map")).toHaveTextContent("Campus map")
+    })
+    expect(getTournamentMapMock).toHaveBeenCalledWith(53)
+  })
+
+  it("treats a missing backend map as a normal empty result", async () => {
+    getTournamentMapMock.mockResolvedValue(response({ message: "Tournament map not found" }, 404))
+
+    renderTournamentMap()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tournament-map")).toHaveTextContent("no-map")
+    })
+    expect(screen.getByTestId("tournament-map")).not.toHaveTextContent("404:")
+  })
+
+  it("preserves non-404 backend failures as errors", async () => {
+    getTournamentMapMock.mockResolvedValue(response({ message: "Map service unavailable" }, 503))
+
+    renderTournamentMap()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tournament-map")).toHaveTextContent("503:")
     })
   })
 })

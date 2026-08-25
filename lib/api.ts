@@ -4,6 +4,7 @@ import { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/an
 import { CommentRequest, CommentResponse } from "@/types/tournament/announcement/comment";
 import { FeedbackGetParams, FeedbackRequest, FeedbackResponse } from "@/types/tournament/feedback";
 import { JudgeGetParams, JudgeRequest, JudgeResponse } from "@/types/tournament/judge";
+import { TournamentMapRequest, TournamentMapResponse, TournamentMapUpdateRequest } from "@/types/tournament/map";
 import { MatchResponse, MatchResultRequest, MatchUpdateRequest } from "@/types/tournament/match";
 import { RoundResponse, RoundUpdateRequest, SimpleRoundResponse } from "@/types/tournament/round/round";
 import { RoundGroupResponse, RoundGroupType } from "@/types/tournament/round/round-group";
@@ -256,6 +257,12 @@ export const api = {
     getTournaments: (params?: TournamentGetParams, pageable?: Pageable) => getPageable<SimpleTournamentResponse>("/tournaments", params, pageable),
     getMyTournaments: (params?: TournamentGetParams, pageable?: Pageable) => getPageable<SimpleTournamentResponse>("/tournaments/mine", params, pageable),
     getTournament: (id: number) => get<TournamentResponse>(`/tournaments/${id}`),
+
+    getTournamentMap: (tournamentId: number) => get<TournamentMapResponse>(`/tournaments/${tournamentId}/map`),
+
+    createTournamentMap: (tournamentId: number, body: TournamentMapRequest, image: File) => postMultipart<TournamentMapResponse>(`/tournaments/${tournamentId}/map`, body, {image}),
+
+    updateTournamentMap: (tournamentId: number, body: TournamentMapUpdateRequest, image?: File) => patchMultipart<TournamentMapResponse>(`/tournaments/${tournamentId}/map`, body, image ? {image} : undefined),
 
     createTournament: (body: TournamentRequest, image: File) => postMultipart<TournamentResponse>("/tournaments", body, {image}),
 
