@@ -3,6 +3,7 @@
  */
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import "@testing-library/jest-dom"
+import { useSWRConfig } from "swr"
 
 import NewsDetailPage from "./page"
 import { useCurrentUser, useSingleNews } from "@/hooks/use-api"
@@ -10,16 +11,19 @@ import { api } from "@/lib/api"
 import type { NewsResponse } from "@/types/news"
 import { Role, type UserResponse } from "@/types/user/user"
 
-const mockNavigate = jest.fn()
-const mockRefresh = jest.fn()
+const mockPush = jest.fn()
+const mockReplace = jest.fn()
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({ id: "42" }),
   useRouter: () => ({
-    push: mockNavigate,
-    replace: mockNavigate,
-    refresh: mockRefresh,
+    push: mockPush,
+    replace: mockReplace,
   }),
+}))
+
+jest.mock("swr", () => ({
+  useSWRConfig: jest.fn(),
 }))
 
 jest.mock("@/hooks/use-api", () => ({
@@ -36,8 +40,10 @@ jest.mock("@/lib/api", () => ({
 
 const mockUseCurrentUser = useCurrentUser as jest.MockedFunction<typeof useCurrentUser>
 const mockUseSingleNews = useSingleNews as jest.MockedFunction<typeof useSingleNews>
+const mockUseSWRConfig = useSWRConfig as jest.MockedFunction<typeof useSWRConfig>
 const mockApi = api as jest.Mocked<typeof api>
 const mockMutateNews = jest.fn()
+const mockMutateCache = jest.fn()
 
 const newsItem: NewsResponse = {
   id: 42,
@@ -112,6 +118,8 @@ describe("NewsDetailPage", () => {
     mockApi.updateNews.mockResolvedValue(okResponse(newsItem))
     mockApi.deleteNews.mockResolvedValue(okResponse())
     mockMutateNews.mockResolvedValue(newsItem)
+    mockMutateCache.mockResolvedValue(undefined)
+    mockUseSWRConfig.mockReturnValue({ mutate: mockMutateCache } as unknown as ReturnType<typeof useSWRConfig>)
   })
 
   it("renders the cover and every gallery photo", () => {
@@ -145,7 +153,7 @@ describe("NewsDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
   })
 
-  it("retains selected existing photos, uploads new photos, and preserves tags when editing", async () => {
+  it("retains selected existing photos, uploads new photos, and leaves tags to the backend", async () => {
     render(<NewsDetailPage />)
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }))
@@ -170,7 +178,6 @@ describe("NewsDetailPage", () => {
         {
           title: "Championship recap — updated",
           content: "The updated recap with the award ceremony.",
-          tags: ["tournament:53", "highlights"],
         },
         undefined,
         [newPhoto],
@@ -179,6 +186,38 @@ describe("NewsDetailPage", () => {
       )
     })
     expect(mockMutateNews).toHaveBeenCalledWith(newsItem, { revalidate: false })
+    expect(mockMutateCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
+    const matchesNewsList = mockMutateCache.mock.calls[0][0] as (key: unknown) => boolean
+    expect(matchesNewsList(["news", undefined, { page: 0 }])).toBe(true)
+    expect(matchesNewsList(["news-item", 42])).toBe(false)
+  })
+
+  it("does not replace concurrent gallery media or tags during a text-only edit", async () => {
+    render(<NewsDetailPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
+      target: { value: "Text-only update" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }))
+
+    await waitFor(() => {
+      expect(mockApi.updateNews).toHaveBeenCalledWith(
+        42,
+        {
+          title: "Text-only update",
+          content: "A full recap of the final rounds.",
+        },
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      )
+    })
   })
 
   it("moves an existing gallery photo earlier and submits retained image ids in that order", async () => {
@@ -194,7 +233,6 @@ describe("NewsDetailPage", () => {
         {
           title: "Championship recap",
           content: "A full recap of the final rounds.",
-          tags: ["tournament:53", "highlights"],
         },
         undefined,
         undefined,
@@ -222,7 +260,6 @@ describe("NewsDetailPage", () => {
         {
           title: "Championship recap",
           content: "A full recap of the final rounds.",
-          tags: ["tournament:53", "highlights"],
         },
         undefined,
         [secondNewPhoto, firstNewPhoto],
@@ -250,7 +287,6 @@ describe("NewsDetailPage", () => {
         {
           title: "Championship recap",
           content: "A full recap of the final rounds.",
-          tags: ["tournament:53", "highlights"],
         },
         undefined,
         [newPhoto],
@@ -316,7 +352,17 @@ describe("NewsDetailPage", () => {
     fireEvent.click(within(confirmation).getByRole("button", { name: "Delete" }))
 
     await waitFor(() => expect(mockApi.deleteNews).toHaveBeenCalledWith(42))
-    expect(mockNavigate).toHaveBeenCalledWith("/news")
+    expect(mockMutateNews).toHaveBeenCalledWith(undefined, { revalidate: false })
+    expect(mockMutateCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
+    const matchesNewsList = mockMutateCache.mock.calls[0][0] as (key: unknown) => boolean
+    expect(matchesNewsList(["news", undefined, { page: 0 }])).toBe(true)
+    expect(matchesNewsList(["news-item", 42])).toBe(false)
+    expect(mockReplace).toHaveBeenCalledWith("/news")
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
   it("supports keyboard dismissal and restores focus for delete confirmation", async () => {
@@ -351,6 +397,9 @@ describe("NewsDetailPage", () => {
         "News deletion is temporarily unavailable.",
       )
     })
-    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalled()
+    expect(mockMutateNews).not.toHaveBeenCalled()
+    expect(mockMutateCache).not.toHaveBeenCalled()
   })
 })

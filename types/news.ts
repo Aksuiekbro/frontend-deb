@@ -21,6 +21,12 @@ export interface NewsRequest {
     tags: string[];
 }
 
+export interface NewsUpdateRequest {
+    title: string;
+    content: string;
+    tags?: string[];
+}
+
 export interface NewsGetParams {
     searchTitle?: string;
     tags?: string[];

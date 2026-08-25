@@ -1,4 +1,4 @@
-import { NewsGetParams, NewsRequest, NewsResponse } from "@/types/news";
+import { NewsGetParams, NewsRequest, NewsResponse, NewsUpdateRequest } from "@/types/news";
 import { Pageable } from "@/types/page";
 import { AnnouncementRequest, AnnouncementResponse } from "@/types/tournament/announcement/announcement";
 import { CommentRequest, CommentResponse } from "@/types/tournament/announcement/comment";
@@ -232,7 +232,7 @@ export const api = {
 
     updateNews: (
         id: number,
-        body: NewsRequest,
+        body: NewsUpdateRequest,
         thumbnail?: File,
         images?: File[],
         retainedImageIds?: number[],

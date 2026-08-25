@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import { ArrowLeft, Edit3, Trash2 } from "lucide-react"
+import { useSWRConfig } from "swr"
 
 import {
   AlertDialog,
@@ -53,6 +54,8 @@ const catalog: TranslationCatalog = {
     deleteDescription: "This action cannot be undone. The article and its photos will be removed.",
     deleting: "Deleting...",
     deleteFailed: "Could not delete the News post.",
+    coverAlt: "{title} cover",
+    photoAlt: "{title} photo {number}",
   },
   ru: {
     back: "Назад к новостям",
@@ -85,6 +88,8 @@ const catalog: TranslationCatalog = {
     deleteDescription: "Это действие нельзя отменить. Статья и фотографии будут удалены.",
     deleting: "Удаление...",
     deleteFailed: "Не удалось удалить новость.",
+    coverAlt: "Обложка: {title}",
+    photoAlt: "{title}: фотография {number}",
   },
   kk: {
     back: "Жаңалықтарға оралу",
@@ -117,6 +122,8 @@ const catalog: TranslationCatalog = {
     deleteDescription: "Бұл әрекетті болдырмау мүмкін емес. Мақала мен фотосуреттер жойылады.",
     deleting: "Жойылуда...",
     deleteFailed: "Жаңалықты жою мүмкін болмады.",
+    coverAlt: "{title} мұқабасы",
+    photoAlt: "{title}: {number}-фотосурет",
   },
 }
 
@@ -141,8 +148,9 @@ export default function NewsDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const newsId = Number(params.id)
-  const { newsItem, isLoading, error, mutate } = useSingleNews(newsId)
+  const { newsItem, isLoading, error, mutate: mutateNewsItem } = useSingleNews(newsId)
   const { user: currentUser } = useCurrentUser()
+  const { mutate: mutateCache } = useSWRConfig()
   const { locale } = useLocale()
   const t = useTranslations(catalog)
 
@@ -150,6 +158,7 @@ export default function NewsDetailPage() {
   const [title, setTitle] = useState("")
   const [article, setArticle] = useState("")
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
+  const [initialGalleryImageIds, setInitialGalleryImageIds] = useState<number[]>([])
   const [newCover, setNewCover] = useState<File>()
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -164,7 +173,9 @@ export default function NewsDetailPage() {
     if (!newsItem) return
     setTitle(newsItem.title)
     setArticle(newsItem.content)
-    setGalleryItems(existingImages.map((image) => ({ kind: "existing", imageId: image.id })))
+    const imageIds = existingImages.map((image) => image.id)
+    setGalleryItems(imageIds.map((imageId) => ({ kind: "existing", imageId })))
+    setInitialGalleryImageIds(imageIds)
     setNewCover(undefined)
     setActionError(null)
     setIsEditing(true)
@@ -200,6 +211,10 @@ export default function NewsDetailPage() {
         newImagePositions.push(position)
       }
     })
+    const galleryChanged = galleryItems.length !== initialGalleryImageIds.length
+      || galleryItems.some((item, index) => (
+        item.kind !== "existing" || item.imageId !== initialGalleryImageIds[index]
+      ))
 
     try {
       setIsSaving(true)
@@ -209,12 +224,11 @@ export default function NewsDetailPage() {
         {
           title: nextTitle,
           content: nextArticle,
-          tags: newsItem.tags.map((tag) => tag.name),
         },
         newCover,
-        newImages.length > 0 ? newImages : undefined,
-        retainedImageIds,
-        newImages.length > 0 ? newImagePositions : undefined,
+        galleryChanged && newImages.length > 0 ? newImages : undefined,
+        galleryChanged ? retainedImageIds : undefined,
+        galleryChanged && newImages.length > 0 ? newImagePositions : undefined,
       )
 
       if (!response.ok) {
@@ -222,7 +236,14 @@ export default function NewsDetailPage() {
       }
 
       const updatedNews = await response.json()
-      await Promise.resolve(mutate(updatedNews, { revalidate: false })).catch(() => undefined)
+      await Promise.allSettled([
+        Promise.resolve(mutateNewsItem(updatedNews, { revalidate: false })),
+        mutateCache(
+          (key) => Array.isArray(key) && key[0] === "news",
+          undefined,
+          { revalidate: true },
+        ),
+      ])
       setIsEditing(false)
     } catch (saveError) {
       setActionError(saveError instanceof Error ? saveError.message : t("saveFailed"))
@@ -240,7 +261,15 @@ export default function NewsDetailPage() {
       if (!response.ok) {
         throw new Error(await readResponseError(response, { fallback: t("deleteFailed") }))
       }
-      router.push("/news")
+      await Promise.allSettled([
+        Promise.resolve(mutateNewsItem(undefined, { revalidate: false })),
+        mutateCache(
+          (key) => Array.isArray(key) && key[0] === "news",
+          undefined,
+          { revalidate: true },
+        ),
+      ])
+      router.replace("/news")
     } catch (deleteError) {
       setActionError(deleteError instanceof Error ? deleteError.message : t("deleteFailed"))
     } finally {
@@ -267,7 +296,7 @@ export default function NewsDetailPage() {
     <main className="min-h-screen bg-[#F1F1F1] px-4 py-10 text-[#0D1321] sm:px-8 lg:py-16">
       <article className="mx-auto max-w-5xl overflow-hidden rounded-2xl bg-white shadow-xl">
         {coverUrl ? (
-          <img src={coverUrl} alt={`${newsItem.title} cover`} className="max-h-[560px] w-full bg-[#E8EBF2] object-cover" />
+          <img src={coverUrl} alt={t("coverAlt", { title: newsItem.title })} className="max-h-[560px] w-full bg-[#E8EBF2] object-cover" />
         ) : null}
 
         <div className="space-y-8 p-6 sm:p-10 lg:p-14">
@@ -378,7 +407,7 @@ export default function NewsDetailPage() {
                       return (
                         <div key={item.kind === "existing" ? `existing-${item.imageId}` : `new-${item.key}`} className="relative overflow-hidden rounded-lg border border-[#D9DEE8]">
                           {image ? (
-                            <img src={resolveMediaUrl(image.url)} alt={`${newsItem.title} photo ${originalIndex + 1}`} className="aspect-square w-full object-cover" />
+                            <img src={resolveMediaUrl(image.url)} alt={t("photoAlt", { title: newsItem.title, number: originalIndex + 1 })} className="aspect-square w-full object-cover" />
                           ) : item.kind === "new" ? (
                             <div className="flex aspect-square flex-col items-center justify-center gap-2 bg-white p-4 text-center">
                               <span className="text-xs font-semibold uppercase tracking-wide text-[#748CAB]">{t("newPhoto", { number: newPhotoNumber })}</span>
@@ -410,7 +439,7 @@ export default function NewsDetailPage() {
           {!isEditing && existingImages.length > 0 ? (
             <section aria-label={t("currentPhotos")} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {existingImages.map((image, index) => (
-                <img key={image.id} src={resolveMediaUrl(image.url)} alt={`${newsItem.title} photo ${index + 1}`} className="aspect-[4/3] w-full rounded-xl bg-[#E8EBF2] object-cover" />
+                <img key={image.id} src={resolveMediaUrl(image.url)} alt={t("photoAlt", { title: newsItem.title, number: index + 1 })} className="aspect-[4/3] w-full rounded-xl bg-[#E8EBF2] object-cover" />
               ))}
             </section>
           ) : null}
