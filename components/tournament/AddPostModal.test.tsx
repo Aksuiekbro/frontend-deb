@@ -98,4 +98,74 @@ describe("AddPostModal", () => {
     expect(onImageUpload).toHaveBeenCalledWith(expect.objectContaining({ 0: file }))
     expect(inputValue).toBe("")
   })
+
+  it("collects map metadata and only accepts one map image", () => {
+    const onClose = jest.fn()
+    const { container } = render(
+      <AddPostModal
+        isOpen
+        modalContext="map"
+        postTitle="Venue map"
+        postDescription="Use the east entrance."
+        selectedNewsCategory="Info"
+        imagePreviews={[]}
+        uploadErrors={[]}
+        dzAnimate={false}
+        formatBytes={(bytes) => `${bytes} bytes`}
+        onClose={onClose}
+        onSubmit={() => undefined}
+        onTitleChange={() => undefined}
+        onDescriptionChange={() => undefined}
+        onCategoryChange={() => undefined}
+        onImageUpload={() => undefined}
+        onDragOver={() => undefined}
+        onDrop={() => undefined}
+        onRemoveImage={() => undefined}
+      />,
+    )
+
+    const dialog = screen.getByRole("dialog", { name: "Add Map" })
+    expect(dialog).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Close" })).toHaveFocus()
+    expect(screen.getByRole("button", { name: "Attach Images" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Title")).toHaveValue("Venue map")
+    expect(screen.getByLabelText("Description")).toHaveValue("Use the east entrance.")
+    expect(container.querySelector<HTMLInputElement>('input[type="file"]')).not.toHaveAttribute("multiple")
+
+    fireEvent.keyDown(dialog, { key: "Escape" })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows edit copy and the current image when editing a map", () => {
+    render(
+      <AddPostModal
+        isOpen
+        modalContext="map"
+        mode="edit"
+        postTitle="Venue map"
+        postDescription="Use the east entrance."
+        selectedNewsCategory="Info"
+        currentImageUrl="https://cdn.example.test/maps/venue.png"
+        imagePreviews={[]}
+        uploadErrors={[]}
+        dzAnimate={false}
+        formatBytes={(bytes) => `${bytes} bytes`}
+        onClose={() => undefined}
+        onSubmit={() => undefined}
+        onTitleChange={() => undefined}
+        onDescriptionChange={() => undefined}
+        onCategoryChange={() => undefined}
+        onImageUpload={() => undefined}
+        onDragOver={() => undefined}
+        onDrop={() => undefined}
+        onRemoveImage={() => undefined}
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Edit Map" })).toBeInTheDocument()
+    expect(screen.getByAltText("Current map")).toHaveAttribute(
+      "src",
+      "https://cdn.example.test/maps/venue.png",
+    )
+  })
 })

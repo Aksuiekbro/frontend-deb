@@ -25,6 +25,7 @@ import { MatchResponse } from '@/types/tournament/match'
 import { TeamResponse, SimpleTeamResponse } from '@/types/tournament/team'
 import { JudgeGetParams, JudgeResponse } from '@/types/tournament/judge'
 import { ScheduleResponse } from '@/types/tournament/schedule'
+import { TournamentMapResponse } from '@/types/tournament/map'
 import { FeedbackGetParams, FeedbackResponse } from '@/types/tournament/feedback'
 import { UrlResponse } from '@/types/util/url'
 import { TagResponse } from '@/types/tag'
@@ -238,6 +239,13 @@ const PREVIEW_SCHEDULES: ScheduleResponse[] = [
   },
 ]
 
+const PREVIEW_TOURNAMENT_MAP: TournamentMapResponse = {
+  id: 10002,
+  title: 'Preview venue map',
+  description: 'Use this map to find tournament rooms in preview mode.',
+  imageUrl: PREVIEW_IMAGE,
+}
+
 const PREVIEW_NEWS: NewsResponse[] = [
   {
     id: 901,
@@ -312,11 +320,13 @@ const PREVIEW_FEEDBACKS_PAGE = previewPage(PREVIEW_FEEDBACKS)
 async function fetcher<T>(fetchFn: () => Promise<Response>): Promise<T> {
   const response = await fetchFn()
   if (!response.ok) {
-    throw new Error(await readResponseError(response, {
+    const error = new Error(await readResponseError(response, {
       fallback: `API Error: ${response.status}`,
       unauthorized: 'Please sign in to continue.',
       serverError: 'Server error. Please try again later.',
     }))
+    Object.assign(error, { status: response.status })
+    throw error
   }
   return response.json()
 }
@@ -335,6 +345,25 @@ export function useTournaments(params?: TournamentGetParams, pageable?: Pageable
   return {
     tournaments: data,
     isLoading,
+    error,
+    mutate
+  }
+}
+
+export function useMyTournaments(params?: TournamentGetParams, pageable?: Pageable) {
+  const { user, isLoading: isCurrentUserLoading } = useCurrentUser()
+  const { data, error, isLoading, mutate } = useSWR(
+    user?.id ? ['my-tournaments', user.id, params, pageable] : null,
+    () => fetcher<PageResult<SimpleTournamentResponse>>(() => api.getMyTournaments(params, pageable)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    tournaments: data,
+    isLoading: isCurrentUserLoading || (Boolean(user?.id) && isLoading),
     error,
     mutate
   }
@@ -474,13 +503,25 @@ export function useNews(params?: NewsGetParams, pageable?: Pageable) {
 }
 
 export function useSingleNews(id: number) {
+  const previewNewsItem = PREVIEW_NEWS_PAGE.content.find((newsItem) => newsItem.id === id)
   const { data, error, isLoading, mutate } = useSWR(
-    ['news-item', id],
+    IS_PREVIEW ? null : ['news-item', id],
     () => fetcher<NewsResponse>(() => api.getNews(id)),
     {
       revalidateOnFocus: false,
     }
   )
+
+  if (IS_PREVIEW) {
+    return {
+      newsItem: previewNewsItem,
+      isLoading: false,
+      error: previewNewsItem
+        ? undefined
+        : Object.assign(new Error('Preview News item not found'), { status: 404 }),
+      mutate: async () => previewNewsItem,
+    }
+  }
 
   return {
     newsItem: data,
@@ -599,8 +640,12 @@ export function useTournamentTeam(tournamentId: number, teamId: number) {
 }
 
 export function useTournamentJudges(tournamentId: number, params?: JudgeGetParams, pageable?: Pageable) {
+  const { user, isLoading: isCurrentUserLoading } = useCurrentUser()
+  const viewerScope = isCurrentUserLoading ? null : (user?.id ?? 'guest')
   const { data, error, isLoading, mutate } = useSWR(
-    IS_PREVIEW ? null : ['tournament-judges', tournamentId, params, pageable],
+    IS_PREVIEW || viewerScope === null
+      ? null
+      : ['tournament-judges', tournamentId, viewerScope, params, pageable],
     () => fetcher<PageResult<JudgeResponse>>(() => api.getJudges(tournamentId, params, pageable)),
     {
       revalidateOnFocus: false,
@@ -619,7 +664,7 @@ export function useTournamentJudges(tournamentId: number, params?: JudgeGetParam
 
   return {
     judges: data,
-    isLoading,
+    isLoading: isCurrentUserLoading || isLoading,
     error,
     mutate,
   }
@@ -646,6 +691,33 @@ export function useTournamentOrganizers(tournamentId: number) {
 
   return {
     organizers: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export function useTournamentMainOrganizer(tournamentId: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-main-organizer', tournamentId],
+    () => fetcher<UserResponse>(() => api.getMainOrganizer(tournamentId)),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      mainOrganizer: PREVIEW_ORGANIZER_ACCOUNT,
+      isLoading: false,
+      error: undefined,
+      mutate: async () => PREVIEW_ORGANIZER_ACCOUNT,
+    }
+  }
+
+  return {
+    mainOrganizer: data,
     isLoading,
     error,
     mutate,
@@ -707,6 +779,50 @@ export function useTournamentSchedules(tournamentId: number) {
 
   return {
     schedules: data,
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+export function useTournamentMap(tournamentId: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    IS_PREVIEW ? null : ['tournament-map', tournamentId],
+    () => fetcher<TournamentMapResponse>(() => api.getTournamentMap(tournamentId))
+      .catch((fetchError: unknown) => {
+        if (
+          fetchError
+          && typeof fetchError === 'object'
+          && 'status' in fetchError
+          && fetchError.status === 404
+        ) {
+          return null
+        }
+        throw fetchError
+      }),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  if (IS_PREVIEW) {
+    return {
+      map: PREVIEW_TOURNAMENT_MAP,
+      isLoading: false,
+      error: undefined,
+      mutate: async (
+        nextMap?: TournamentMapResponse | null,
+        options?: { revalidate?: boolean },
+      ) => {
+        void options
+        return nextMap ?? PREVIEW_TOURNAMENT_MAP
+      },
+    }
+  }
+
+  return {
+    map: data,
     isLoading,
     error,
     mutate,

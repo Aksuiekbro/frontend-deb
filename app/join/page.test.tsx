@@ -1,9 +1,9 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import type { ComponentPropsWithoutRef } from "react"
+import { StrictMode, type ComponentPropsWithoutRef } from "react"
 import JoinDebatesPage from "./page"
 import { api } from "@/lib/api"
 import { DebateFormat, TournamentLeague } from "@/types/tournament/tournament"
@@ -65,12 +65,20 @@ function response(body: unknown, status = 200) {
   } as Response
 }
 
-function tournamentsPage() {
+function tournamentsPage(content = [tournament], totalPages = 1) {
   return {
-    content: [tournament],
-    totalElements: 1,
-    totalPages: 1,
+    content,
+    totalElements: content.length,
+    totalPages,
   }
+}
+
+function deferredResponse() {
+  let resolve!: (value: Response) => void
+  const promise = new Promise<Response>((promiseResolve) => {
+    resolve = promiseResolve
+  })
+  return { promise, resolve }
 }
 
 async function openRegistrationModal() {
@@ -101,13 +109,152 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
+describe("JoinDebatesPage tournament pagination", () => {
+  it("loads page zero once in Strict Mode", async () => {
+    render(
+      <StrictMode>
+        <JoinDebatesPage />
+      </StrictMode>,
+    )
+
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+    expect(apiMock.getTournaments).toHaveBeenCalledTimes(1)
+  })
+
+  it("loads page zero once on initial render", async () => {
+    render(<JoinDebatesPage />)
+
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+    expect(apiMock.getTournaments).toHaveBeenCalledTimes(1)
+    expect(apiMock.getTournaments).toHaveBeenCalledWith(
+      expect.objectContaining({
+        searchName: undefined,
+        searchLocation: undefined,
+      }),
+      { page: 0, size: 10, sort: "startDate,desc" },
+    )
+  })
+
+  it("resets to page zero once when a filter changes", async () => {
+    const filteredTournament = { ...tournament, id: 54, name: "Astana Open" }
+
+    render(<JoinDebatesPage />)
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+
+    apiMock.getTournaments.mockClear()
+    apiMock.getTournaments.mockResolvedValue(response(tournamentsPage([filteredTournament])))
+    fireEvent.change(screen.getByPlaceholderText("Place/City"), { target: { value: "Astana" } })
+
+    expect(await screen.findByText("Astana Open")).toBeInTheDocument()
+    expect(apiMock.getTournaments).toHaveBeenCalledTimes(1)
+    expect(apiMock.getTournaments).toHaveBeenCalledWith(
+      expect.objectContaining({ searchLocation: "Astana" }),
+      { page: 0, size: 10, sort: "startDate,desc" },
+    )
+  })
+
+  it("appends each next page once and removes overlapping tournament ids", async () => {
+    const secondTournament = { ...tournament, id: 55, name: "Justice Open" }
+    apiMock.getTournaments
+      .mockResolvedValueOnce(response(tournamentsPage([tournament], 2)))
+      .mockResolvedValueOnce(response(tournamentsPage([tournament, secondTournament], 2)))
+
+    render(<JoinDebatesPage />)
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Load More Debates" }))
+    fireEvent.click(screen.getByRole("button", { name: "Load More Debates" }))
+
+    expect(await screen.findByText("Justice Open")).toBeInTheDocument()
+    expect(screen.getAllByText("Climate Cup")).toHaveLength(1)
+    expect(apiMock.getTournaments).toHaveBeenCalledTimes(2)
+    expect(apiMock.getTournaments).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Object),
+      { page: 1, size: 10, sort: "startDate,desc" },
+    )
+    expect(screen.queryByRole("button", { name: "Load More Debates" })).not.toBeInTheDocument()
+  })
+
+  it("ignores a late response from filters that are no longer active", async () => {
+    const initialRequest = deferredResponse()
+    const filteredRequest = deferredResponse()
+    const filteredTournament = { ...tournament, id: 56, name: "Almaty Invitational" }
+    apiMock.getTournaments
+      .mockReturnValueOnce(initialRequest.promise)
+      .mockReturnValueOnce(filteredRequest.promise)
+
+    render(<JoinDebatesPage />)
+    await waitFor(() => expect(apiMock.getTournaments).toHaveBeenCalledTimes(1))
+
+    fireEvent.change(screen.getByPlaceholderText("Place/City"), { target: { value: "Almaty" } })
+    await waitFor(() => expect(apiMock.getTournaments).toHaveBeenCalledTimes(2))
+
+    await act(async () => {
+      filteredRequest.resolve(response(tournamentsPage([filteredTournament])))
+      await filteredRequest.promise
+    })
+    expect(await screen.findByText("Almaty Invitational")).toBeInTheDocument()
+
+    await act(async () => {
+      initialRequest.resolve(response(tournamentsPage()))
+      await initialRequest.promise
+    })
+    expect(screen.getByText("Almaty Invitational")).toBeInTheDocument()
+    expect(screen.queryByText("Climate Cup")).not.toBeInTheDocument()
+  })
+
+  it("ignores a late response from a page load after a filter reset", async () => {
+    const pageOneRequest = deferredResponse()
+    const filteredRequest = deferredResponse()
+    const filteredTournament = { ...tournament, id: 57, name: "Shymkent Open" }
+    const staleTournament = { ...tournament, id: 58, name: "Stale Page Tournament" }
+    apiMock.getTournaments
+      .mockResolvedValueOnce(response(tournamentsPage([tournament], 2)))
+      .mockReturnValueOnce(pageOneRequest.promise)
+      .mockReturnValueOnce(filteredRequest.promise)
+
+    render(<JoinDebatesPage />)
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Load More Debates" }))
+    await waitFor(() => expect(apiMock.getTournaments).toHaveBeenCalledTimes(2))
+
+    fireEvent.change(screen.getByPlaceholderText("Place/City"), { target: { value: "Shymkent" } })
+    await waitFor(() => expect(apiMock.getTournaments).toHaveBeenCalledTimes(3))
+
+    await act(async () => {
+      filteredRequest.resolve(response(tournamentsPage([filteredTournament])))
+      await filteredRequest.promise
+    })
+    expect(await screen.findByText("Shymkent Open")).toBeInTheDocument()
+
+    await act(async () => {
+      pageOneRequest.resolve(response(tournamentsPage([staleTournament], 2)))
+      await pageOneRequest.promise
+    })
+    expect(screen.getByText("Shymkent Open")).toBeInTheDocument()
+    expect(screen.queryByText("Stale Page Tournament")).not.toBeInTheDocument()
+  })
+})
+
 describe("JoinDebatesPage team registration", () => {
-  it("shows backend tournament loading errors instead of silently rendering an empty list", async () => {
-    apiMock.getTournaments.mockResolvedValue(response({ message: "Backend is temporarily unavailable" }, 503))
+  it("offers a page-zero retry after the initial tournament load fails", async () => {
+    apiMock.getTournaments
+      .mockResolvedValueOnce(response({ message: "Backend is temporarily unavailable" }, 503))
+      .mockResolvedValueOnce(response(tournamentsPage()))
 
     render(<JoinDebatesPage />)
 
     expect(await screen.findByText("Backend is temporarily unavailable")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+    expect(apiMock.getTournaments).toHaveBeenCalledTimes(2)
+    expect(apiMock.getTournaments).toHaveBeenLastCalledWith(
+      expect.any(Object),
+      { page: 0, size: 10, sort: "startDate,desc" },
+    )
   })
 
   it("registers a participant team with the participant profile id and teammate usernames", async () => {

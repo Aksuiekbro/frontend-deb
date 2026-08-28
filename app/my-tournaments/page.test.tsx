@@ -7,7 +7,8 @@ import "@testing-library/jest-dom"
 import MyTournamentsPage from "./page"
 import { LocaleProvider } from "../../lib/i18n"
 
-const mockUseTournaments = jest.fn()
+const mockUseMyTournaments = jest.fn()
+const mockUseCurrentUser = jest.fn()
 
 jest.mock("../../components/Header", () => function Header() {
   return <div data-testid="header" />
@@ -18,7 +19,8 @@ jest.mock("next/image", () => function Image() {
 })
 
 jest.mock("../../hooks/use-api", () => ({
-  useTournaments: (...args: unknown[]) => mockUseTournaments(...args),
+  useMyTournaments: (...args: unknown[]) => mockUseMyTournaments(...args),
+  useCurrentUser: () => mockUseCurrentUser(),
 }))
 
 const tournament = (overrides: Record<string, unknown>) => ({
@@ -51,7 +53,11 @@ describe("MyTournamentsPage", () => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date("2026-06-19T12:00:00.000Z"))
     window.localStorage.setItem("debetter-locale", "en")
-    mockUseTournaments.mockImplementation((params?: { startDateTo?: string; startDateFrom?: string }) => {
+    mockUseCurrentUser.mockReturnValue({
+      user: { id: 7, username: "member" },
+      isLoading: false,
+    })
+    mockUseMyTournaments.mockImplementation((params?: { startDateTo?: string; startDateFrom?: string }) => {
       if (params?.startDateTo) {
         return {
           tournaments: { content: [tournament({ id: 11, name: "Past Cup", startDate: "2026-06-10T10:00:00", endDate: "2026-06-11T18:00:00", status: "COMPLETED" })] },
@@ -89,12 +95,12 @@ describe("MyTournamentsPage", () => {
   it("requests date-filtered tournament lists and switches between past, ongoing, and upcoming tabs", () => {
     renderPage()
 
-    expect(mockUseTournaments).toHaveBeenNthCalledWith(
+    expect(mockUseMyTournaments).toHaveBeenNthCalledWith(
       1,
       { startDateTo: "2026-06-19T00:00:00" },
       { page: 0, size: 20, sort: ["startDate,desc"] },
     )
-    expect(mockUseTournaments).toHaveBeenNthCalledWith(
+    expect(mockUseMyTournaments).toHaveBeenNthCalledWith(
       2,
       { startDateFrom: "2026-06-19T00:00:00" },
       { page: 0, size: 20, sort: ["startDate,asc"] },
@@ -109,6 +115,36 @@ describe("MyTournamentsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Upcoming" }))
     expect(screen.getByText("Upcoming Cup")).toBeInTheDocument()
+
+    expect(mockUseMyTournaments).toHaveBeenNthCalledWith(
+      3,
+      undefined,
+      { page: 0, size: 50, sort: ["startDate,desc"] },
+    )
+  })
+
+  it("asks guests to sign in instead of showing an empty membership history", () => {
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isLoading: false })
+
+    renderPage()
+
+    expect(screen.getByRole("heading", { name: "Sign in to view My Tournaments" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Log In" })).toHaveAttribute("href", "/auth?mode=login")
+    expect(screen.queryByText("You haven't participated in any tournaments yet.")).not.toBeInTheDocument()
+  })
+
+  it("shows a retryable error when the current session cannot be verified", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isLoading: false,
+      error: new Error("Session lookup failed"),
+    })
+
+    renderPage()
+
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn't verify your session. Please try again.")
+    expect(screen.queryByRole("link", { name: "Log In" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument()
   })
 
   it.each([

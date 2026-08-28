@@ -1406,6 +1406,84 @@ describe("ResultsSection", () => {
     expect(onSelectedRoundChange).toHaveBeenCalledWith("Round 2")
   })
 
+  it("renders only configured team-elimination rounds in the results navigation", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="1/4"
+        selectedRound="1/4"
+        rounds={[
+          { id: 901, name: "1/4", roundNumber: 1, customFormat: "APF" as never },
+          { id: 902, name: "1/2", roundNumber: 2, customFormat: "APF" as never },
+          { id: 903, name: "Final", roundNumber: 3, customFormat: "APF" as never },
+        ]}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+      />,
+    )
+
+    const navigation = screen.getByRole("navigation", { name: "Results rounds" })
+    expect(within(navigation).getByRole("button", { name: "1/4" })).toBeInTheDocument()
+    expect(within(navigation).getByRole("button", { name: "1/2" })).toBeInTheDocument()
+    expect(within(navigation).getByRole("button", { name: "Final" })).toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/16" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/8" })).not.toBeInTheDocument()
+  })
+
+  it("sorts configured elimination navigation by round number without mutating the source", () => {
+    const eliminationRounds = [
+      { id: 903, name: "Final", roundNumber: 3, customFormat: "APF" as never },
+      { id: 901, name: "1/4", roundNumber: 1, customFormat: "APF" as never },
+      { id: 902, name: "1/2", roundNumber: 2, customFormat: "APF" as never },
+    ]
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="1/4"
+        selectedRound="1/4"
+        rounds={eliminationRounds}
+        eliminationRounds={eliminationRounds}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+      />,
+    )
+
+    const navigation = screen.getByRole("navigation", { name: "Results rounds" })
+    expect(within(navigation).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "APF Results",
+      "APF Speaker Score",
+      "1/4",
+      "1/2",
+      "Final",
+    ])
+    expect(eliminationRounds.map((round) => round.id)).toEqual([903, 901, 902])
+  })
+
+  it("renders a final-only LD navigation without inventing 1/16", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        selectedResultsOption="LD"
+        roundGroupType={RoundGroupType.SOLO_ELIMINATION}
+        activeResultsSection="Final"
+        selectedRound="Final"
+        rounds={[{ id: 904, name: "Final", roundNumber: 1, customFormat: "LD" as never }]}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+      />,
+    )
+
+    const navigation = screen.getByRole("navigation", { name: "Results rounds" })
+    expect(within(navigation).getByRole("button", { name: "Final" })).toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/16" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/8" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/4" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/2" })).not.toBeInTheDocument()
+  })
+
   it("hydrates submitted results from local fallback when the match list omits scores after refresh", async () => {
     const storageKey = "tournament:53:round-group:101:round:201:match-results"
     window.localStorage.setItem(storageKey, JSON.stringify({

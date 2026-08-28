@@ -15,6 +15,7 @@ interface JudgesSectionProps {
   judges?: PageResult<JudgeResponse>
   judgesLoading: boolean
   judgesError?: Error
+  showContactDetails?: boolean
   onAddJudge?: () => void
   onToggleJudgeCheckIn?: (judge: JudgeResponse) => void
   onEditJudge?: (judge: JudgeResponse) => void
@@ -27,6 +28,7 @@ export function JudgesSection({
   judges,
   judgesLoading,
   judgesError,
+  showContactDetails = false,
   onAddJudge,
   onToggleJudgeCheckIn,
   onEditJudge,
@@ -37,7 +39,7 @@ export function JudgesSection({
   const t = useTranslations(catalog)
   const rows = judges?.content ?? []
   const hasActions = Boolean(onEditJudge || onDeleteJudge)
-  const columnCount = hasActions ? 5 : 4
+  const columnCount = 2 + (showContactDetails ? 2 : 0) + (hasActions ? 1 : 0)
 
   return (
     <div>
@@ -46,8 +48,12 @@ export function JudgesSection({
           <thead>
             <tr className="bg-gray-100">
               <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("name")}</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("email")}</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("phone")}</th>
+              {showContactDetails ? (
+                <>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("email")}</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">{t("phone")}</th>
+                </>
+              ) : null}
               <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("checkIn")}</th>
               {hasActions ? (
                 <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">{t("actions")}</th>
@@ -71,8 +77,12 @@ export function JudgesSection({
               rows.map((judge) => (
                 <tr key={judge.id} className="hover:bg-gray-50">
                   <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{judge.fullName}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.email || "—"}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.phoneNumber || "—"}</td>
+                  {showContactDetails ? (
+                    <>
+                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.email || "—"}</td>
+                      <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.phoneNumber || "—"}</td>
+                    </>
+                  ) : null}
                   <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321]">
                     {onToggleJudgeCheckIn ? (
                       <button
