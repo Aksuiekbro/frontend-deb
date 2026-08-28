@@ -23,6 +23,7 @@ export interface OrganizerBelowProps {
 const messages: TranslationCatalog = {
   en: {
     joinDebates: "Join Debates",
+    browseDebates: "Browse Debates",
     hostDebate: "Host Debate",
     connectUs: "Connect Us",
     advicePrefix: "Get",
@@ -53,6 +54,7 @@ const messages: TranslationCatalog = {
   },
   ru: {
     joinDebates: "Присоединиться к дебатам",
+    browseDebates: "Смотреть дебаты",
     hostDebate: "Провести дебаты",
     connectUs: "Связаться с нами",
     advicePrefix: "Получите",
@@ -84,6 +86,7 @@ const messages: TranslationCatalog = {
   },
   kk: {
     joinDebates: "Пікірсайыстарға қосылу",
+    browseDebates: "Пікірсайыстарды көру",
     hostDebate: "Пікірсайыс өткізу",
     connectUs: "Бізбен байланысу",
     advicePrefix: "Пікірсайыс жолы туралы",
@@ -140,12 +143,12 @@ export default function OrganizerBelow({
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
+          <Link
+            href="/join"
             className="px-4 py-2 rounded-md bg-[#0D1321] text-white text-sm md:text-base font-medium hover:bg-[#0D1321]/90 transition-colors"
           >
-            {t("joinDebates")}
-          </button>
+            {t("browseDebates")}
+          </Link>
           <Link
             href="/create-tournament"
             className="px-4 py-2 rounded-md border border-black/20 text-sm md:text-base font-medium hover:bg-black/5 transition-colors"

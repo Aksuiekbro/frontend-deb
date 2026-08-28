@@ -228,4 +228,65 @@ describe("Dashboard", () => {
     expect(screen.queryByTestId("participant-invitation-inbox")).not.toBeInTheDocument()
     expect(screen.queryByTestId("organizer-invitation-inbox")).not.toBeInTheDocument()
   })
+
+  it("shows role-appropriate tournament actions", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 1,
+        firstName: "Dauren",
+        lastName: "Zhunussov",
+        role: "PARTICIPANT",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+
+    const participantDashboard = renderDashboard()
+
+    expect(screen.getAllByRole("link", { name: "Join Debates" })).not.toHaveLength(0)
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+
+    participantDashboard.unmount()
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 2,
+        firstName: "Olivia",
+        lastName: "Organizer",
+        role: "ORGANIZER",
+      },
+      isLoading: false,
+      error: undefined,
+    })
+    renderDashboard()
+
+    expect(screen.getAllByRole("link", { name: "Browse Debates" })).not.toHaveLength(0)
+    expect(screen.getByRole("link", { name: "Host Debate" })).toHaveAttribute("href", "/create-tournament")
+  })
+
+  it("waits for the user role before rendering tournament actions", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: null,
+      isLoading: true,
+      error: undefined,
+    })
+
+    renderDashboard()
+
+    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+  })
+
+  it("fails closed when the current role cannot be loaded", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isLoading: false,
+      error: new Error("current user request failed"),
+    })
+
+    renderDashboard()
+
+    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Browse Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+  })
 })

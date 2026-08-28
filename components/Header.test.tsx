@@ -81,6 +81,50 @@ describe("Header auth links", () => {
       "href",
       "/my-tournaments",
     )
+    expect(screen.getByRole("link", { name: "Browse Debates" })).toHaveAttribute("href", "/join")
+    expect(screen.getByRole("link", { name: "Host Debate" })).toHaveAttribute("href", "/create-tournament")
+  })
+
+  it("does not offer tournament hosting to participants", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: {
+        id: 18,
+        username: "debater",
+        firstName: "Debate",
+        lastName: "Participant",
+        role: Role.PARTICIPANT,
+      },
+      isLoading: false,
+    })
+
+    render(<Header />)
+
+    expect(screen.getByRole("link", { name: "Join Debates" })).toHaveAttribute("href", "/join")
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "My Tournaments" })).toHaveAttribute("href", "/my-tournaments")
+  })
+
+  it("waits for the user role before rendering tournament actions", () => {
+    mockUseCurrentUser.mockReturnValue({ user: null, isLoading: true })
+
+    render(<Header />)
+
+    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+  })
+
+  it("fails closed when the current role cannot be loaded", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isLoading: false,
+      error: new Error("current user request failed"),
+    })
+
+    render(<Header />)
+
+    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Browse Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
   })
 
   it.each([
