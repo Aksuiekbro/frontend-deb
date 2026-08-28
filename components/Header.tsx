@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-api";
 import { resolveMediaUrl } from "@/lib/media";
+import { Role } from "@/types/user/user";
 import {
   localeLabels,
   locales,
@@ -14,6 +15,7 @@ import {
 const headerMessages = {
   en: {
     joinDebates: "Join Debates",
+    browseDebates: "Browse Debates",
     hostDebate: "Host Debate",
     rating: "Rating",
     news: "News",
@@ -25,6 +27,7 @@ const headerMessages = {
   },
   ru: {
     joinDebates: "Участвовать в дебатах",
+    browseDebates: "Смотреть дебаты",
     hostDebate: "Провести дебаты",
     rating: "Рейтинг",
     news: "Новости",
@@ -36,6 +39,7 @@ const headerMessages = {
   },
   kk: {
     joinDebates: "Дебатқа қатысу",
+    browseDebates: "Пікірсайыстарды көру",
     hostDebate: "Дебат өткізу",
     rating: "Рейтинг",
     news: "Жаңалықтар",
@@ -54,6 +58,9 @@ export default function Header() {
   const t = useTranslations(headerMessages);
 
   const isLoggedIn = !!user;
+  const isOrganizer = user?.role === Role.ORGANIZER;
+  const canBrowseDebates = !isLoading;
+  const canHostDebates = isOrganizer || (!isLoading && !user);
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return '';
@@ -67,8 +74,16 @@ export default function Header() {
         <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</Link>
         <nav className="flex flex-wrap gap-x-6 gap-y-1 lg:gap-x-12">
           {/* Nav Links */}
-          <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("joinDebates")}</Link>
-          <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("hostDebate")}</Link>
+          {canBrowseDebates && (
+            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+              {isOrganizer ? t("browseDebates") : t("joinDebates")}
+            </Link>
+          )}
+          {canHostDebates && (
+            <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+              {t("hostDebate")}
+            </Link>
+          )}
           <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("rating")}</Link>
           <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("news")}</Link>
         </nav>

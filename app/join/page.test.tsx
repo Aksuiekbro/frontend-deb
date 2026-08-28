@@ -140,7 +140,7 @@ describe("JoinDebatesPage team registration", () => {
     expect(screen.getByText("Tournament Registration")).toBeInTheDocument()
   })
 
-  it("blocks organizer accounts before submitting to the backend", async () => {
+  it("does not offer organizers a team-registration action", async () => {
     mockCurrentUser = {
       id: 1,
       username: "organizer",
@@ -149,11 +149,9 @@ describe("JoinDebatesPage team registration", () => {
     }
 
     render(<JoinDebatesPage />)
-    await openRegistrationModal()
-    fillRegistrationForm()
-    fireEvent.click(screen.getByText("Register Team"))
 
-    expect(await screen.findByText("Only participant accounts can register a team")).toBeInTheDocument()
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Join Debates" })).not.toBeInTheDocument()
     expect(apiMock.registerTeam).not.toHaveBeenCalled()
   })
 

@@ -249,6 +249,7 @@ export default function JoinDebatesPage() {
   const selectedTournament = tournaments.find((tournament) => tournament.id === selectedTournamentId)
   const maxInvitedParticipants = getMaxInvitedParticipants(selectedTournament?.preliminaryFormat)
   const isGuestRegistration = !currentUser && !currentUserLoading
+  const canRegisterForTournaments = !currentUserLoading && currentUser?.role !== Role.ORGANIZER
   const formatDate = (date?: string) => {
     if (!date) return t("notAvailable")
     const parsedDate = new Date(date)
@@ -617,18 +618,20 @@ export default function JoinDebatesPage() {
                     <Link href={`/tournament/${tournament.id}`} className="text-[#FFFFFF] underline hover:text-[#748CAB] text-[14px] font-normal">
                       {t("more")}
                     </Link>
-                    <button
-                      onClick={() => {
-                        setSelectedTournamentId(tournament.id)
-                        setRegistrationError(isGuestRegistration ? t("signInBeforeRegistering") : null)
-                        setRegistrationSuccess(false)
-                        setSpeakerTwoUsername("")
-                        setIsModalOpen(true)
-                      }}
-                      className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
-                    >
-                      {t("joinDebates")}
-                    </button>
+                    {canRegisterForTournaments && (
+                      <button
+                        onClick={() => {
+                          setSelectedTournamentId(tournament.id)
+                          setRegistrationError(isGuestRegistration ? t("signInBeforeRegistering") : null)
+                          setRegistrationSuccess(false)
+                          setSpeakerTwoUsername("")
+                          setIsModalOpen(true)
+                        }}
+                        className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal"
+                      >
+                        {t("joinDebates")}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
