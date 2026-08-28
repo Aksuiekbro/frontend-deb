@@ -152,8 +152,9 @@ export default function Dashboard() {
   const { user: currentUser, isLoading: userLoading, error: userError } = useCurrentUser()
   const { upcomingTournaments, isLoading: upcomingLoading, error: upcomingError } = useUpcomingTournaments(6)
   const isOrganizer = currentUser?.role === Role.ORGANIZER
-  const canBrowseDebates = !userLoading
-  const canHostDebates = isOrganizer || (!userLoading && !currentUser)
+  const hasResolvedUser = !userLoading && !userError
+  const canBrowseDebates = hasResolvedUser
+  const canHostDebates = hasResolvedUser && (isOrganizer || !currentUser)
 
   // Get past tournaments
   const currentDate = new Date().toISOString().slice(0,19)

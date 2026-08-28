@@ -27,12 +27,14 @@ let mockCurrentUser: {
   username: string
   role: Role
   profileId?: number
-} | null
+} | null | undefined
+let mockCurrentUserError: Error | undefined
 
 jest.mock("@/hooks/use-api", () => ({
   useCurrentUser: () => ({
     user: mockCurrentUser,
     isLoading: false,
+    error: mockCurrentUserError,
   }),
 }))
 
@@ -102,6 +104,7 @@ beforeEach(() => {
     role: Role.PARTICIPANT,
     profileId: 42,
   }
+  mockCurrentUserError = undefined
   apiMock.getTournaments.mockResolvedValue(response(tournamentsPage()))
 })
 
@@ -300,6 +303,16 @@ describe("JoinDebatesPage team registration", () => {
     expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Join Debates" })).not.toBeInTheDocument()
     expect(apiMock.registerTeam).not.toHaveBeenCalled()
+  })
+
+  it("fails closed when the current role cannot be loaded", async () => {
+    mockCurrentUser = undefined
+    mockCurrentUserError = new Error("current user request failed")
+
+    render(<JoinDebatesPage />)
+
+    expect(await screen.findByText("Climate Cup")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Join Debates" })).not.toBeInTheDocument()
   })
 
   it("prompts guests to sign in before team registration", async () => {

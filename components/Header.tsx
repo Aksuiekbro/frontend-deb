@@ -53,14 +53,15 @@ const headerMessages = {
 
 // --- The Header Component ---
 export default function Header() {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading, error } = useCurrentUser();
   const { locale, setLocale } = useLocale();
   const t = useTranslations(headerMessages);
 
   const isLoggedIn = !!user;
   const isOrganizer = user?.role === Role.ORGANIZER;
-  const canBrowseDebates = !isLoading;
-  const canHostDebates = isOrganizer || (!isLoading && !user);
+  const hasResolvedUser = !isLoading && !error;
+  const canBrowseDebates = hasResolvedUser;
+  const canHostDebates = hasResolvedUser && (isOrganizer || !user);
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return '';

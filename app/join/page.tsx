@@ -221,7 +221,7 @@ const translations: TranslationCatalog = {
 export default function JoinDebatesPage() {
   const { locale } = useLocale()
   const t = useTranslations(translations)
-  const { user: currentUser, isLoading: currentUserLoading } = useCurrentUser()
+  const { user: currentUser, isLoading: currentUserLoading, error: currentUserError } = useCurrentUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null)
   const [tournaments, setTournaments] = useState<SimpleTournamentResponse[]>([])
@@ -253,8 +253,9 @@ export default function JoinDebatesPage() {
   const [sortBy, setSortBy] = useState<string>("startDate,desc") // Default to Most Recent
   const selectedTournament = tournaments.find((tournament) => tournament.id === selectedTournamentId)
   const maxInvitedParticipants = getMaxInvitedParticipants(selectedTournament?.preliminaryFormat)
-  const isGuestRegistration = !currentUser && !currentUserLoading
-  const canRegisterForTournaments = !currentUserLoading && currentUser?.role !== Role.ORGANIZER
+  const hasResolvedCurrentUser = !currentUserLoading && !currentUserError
+  const isGuestRegistration = hasResolvedCurrentUser && !currentUser
+  const canRegisterForTournaments = hasResolvedCurrentUser && currentUser?.role !== Role.ORGANIZER
   const formatDate = (date?: string) => {
     if (!date) return t("notAvailable")
     const parsedDate = new Date(date)

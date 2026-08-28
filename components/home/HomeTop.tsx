@@ -4,9 +4,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useUpcomingTournaments } from "@/hooks/use-api";
+import { useCurrentUser, useUpcomingTournaments } from "@/hooks/use-api";
 import { LoadingState, CardSkeleton } from "@/components/ui/loading";
 import { ErrorState } from "@/components/ui/error";
+import { Role } from "@/types/user/user";
 import {
   localeTags,
   useLocale,
@@ -25,6 +26,7 @@ const messages: TranslationCatalog = {
     websiteForDebates: "website for",
     debatesOrganisation: "debates organisation",
     joinDebate: "Join Debate",
+    browseDebates: "Browse Debates",
     createTournament: "Create Tournament",
     slide: "Slide {number}",
     previousSlide: "Previous slide",
@@ -47,6 +49,7 @@ const messages: TranslationCatalog = {
     websiteForDebates: "сайт для",
     debatesOrganisation: "организации дебатов",
     joinDebate: "Присоединиться к дебатам",
+    browseDebates: "Смотреть дебаты",
     createTournament: "Создать турнир",
     slide: "Слайд {number}",
     previousSlide: "Предыдущий слайд",
@@ -69,6 +72,7 @@ const messages: TranslationCatalog = {
     websiteForDebates: "пікірсайыстарды",
     debatesOrganisation: "ұйымдастыруға арналған сайт",
     joinDebate: "Пікірсайысқа қосылу",
+    browseDebates: "Пікірсайыстарды көру",
     createTournament: "Турнир құру",
     slide: "Слайд {number}",
     previousSlide: "Алдыңғы слайд",
@@ -94,6 +98,15 @@ export default function HomeTop({
 }: HomeTopProps) {
   const { locale } = useLocale();
   const t = useTranslations(messages);
+  const {
+    user: currentUser,
+    isLoading: currentUserLoading,
+    error: currentUserError,
+  } = useCurrentUser();
+  const isOrganizer = currentUser?.role === Role.ORGANIZER;
+  const hasResolvedCurrentUser = !currentUserLoading && !currentUserError;
+  const canBrowseDebates = hasResolvedCurrentUser;
+  const canHostDebates = hasResolvedCurrentUser && (isOrganizer || !currentUser);
   const formatLeague = (league: string) => {
     if (league === "SCHOOL") return t("schoolLeague");
     if (league === "UNIVERSITY") return t("universityLeague");
@@ -160,18 +173,22 @@ export default function HomeTop({
                             </span>
                           </h2>
                           <div className="flex justify-center space-x-4 mb-8">
-                            <Link
-                              href="/join"
-                              className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center"
-                            >
-                              {t("joinDebate")}
-                            </Link>
-                            <Link
-                              href="/tournament/create"
-                              className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami"
-                            >
-                              {t("createTournament")}
-                            </Link>
+                            {canBrowseDebates && (
+                              <Link
+                                href="/join"
+                                className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal font-hikasami text-center"
+                              >
+                                {isOrganizer ? t("browseDebates") : t("joinDebate")}
+                              </Link>
+                            )}
+                            {canHostDebates && (
+                              <Link
+                                href="/tournament/create"
+                                className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal font-hikasami"
+                              >
+                                {t("createTournament")}
+                              </Link>
+                            )}
                           </div>
                         </div>
                       </>
@@ -265,14 +282,16 @@ export default function HomeTop({
                           {t("more")}
                         </Link>
                       </div>
-                      <div className="flex justify-start">
-                        <Link
-                          href="/join"
-                          className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center"
-                        >
-                          {t("joinDebates")}
-                        </Link>
-                      </div>
+                      {canBrowseDebates && (
+                        <div className="flex justify-start">
+                          <Link
+                            href="/join"
+                            className="inline-block bg-[#3E5C76] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal font-hikasami text-center"
+                          >
+                            {isOrganizer ? t("browseDebates") : t("joinDebates")}
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -290,12 +309,14 @@ export default function HomeTop({
               <p className="text-[#4a4e69] text-[18px] font-hikasami">
                 {t("noUpcoming")}
               </p>
-              <Link
-                href="/tournament/create"
-                className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
-              >
-                {t("createTournament")}
-              </Link>
+              {canHostDebates && (
+                <Link
+                  href="/tournament/create"
+                  className="inline-block mt-4 bg-[#3E5C76] text-[#FFFFFF] px-6 py-3 rounded hover:bg-[#748cab] text-[16px] font-normal font-hikasami"
+                >
+                  {t("createTournament")}
+                </Link>
+              )}
             </div>
           )}
         </LoadingState>

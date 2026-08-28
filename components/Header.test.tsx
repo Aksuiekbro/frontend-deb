@@ -113,6 +113,20 @@ describe("Header auth links", () => {
     expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
   })
 
+  it("fails closed when the current role cannot be loaded", () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isLoading: false,
+      error: new Error("current user request failed"),
+    })
+
+    render(<Header />)
+
+    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Browse Debates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+  })
+
   it.each([
     ["ru", "Мои турниры"],
     ["kk", "Менің турнирлерім"],
