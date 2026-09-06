@@ -34,6 +34,54 @@ describe("Header auth links", () => {
     window.localStorage.clear()
   })
 
+  it.each([
+    ["anonymous users", { user: null, isLoading: false }, "/"],
+    [
+      "participants",
+      {
+        user: {
+          id: 18,
+          username: "debater",
+          firstName: "Debate",
+          lastName: "Participant",
+          role: Role.PARTICIPANT,
+        },
+        isLoading: false,
+      },
+      "/dashboard",
+    ],
+    [
+      "organizers",
+      {
+        user: {
+          id: 17,
+          username: "organizer",
+          firstName: "Tour",
+          lastName: "Director",
+          role: Role.ORGANIZER,
+        },
+        isLoading: false,
+      },
+      "/organizer",
+    ],
+    ["loading auth state", { user: null, isLoading: true }, "/"],
+    [
+      "failed auth state",
+      {
+        user: undefined,
+        isLoading: false,
+        error: new Error("current user request failed"),
+      },
+      "/",
+    ],
+  ] as const)("links the DB logo correctly for %s", (_state, currentUser, expectedHref) => {
+    mockUseCurrentUser.mockReturnValue(currentUser)
+
+    render(<Header />)
+
+    expect(screen.getByRole("link", { name: "DB" })).toHaveAttribute("href", expectedHref)
+  })
+
   it("disables auth prefetching while preserving hrefs and default behavior elsewhere", () => {
     render(<Header />)
 
