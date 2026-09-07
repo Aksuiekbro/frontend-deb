@@ -1,6 +1,7 @@
 # Implementation Checklist
 
-The build doer runs through this before `/gate4-build`.
+The build doer runs through this before each build slice, including `/gate4-build` in cross-model
+mode.
 
 - [ ] Change is one small, logically coherent slice from the approved plan.
 - [ ] Scope matches the task, plan, and design.

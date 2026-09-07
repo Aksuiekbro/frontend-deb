@@ -1,6 +1,7 @@
 # Review Scoring Rubric
 
-Every review by Opus or GPT Codex ends with a score out of 10 and a status.
+Every formal review by Opus, GPT Codex, or an independent Codex reviewer agent ends with a score
+out of 10 and a status. The reviewer must not have authored the artifact or code being reviewed.
 
 ## Bands
 

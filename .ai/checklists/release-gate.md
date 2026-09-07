@@ -1,6 +1,7 @@
 # Release Gate
 
-The final gate is Step 7, `/gate7-ship`. Release only when the scored verdict clears the bar.
+The final gate is Step 7 (`/gate7-ship`) in cross-model mode or the independent final review in
+Codex multi-agent mode. Release only when the scored verdict clears the bar.
 
 ## Gate Rule
 
@@ -11,7 +12,7 @@ The final gate is Step 7, `/gate7-ship`. Release only when the scored verdict cl
 
 ## Before Final Review
 
-- [ ] All prior gates scored `>= 9.0`.
+- [ ] All required gates or multi-agent slice reviews scored `>= 9.0`.
 - [ ] `make verify` or the target repo equivalent passes.
 - [ ] Every acceptance criterion in the task is met.
 - [ ] Tests cover the risky paths named in the plan/design.

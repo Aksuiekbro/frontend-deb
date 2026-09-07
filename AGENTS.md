@@ -56,17 +56,37 @@ Conventions for AI agents working in this project.
 - PRs should include: a clear summary, screenshots/GIFs for UI changes, and links to related issues or tickets.
 - Ensure `npm run lint` passes and the app runs locally before requesting review.
 
-## Roles: 7-Step Pipeline
+## Delivery Pipeline
 
-Every feature flows through the process in `.ai/README.md`.
+Use one of the execution modes defined in `.ai/README.md`.
 
-- Codex reviews steps 1 (think), 3 (design), 4 (build), and 7 (ship). Codex is read-only on these
-  steps and returns a scored verdict only.
-- Codex is the doer on steps 2 (plan), 5 (review), and 6 (test). On steps 2 and 6 Codex may write
-  only the named plan/test artifacts. On step 5 Codex is read-only and writes the holistic review
-  pass for Claude to persist.
-- The reviewer is always the other model. No model grades its own work.
-- On a BLOCKED verdict, the doer fixes only the cited Must Fix items and resubmits.
+### Cross-model mode
+
+- Keep the original seven gates: Opus performs think, design, build, and ship; GPT Codex performs
+  plan, review, and test.
+- The reviewer is the other model and is read-only.
+
+### Codex multi-agent mode
+
+Use this mode when the user asks Codex to implement or orchestrate work, or when Opus is not
+available.
+
+- The primary Codex agent may plan, implement integration work, run tests, and coordinate delivery.
+- Delegate independent build slices to Codex subagents with explicit file or subsystem ownership.
+- No agent may approve code it authored. A different Codex agent must perform the read-only review;
+  primary-authored code must be reviewed by a subagent.
+- Keep reviews independent: do not give the reviewer an implementation task in the same pass.
+- For a bounded issue that already has evidence and acceptance criteria, an in-session plan may
+  replace separate think/design artifacts. For large, ambiguous, migration-heavy, security-, or
+  privacy-sensitive work, use the Codex full-artifact variant from `.ai/README.md`; it keeps Codex
+  doer/reviewer separation while requiring the complete artifact trail.
+- The primary agent owns integration: inspect every diff, resolve overlap without discarding user
+  changes, run focused tests and the repository-wide checks, and obtain an independent final review.
+- Before delegation, record a per-repository dirty-worktree baseline and task-owned file/hunk map as
+  defined in `.ai/README.md`. Serialize any slice that must touch a file with pre-existing changes.
+
+In both modes, a BLOCKED verdict sends only the cited Must Fix items back to an implementation
+agent. Re-review the fix before proceeding.
 
 ## Review Output
 
@@ -75,7 +95,7 @@ Every reviewer must end with this exact format:
 ```md
 # Review Verdict
 
-Reviewer: <Opus | GPT Codex>
+Reviewer: <Opus | GPT Codex | GPT Codex agent:task-name>
 Step: <think | plan | design | build | review | test | ship>
 Score: X.X / 10
 Status: APPROVED or BLOCKED
@@ -98,3 +118,13 @@ Scoring is governed by `.ai/checklists/scoring-rubric.md`:
 
 - When committing, do not say it was co-authored by Claude or Codex.
 - Do not add AI agents as collaborators in the GitHub project.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
