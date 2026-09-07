@@ -4,7 +4,8 @@ import { AlertCircle, Calendar, MapPin, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useCurrentUser, useMyTournaments } from "../../hooks/use-api"
+import { useCurrentUser } from "../../hooks/use-api"
+import { useMyTournamentPages } from "@/hooks/use-my-tournament-pages"
 import { toBackendDateTime } from "@/lib/datetime"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
@@ -34,6 +35,8 @@ const translations: TranslationCatalog = {
     format: "Format",
     showDetails: "Show Details",
     tryAgain: "Try again",
+    loadMore: "Load more tournaments",
+    loadingMore: "Loading more tournaments...",
     somethingWentWrong: "Oops! Something went wrong",
     loading: "Loading tournaments",
     signInTitle: "Sign in to view My Tournaments",
@@ -67,6 +70,8 @@ const translations: TranslationCatalog = {
     format: "Формат",
     showDetails: "Подробнее",
     tryAgain: "Повторить",
+    loadMore: "Загрузить ещё турниры",
+    loadingMore: "Загрузка турниров...",
     somethingWentWrong: "Ой! Что-то пошло не так",
     loading: "Загрузка турниров",
     signInTitle: "Войдите, чтобы открыть «Мои турниры»",
@@ -100,6 +105,8 @@ const translations: TranslationCatalog = {
     format: "Формат",
     showDetails: "Толығырақ көру",
     tryAgain: "Қайталап көру",
+    loadMore: "Тағы турнирлерді жүктеу",
+    loadingMore: "Турнирлер жүктелуде...",
     somethingWentWrong: "Ой! Бірдеңе дұрыс болмады",
     loading: "Турнирлер жүктелуде",
     signInTitle: "Менің турнирлерімді көру үшін жүйеге кіріңіз",
@@ -170,24 +177,26 @@ export default function MyTournamentsPage() {
   const pastParams = { startDateTo: toBackendDateTime(currentDate) }
   const upcomingParams = { startDateFrom: toBackendDateTime(currentDate) }
 
-  const { tournaments: pastTournaments, isLoading: loadingPast, error: errorPast } = useMyTournaments(
+  const past = useMyTournamentPages(
     pastParams,
-    { page: 0, size: 20, sort: ['startDate,desc'] }
+    { size: 20, sort: ['startDate,desc'] }
   )
 
-  const { tournaments: upcomingTournaments, isLoading: loadingUpcoming, error: errorUpcoming } = useMyTournaments(
+  const upcoming = useMyTournamentPages(
     upcomingParams,
-    { page: 0, size: 20, sort: ['startDate,asc'] }
+    { size: 20, sort: ['startDate,asc'] }
   )
 
-  // For ongoing tournaments, we'll use a broader date range and filter in frontend
-  const { tournaments: allTournaments, isLoading: loadingAll, error: errorAll } = useMyTournaments(
+  // The API has no end-date filter, so all membership pages must be read
+  // before we can conclude there are no ongoing tournaments.
+  const ongoing = useMyTournamentPages(
     undefined,
-    { page: 0, size: 50, sort: ['startDate,desc'] }
+    { size: 50, sort: ['startDate,desc'] },
+    true,
   )
 
   // Filter for ongoing tournaments (started but not yet ended)
-  const ongoingTournaments = allTournaments?.content.filter(tournament => {
+  const ongoingTournaments = ongoing.tournaments?.content.filter(tournament => {
     const startDate = new Date(tournament.startDate ?? "")
     const endDate = new Date(tournament.endDate || tournament.startDate || "")
     const now = new Date()
@@ -198,17 +207,15 @@ export default function MyTournamentsPage() {
   const getCurrentTournaments = () => {
     switch (activeTab) {
       case 'Past':
-        return { tournaments: pastTournaments?.content || [], isLoading: loadingPast, error: errorPast }
+        return { ...past, tournaments: past.tournaments?.content || [] }
       case 'Ongoing':
-        return { tournaments: ongoingTournaments, isLoading: loadingAll, error: errorAll }
+        return { ...ongoing, tournaments: ongoingTournaments }
       case 'Upcoming':
-        return { tournaments: upcomingTournaments?.content || [], isLoading: loadingUpcoming, error: errorUpcoming }
-      default:
-        return { tournaments: [], isLoading: false, error: null }
+        return { ...upcoming, tournaments: upcoming.tournaments?.content || [] }
     }
   }
 
-  const { tournaments, isLoading, error } = getCurrentTournaments()
+  const { tournaments, isLoading, error, hasMore, isLoadingMore, loadMore, mutate } = getCurrentTournaments()
   const activeTabKey = tabDefinitions.find((tab) => tab.value === activeTab)?.key ?? "past"
   const errorMessageKey = activeTabKey === "past"
     ? "failedPast"
@@ -283,10 +290,10 @@ export default function MyTournamentsPage() {
               actionHref="/auth?mode=login"
               prefetch={false}
             />
-          ) : error ? (
+          ) : error && tournaments.length === 0 ? (
             <LocalizedErrorState
               error={error}
-              onRetry={() => window.location.reload()}
+              onRetry={() => void mutate()}
               message={t(errorMessageKey)}
               t={t}
             />
@@ -380,6 +387,21 @@ export default function MyTournamentsPage() {
             />
           )}
         </LoadingState>
+        {currentUser && !currentUserError && !isLoading && tournaments.length > 0 && error && (
+          <p role="alert" className="mt-4 text-center text-red-600">{t(errorMessageKey)}</p>
+        )}
+        {currentUser && !currentUserError && !isLoading && (hasMore || (error && tournaments.length > 0)) && (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              disabled={isLoadingMore}
+              onClick={() => error ? void mutate() : loadMore()}
+              className="rounded-lg bg-[#3E5C76] px-6 py-3 text-white disabled:opacity-60"
+            >
+              {isLoadingMore ? t("loadingMore") : error ? t("tryAgain") : t("loadMore")}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

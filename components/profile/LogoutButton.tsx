@@ -4,6 +4,7 @@ import React from "react"
 import { LogOut } from "lucide-react"
 import { api } from "@/lib/api"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
+import { clearTournamentResultDrafts } from "@/lib/tournament-result-drafts"
 
 const logoutMessages: TranslationCatalog = {
   en: { loggingOut: "Logging out...", logOut: "Log out" },
@@ -21,6 +22,7 @@ export default function LogoutButton() {
     try {
       await api.logout().catch(() => undefined)
     } finally {
+      clearTournamentResultDrafts()
       // Always reload the page to refresh SWR/session state
       if (typeof window !== "undefined") window.location.reload()
     }
@@ -33,4 +35,3 @@ export default function LogoutButton() {
     </button>
   )
 }
-

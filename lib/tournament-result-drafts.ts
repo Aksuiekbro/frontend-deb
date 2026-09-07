@@ -9,6 +9,35 @@ export type PersistedResultDrafts = Record<string, PersistedResultDraft>
 
 export const RESULT_DRAFTS_CHANGED_EVENT = "tournament-result-drafts-changed"
 
+export const createResultDraftStorageKey = (
+  principalId: number,
+  tournamentId: number,
+  roundGroupId: number | null | undefined,
+  roundId: number | null | undefined,
+): string | undefined => {
+  if (![principalId, tournamentId, roundGroupId, roundId].every((id) => typeof id === "number" && Number.isSafeInteger(id) && id > 0)) {
+    return undefined
+  }
+  return `tournament:${tournamentId}:round-group:${roundGroupId}:round:${roundId}:match-results:principal:${principalId}`
+}
+
+const RESULT_DRAFT_STORAGE_KEY = /^tournament:\d+:round-group:\d+:round:\d+:match-results(?::principal:\d+)?(?::input-drafts)?$/
+
+export const clearTournamentResultDrafts = () => {
+  if (typeof window === "undefined") return
+  try {
+    const keys = Array.from({ length: window.localStorage.length }, (_, index) => window.localStorage.key(index))
+    keys.forEach((key) => {
+      if (key && RESULT_DRAFT_STORAGE_KEY.test(key)) {
+        window.localStorage.removeItem(key)
+        notifyResultDraftsChanged(key)
+      }
+    })
+  } catch {
+    // Storage can be unavailable in private browsing; logout must still finish.
+  }
+}
+
 const notifyResultDraftsChanged = (storageKey: string | undefined) => {
   if (!storageKey || typeof window === "undefined") return
   window.dispatchEvent(new CustomEvent(RESULT_DRAFTS_CHANGED_EVENT, { detail: { storageKey } }))

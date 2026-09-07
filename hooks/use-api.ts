@@ -175,14 +175,14 @@ const PREVIEW_ROUND_GROUPS: RoundGroupResponse[] = [
     id: 501,
     type: RoundGroupType.PRELIMINARY,
     format: DebateFormat.BPF,
-    rounds: PREVIEW_ROUNDS[0],
+    rounds: [PREVIEW_ROUNDS[0]],
     currentRoundNumber: 1,
   },
   {
     id: 502,
     type: RoundGroupType.TEAM_ELIMINATION,
     format: DebateFormat.APF,
-    rounds: PREVIEW_ROUNDS[1],
+    rounds: [PREVIEW_ROUNDS[1]],
     currentRoundNumber: 2,
   },
 ]
@@ -941,12 +941,14 @@ export function useMatches(
   roundId?: number,
   pageable?: Pageable
 ) {
+  const { user, isLoading: isCurrentUserLoading, error: currentUserError } = useCurrentUser()
+  const viewerScope = isCurrentUserLoading || currentUserError ? null : (user?.id ?? 'guest')
   const enabled =
     typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
     typeof roundGroupId === 'number' && !Number.isNaN(roundGroupId) &&
     typeof roundId === 'number' && !Number.isNaN(roundId)
   const { data, error, isLoading, mutate } = useSWR(
-    IS_PREVIEW || !enabled ? null : ['matches', tournamentId, roundGroupId, roundId, pageable],
+    IS_PREVIEW || !enabled || viewerScope === null ? null : ['matches', tournamentId, roundGroupId, roundId, pageable, viewerScope],
     () => fetcher<PageResult<MatchResponse>>(() => api.getMatches(tournamentId!, roundGroupId!, roundId!, pageable)),
     {
       revalidateOnFocus: false,
@@ -964,8 +966,8 @@ export function useMatches(
 
   return {
     matches: data,
-    isLoading,
-    error,
+    isLoading: isCurrentUserLoading || isLoading,
+    error: currentUserError ?? error,
     mutate,
   }
 }
@@ -981,6 +983,8 @@ export function useRoundMatches(
   rounds?: SimpleRoundResponse[],
   pageable?: Pageable
 ) {
+  const { user, isLoading: isCurrentUserLoading, error: currentUserError } = useCurrentUser()
+  const viewerScope = isCurrentUserLoading || currentUserError ? null : (user?.id ?? 'guest')
   const roundIds = rounds?.map((round) => round.id) ?? []
   const enabled =
     typeof tournamentId === 'number' && !Number.isNaN(tournamentId) &&
@@ -988,7 +992,7 @@ export function useRoundMatches(
     roundIds.length > 0
 
   const { data, error, isLoading, mutate } = useSWR(
-    IS_PREVIEW || !enabled ? null : ['round-matches', tournamentId, roundGroupId, roundIds, pageable],
+    IS_PREVIEW || !enabled || viewerScope === null ? null : ['round-matches', tournamentId, roundGroupId, roundIds, pageable, viewerScope],
     async () => {
       const pages = await Promise.all(
         rounds!.map(async (round) => ({
@@ -1016,8 +1020,8 @@ export function useRoundMatches(
 
   return {
     roundMatches: data,
-    isLoading,
-    error,
+    isLoading: isCurrentUserLoading || isLoading,
+    error: currentUserError ?? error,
     mutate,
   }
 }

@@ -154,7 +154,7 @@ test.describe.serial("tester regression scenarios", () => {
     await expect(newsModal.locator("select")).toHaveCount(0)
   })
 
-  test("participant can decline an invitation without gaining tournament access", async ({ page, browser }) => {
+  test("participant can decline an invitation without gaining tournament membership", async ({ page, browser }) => {
     await registerLogin(page)
     const declineTournamentId = await createTournament(page.request, `Tester Decline ${RUN_ID}`)
 
@@ -176,10 +176,10 @@ test.describe.serial("tester regression scenarios", () => {
       })
       expect(createdTeam.ok(), `create decline team: ${createdTeam.status()}`).toBe(true)
 
-      // Hide the tournament after the invitation is issued. A declined invite
-      // must not grant a VIEW role or membership that could reopen it.
+      // Unpublish outcomes after the invitation is issued. The tournament and
+      // roster stay public, but declining must not grant membership.
       const disabled = await page.request.patch(`/api/tournaments/${declineTournamentId}/disable`)
-      expect(disabled.ok(), `hide decline tournament: ${disabled.status()}`).toBe(true)
+      expect(disabled.ok(), `unpublish tournament results: ${disabled.status()}`).toBe(true)
 
       await inviteePage.goto("/dashboard")
       await expect(inviteePage.getByRole("heading", { name: "Team invitations" })).toBeVisible()
@@ -195,10 +195,15 @@ test.describe.serial("tester regression scenarios", () => {
       const receivedBody = await received.json()
       expect(receivedBody.content).toEqual([])
 
-      const hiddenTournament = await inviteePage.request.get(`/api/tournaments/${declineTournamentId}`)
-      expect(hiddenTournament.status(), "declined participant must not gain tournament role/access").toBe(403)
-      const hiddenTeams = await inviteePage.request.get(`/api/tournaments/${declineTournamentId}/teams`)
-      expect(hiddenTeams.status(), "declined participant must not gain team membership/access").toBe(403)
+      const publicTournament = await inviteePage.request.get(`/api/tournaments/${declineTournamentId}`)
+      expect(publicTournament.ok(), "unpublished results must not hide the tournament").toBe(true)
+      const publicTeams = await inviteePage.request.get(`/api/tournaments/${declineTournamentId}/teams`)
+      expect(publicTeams.ok(), "unpublished results must not hide the team roster").toBe(true)
+      const memberships = await inviteePage.request.get("/api/tournaments/mine?page=0&size=50")
+      expect(memberships.ok(), "membership lookup after declining").toBe(true)
+      expect((await memberships.json()).content).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: declineTournamentId }),
+      ]))
 
       const organizerParticipants = await page.request.get(
         `/api/tournaments/${declineTournamentId}/participants?page=0&size=50`,

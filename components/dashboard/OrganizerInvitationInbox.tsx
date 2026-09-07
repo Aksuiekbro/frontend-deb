@@ -125,6 +125,7 @@ export function OrganizerInvitationInbox() {
   }, [loadInvitations])
 
   const handleInvitation = async (invitation: OrganizerInvitationRecord, action: InvitationAction) => {
+    if (pendingAction !== null || isRefreshing) return
     setPendingAction({ id: invitation.id, action })
     setError(null)
     try {
@@ -183,7 +184,7 @@ export function OrganizerInvitationInbox() {
             </div>
             <p className="mt-2 text-sm text-[#4A5568] sm:ml-[52px]">{t("description")}</p>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => void loadInvitations()} disabled={isLoading || isRefreshing} aria-label={t("refresh")}>
+          <Button type="button" variant="outline" size="sm" onClick={() => void loadInvitations()} disabled={isLoading || isRefreshing || pendingAction !== null} aria-label={t("refresh")}>
             <RefreshCw className={isRefreshing ? "motion-safe:animate-spin" : ""} aria-hidden="true" />{t("refresh")}
           </Button>
         </div>

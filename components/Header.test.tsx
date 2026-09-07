@@ -62,7 +62,7 @@ describe("Header auth links", () => {
         },
         isLoading: false,
       },
-      "/organizer",
+      "/dashboard",
     ],
     ["loading auth state", { user: null, isLoading: true }, "/"],
     [
@@ -79,7 +79,7 @@ describe("Header auth links", () => {
 
     render(<Header />)
 
-    expect(screen.getByRole("link", { name: "DB" })).toHaveAttribute("href", expectedHref)
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", expectedHref)
   })
 
   it("disables auth prefetching while preserving hrefs and default behavior elsewhere", () => {
@@ -89,8 +89,9 @@ describe("Header auth links", () => {
     expect(screen.getByRole("link", { name: "Log In" })).toHaveAttribute("data-prefetch", "false")
     expect(screen.getByRole("link", { name: "Register" })).toHaveAttribute("href", "/auth?mode=register")
     expect(screen.getByRole("link", { name: "Register" })).toHaveAttribute("data-prefetch", "false")
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
 
-    for (const name of ["DB", "Join Debates", "Host Debate", "Rating", "News"]) {
+    for (const name of ["Home", "Join Debates", "Host Debate", "Rating", "News"]) {
       expect(screen.getByRole("link", { name })).toHaveAttribute("data-prefetch", "default")
     }
   })
@@ -131,6 +132,7 @@ describe("Header auth links", () => {
     )
     expect(screen.getByRole("link", { name: "Browse Debates" })).toHaveAttribute("href", "/join")
     expect(screen.getByRole("link", { name: "Host Debate" })).toHaveAttribute("href", "/create-tournament")
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/dashboard")
   })
 
   it("does not offer tournament hosting to participants", () => {
@@ -150,6 +152,7 @@ describe("Header auth links", () => {
     expect(screen.getByRole("link", { name: "Join Debates" })).toHaveAttribute("href", "/join")
     expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "My Tournaments" })).toHaveAttribute("href", "/my-tournaments")
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/dashboard")
   })
 
   it("waits for the user role before rendering tournament actions", () => {
@@ -159,20 +162,32 @@ describe("Header auth links", () => {
 
     expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
   })
 
-  it("fails closed when the current role cannot be loaded", () => {
-    mockUseCurrentUser.mockReturnValue({
-      user: undefined,
-      isLoading: false,
-      error: new Error("current user request failed"),
+  it("does not expose role-specific actions when the session request fails", () => {
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isLoading: false, error: new Error("session failed") })
+    render(<Header />)
+    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ["en", "Home"],
+    ["ru", "Главная"],
+    ["kk", "Басты бет"],
+  ] as const)("localizes the accessible home label in %s", (locale, label) => {
+    render(
+      <LocaleProvider>
+        <Header />
+      </LocaleProvider>,
+    )
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+      target: { value: locale },
     })
 
-    render(<Header />)
-
-    expect(screen.queryByRole("link", { name: "Join Debates" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: "Browse Debates" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: "Host Debate" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", "/")
   })
 
   it.each([

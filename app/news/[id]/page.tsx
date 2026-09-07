@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ArrowLeft, Edit3, Trash2 } from "lucide-react"
 import { useSWRConfig } from "swr"
 
@@ -153,13 +153,27 @@ function hasResponseStatus(error: unknown, status: number): boolean {
 
 export default function NewsDetailPage() {
   const params = useParams<{ id: string }>()
-  const router = useRouter()
   const newsId = Number(params.id)
-  const { newsItem, isLoading, error, mutate: mutateNewsItem } = useSingleNews(newsId)
   const { user: currentUser } = useCurrentUser()
+
+  return <NewsDetailContent key={`${newsId}:${currentUser?.id ?? "guest"}`} newsId={newsId} currentUser={currentUser} />
+}
+
+function NewsDetailContent({ newsId, currentUser }: {
+  newsId: number
+  currentUser: ReturnType<typeof useCurrentUser>["user"]
+}) {
+  const router = useRouter()
+  const { newsItem, isLoading, error, mutate: mutateNewsItem } = useSingleNews(newsId)
   const { mutate: mutateCache } = useSWRConfig()
   const { locale } = useLocale()
   const t = useTranslations(catalog)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
 
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState("")
@@ -194,7 +208,7 @@ export default function NewsDetailPage() {
   }
 
   const saveChanges = async () => {
-    if (!newsItem || !isOwner) return
+    if (!newsItem || !isOwner || isSaving) return
     const nextTitle = title.trim()
     const nextArticle = article.trim()
 
@@ -251,16 +265,16 @@ export default function NewsDetailPage() {
           { revalidate: true },
         ),
       ])
-      setIsEditing(false)
+      if (mountedRef.current) setIsEditing(false)
     } catch (saveError) {
-      setActionError(saveError instanceof Error ? saveError.message : t("saveFailed"))
+      if (mountedRef.current) setActionError(saveError instanceof Error ? saveError.message : t("saveFailed"))
     } finally {
-      setIsSaving(false)
+      if (mountedRef.current) setIsSaving(false)
     }
   }
 
   const deleteNews = async () => {
-    if (!newsItem || !isOwner) return
+    if (!newsItem || !isOwner || isDeleting) return
     try {
       setIsDeleting(true)
       setActionError(null)
@@ -276,11 +290,11 @@ export default function NewsDetailPage() {
           { revalidate: true },
         ),
       ])
-      router.replace("/news")
+      if (mountedRef.current) router.replace("/news")
     } catch (deleteError) {
-      setActionError(deleteError instanceof Error ? deleteError.message : t("deleteFailed"))
+      if (mountedRef.current) setActionError(deleteError instanceof Error ? deleteError.message : t("deleteFailed"))
     } finally {
-      setIsDeleting(false)
+      if (mountedRef.current) setIsDeleting(false)
     }
   }
 

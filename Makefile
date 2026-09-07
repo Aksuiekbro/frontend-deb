@@ -1,14 +1,13 @@
 .PHONY: test lint typecheck build verify
 
 test:
-	@echo "TODO(test): plug in the test runner here, e.g. 'npm test'"
-	@exit 0
+	npm test -- --runInBand
 
 lint:
 	npm run lint
 
 typecheck:
-	npx tsc --noEmit
+	npm run typecheck
 
 build:
 	npm run build
