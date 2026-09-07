@@ -4,7 +4,7 @@ import { AlertCircle, Calendar, MapPin, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useTournaments } from "../../hooks/use-api"
+import { useMyTournaments } from "../../hooks/use-api"
 import { toBackendDateTime } from "@/lib/datetime"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n"
@@ -153,18 +153,18 @@ export default function MyTournamentsPage() {
   const pastParams = { startDateTo: toBackendDateTime(currentDate) }
   const upcomingParams = { startDateFrom: toBackendDateTime(currentDate) }
 
-  const { tournaments: pastTournaments, isLoading: loadingPast, error: errorPast } = useTournaments(
+  const { tournaments: pastTournaments, isLoading: loadingPast, error: errorPast } = useMyTournaments(
     pastParams,
     { page: 0, size: 20, sort: ['startDate,desc'] }
   )
 
-  const { tournaments: upcomingTournaments, isLoading: loadingUpcoming, error: errorUpcoming } = useTournaments(
+  const { tournaments: upcomingTournaments, isLoading: loadingUpcoming, error: errorUpcoming } = useMyTournaments(
     upcomingParams,
     { page: 0, size: 20, sort: ['startDate,asc'] }
   )
 
   // For ongoing tournaments, we'll use a broader date range and filter in frontend
-  const { tournaments: allTournaments, isLoading: loadingAll, error: errorAll } = useTournaments(
+  const { tournaments: allTournaments, isLoading: loadingAll, error: errorAll } = useMyTournaments(
     undefined,
     { page: 0, size: 50, sort: ['startDate,desc'] }
   )

@@ -16,57 +16,57 @@ interface UseTournamentVisibilityParams {
 
 const messages: TranslationCatalog = {
   en: {
-    visibilityUpdateFailed: "Failed to update tournament visibility",
+    visibilityUpdateFailed: "Failed to update results visibility",
     permissionDenied: "You do not have permission to perform this action.",
     serverError: "Server error. Please try again later.",
-    tournamentVisible: "Tournament visible",
-    tournamentHidden: "Tournament hidden",
-    visibleDescription: "{name} is now visible to participants.",
-    hiddenDescription: "{name} is now hidden from participants.",
-    updateFailed: "Failed to update tournament",
+    resultsPublished: "Results published",
+    resultsHidden: "Results hidden",
+    publishedDescription: "Results for {name} are now visible to participants.",
+    hiddenDescription: "Results for {name} are now hidden from participants.",
+    updateFailed: "Failed to update results visibility",
     tryAgain: "Please try again later.",
   },
   ru: {
-    visibilityUpdateFailed: "Не удалось изменить видимость турнира",
+    visibilityUpdateFailed: "Не удалось изменить видимость результатов",
     permissionDenied: "У вас нет разрешения на выполнение этого действия.",
     serverError: "Ошибка сервера. Повторите попытку позже.",
-    tournamentVisible: "Турнир виден",
-    tournamentHidden: "Турнир скрыт",
-    visibleDescription: "Турнир «{name}» теперь виден участникам.",
-    hiddenDescription: "Турнир «{name}» теперь скрыт от участников.",
-    updateFailed: "Не удалось обновить турнир",
+    resultsPublished: "Результаты опубликованы",
+    resultsHidden: "Результаты скрыты",
+    publishedDescription: "Результаты турнира «{name}» теперь видны участникам.",
+    hiddenDescription: "Результаты турнира «{name}» теперь скрыты от участников.",
+    updateFailed: "Не удалось изменить видимость результатов",
     tryAgain: "Повторите попытку позже.",
   },
   kk: {
-    visibilityUpdateFailed: "Турнирдің көріну күйін жаңарту мүмкін болмады",
+    visibilityUpdateFailed: "Нәтижелердің көрінуін жаңарту мүмкін болмады",
     permissionDenied: "Бұл әрекетті орындауға рұқсатыңыз жоқ.",
     serverError: "Сервер қатесі. Кейінірек қайталап көріңіз.",
-    tournamentVisible: "Турнир көрінеді",
-    tournamentHidden: "Турнир жасырылды",
-    visibleDescription: "«{name}» турнирі енді қатысушыларға көрінеді.",
-    hiddenDescription: "«{name}» турнирі енді қатысушылардан жасырылды.",
-    updateFailed: "Турнирді жаңарту мүмкін болмады",
+    resultsPublished: "Нәтижелер жарияланды",
+    resultsHidden: "Нәтижелер жасырылды",
+    publishedDescription: "«{name}» турнирінің нәтижелері енді қатысушыларға көрінеді.",
+    hiddenDescription: "«{name}» турнирінің нәтижелері енді қатысушылардан жасырылды.",
+    updateFailed: "Нәтижелердің көрінуін жаңарту мүмкін болмады",
     tryAgain: "Кейінірек қайталап көріңіз.",
   },
 }
 
 export function useTournamentVisibility({ tournament, toast }: UseTournamentVisibilityParams) {
   const t = useTranslations(messages)
-  const [isTournamentEnabled, setIsTournamentEnabled] = useState(false)
-  const [toggleTournamentLoading, setToggleTournamentLoading] = useState(false)
+  const [areResultsVisible, setAreResultsVisible] = useState(tournament?.disabled !== true)
+  const [resultsVisibilityUpdating, setResultsVisibilityUpdating] = useState(false)
 
   useEffect(() => {
     if (typeof tournament?.disabled === "boolean") {
-      setIsTournamentEnabled(!tournament.disabled)
+      setAreResultsVisible(!tournament.disabled)
     }
   }, [tournament?.disabled])
 
-  const handleTournamentToggle = async (nextValue: boolean) => {
+  const handleResultsVisibilityToggle = async (nextValue: boolean) => {
     if (!tournament) return
 
-    const previousValue = isTournamentEnabled
-    setIsTournamentEnabled(nextValue)
-    setToggleTournamentLoading(true)
+    const previousValue = areResultsVisible
+    setAreResultsVisible(nextValue)
+    setResultsVisibilityUpdating(true)
 
     try {
       const response = nextValue
@@ -82,27 +82,27 @@ export function useTournamentVisibility({ tournament, toast }: UseTournamentVisi
       }
 
       toast?.({
-        title: nextValue ? t("tournamentVisible") : t("tournamentHidden"),
+        title: nextValue ? t("resultsPublished") : t("resultsHidden"),
         description: nextValue
-          ? t("visibleDescription", { name: tournament.name })
+          ? t("publishedDescription", { name: tournament.name })
           : t("hiddenDescription", { name: tournament.name }),
       })
     } catch (error) {
-      console.error("Failed to toggle tournament status", error)
-      setIsTournamentEnabled(previousValue)
+      console.error("Failed to toggle results visibility", error)
+      setAreResultsVisible(previousValue)
       toast?.({
         title: t("updateFailed"),
         description: error instanceof Error ? error.message : t("tryAgain"),
         variant: "destructive",
       })
     } finally {
-      setToggleTournamentLoading(false)
+      setResultsVisibilityUpdating(false)
     }
   }
 
   return {
-    isTournamentEnabled,
-    toggleTournamentLoading,
-    handleTournamentToggle,
+    areResultsVisible,
+    resultsVisibilityUpdating,
+    handleResultsVisibilityToggle,
   }
 }

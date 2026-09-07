@@ -24,13 +24,26 @@ const judges: PageResult<JudgeResponse> = {
 }
 
 describe("JudgesSection", () => {
-  it("renders judge roster read-only when organizer handlers are not provided", () => {
-    render(<JudgesSection judges={judges} judgesLoading={false} />)
+  it("omits contact columns and values from the public roster even if data contains them", () => {
+    render(<JudgesSection judges={judges} judgesLoading={false} showContactDetails={false} />)
 
     expect(screen.getByText("Aigerim Judge")).toBeInTheDocument()
+    expect(screen.queryByRole("columnheader", { name: "Email" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("columnheader", { name: "Phone" })).not.toBeInTheDocument()
+    expect(screen.queryByText("judge@example.com")).not.toBeInTheDocument()
+    expect(screen.queryByText("+77010000000")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Add judge" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Edit Aigerim Judge" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Delete Aigerim Judge" })).not.toBeInTheDocument()
+  })
+
+  it("renders contact columns and values in the organizer management view", () => {
+    render(<JudgesSection judges={judges} judgesLoading={false} showContactDetails />)
+
+    expect(screen.getByRole("columnheader", { name: "Email" })).toBeInTheDocument()
+    expect(screen.getByRole("columnheader", { name: "Phone" })).toBeInTheDocument()
+    expect(screen.getByText("judge@example.com")).toBeInTheDocument()
+    expect(screen.getByText("+77010000000")).toBeInTheDocument()
   })
 
   it("wires organizer add, edit, delete, and check-in actions", () => {
@@ -43,6 +56,7 @@ describe("JudgesSection", () => {
       <JudgesSection
         judges={judges}
         judgesLoading={false}
+        showContactDetails
         onAddJudge={onAddJudge}
         onEditJudge={onEditJudge}
         onDeleteJudge={onDeleteJudge}

@@ -6,6 +6,9 @@ import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/
 import { ErrorState, EmptyState } from "../../components/ui/error"
 import { resolveMediaUrl } from "@/lib/media"
 import { localeTags, useLocale, useTranslations } from "@/lib/i18n"
+import { ParticipantInvitationInbox } from "@/components/dashboard/ParticipantInvitationInbox"
+import { OrganizerInvitationInbox } from "@/components/dashboard/OrganizerInvitationInbox"
+import { Role } from "@/types/user/user"
 
 const translations = {
   en: {
@@ -13,6 +16,7 @@ const translations = {
     welcomeBack: "Welcome back, {name}!",
     debateOrganisation: "website for debates organisation",
     joinDebates: "Join Debates",
+    browseDebates: "Browse Debates",
     hostDebate: "Host Debate",
     welcomeBackHeading: "Welcome Back",
     profileAlt: "{name} profile",
@@ -54,6 +58,7 @@ const translations = {
     welcomeBack: "С возвращением, {name}!",
     debateOrganisation: "сайт для организации дебатов",
     joinDebates: "Присоединиться к дебатам",
+    browseDebates: "Смотреть дебаты",
     hostDebate: "Организовать дебаты",
     welcomeBackHeading: "С возвращением",
     profileAlt: "Профиль: {name}",
@@ -95,6 +100,7 @@ const translations = {
     welcomeBack: "Қайта қош келдіңіз, {name}!",
     debateOrganisation: "пікірсайыстарды ұйымдастыруға арналған сайт",
     joinDebates: "Пікірсайысқа қосылу",
+    browseDebates: "Пікірсайыстарды көру",
     hostDebate: "Пікірсайыс ұйымдастыру",
     welcomeBackHeading: "Қайта қош келдіңіз",
     profileAlt: "{name} профилі",
@@ -144,6 +150,10 @@ export default function Dashboard() {
   // API hooks
   const { user: currentUser, isLoading: userLoading, error: userError } = useCurrentUser()
   const { upcomingTournaments, isLoading: upcomingLoading, error: upcomingError } = useUpcomingTournaments(6)
+  const isOrganizer = currentUser?.role === Role.ORGANIZER
+  const hasResolvedUser = !userLoading && !userError
+  const canBrowseDebates = hasResolvedUser
+  const canHostDebates = hasResolvedUser && (isOrganizer || !currentUser)
 
   // Get past tournaments
   const currentDate = new Date().toISOString().slice(0,19)
@@ -176,12 +186,16 @@ export default function Dashboard() {
           </h2>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
-              {t("joinDebates")}
-            </Link>
-            <Link href="/create-tournament" className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal text-center">
-              {t("hostDebate")}
-            </Link>
+            {canBrowseDebates && (
+              <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
+                {isOrganizer ? t("browseDebates") : t("joinDebates")}
+              </Link>
+            )}
+            {canHostDebates && (
+              <Link href="/create-tournament" className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal text-center">
+                {t("hostDebate")}
+              </Link>
+            )}
           </div>
 
           {/* Pagination dots */}
@@ -298,6 +312,9 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {currentUser?.role === Role.PARTICIPANT && <ParticipantInvitationInbox key={currentUser.id} userId={currentUser.id} />}
+      {currentUser?.role === Role.ORGANIZER && <OrganizerInvitationInbox />}
+
       {/* Upcoming Debates */}
       <section className="px-8 py-12">
         <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">{t("upcomingDebates")}</h3>
@@ -344,11 +361,13 @@ export default function Dashboard() {
                             {t("more")}
                           </Link>
                         </div>
-                        <div className="flex justify-start">
-                          <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
-                            {t("joinDebates")}
-                          </Link>
-                        </div>
+                        {canBrowseDebates && (
+                          <div className="flex justify-start">
+                            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
+                              {isOrganizer ? t("browseDebates") : t("joinDebates")}
+                            </Link>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )

@@ -95,6 +95,53 @@ describe("MainInfoSection announcement comments", () => {
     expect(screen.getByText("Registration open")).toBeInTheDocument()
   })
 
+  it("switches the photo and all announcement details together", () => {
+    const olderAnnouncement = {
+      ...announcement,
+      id: 12,
+      title: "Venue update",
+      content: "The final round moved to Hall B.",
+      imageUrl: { id: 12, url: "/venue-update.jpg" },
+      timestamp: "2026-06-17T10:00:00",
+      tags: [{ id: 4, name: "Info" }],
+      comments: [{
+        ...announcement.comments[0],
+        id: 32,
+        content: "Thanks for the update.",
+      }],
+    }
+    const newestAnnouncement = {
+      ...announcement,
+      tags: [{ id: 3, name: "Important" }],
+    }
+
+    render(
+      <MainInfoSection
+        {...baseProps}
+        announcements={{
+          content: [olderAnnouncement, newestAnnouncement],
+          totalElements: 2,
+          totalPages: 1,
+        }}
+      />
+    )
+
+    expect(screen.getByAltText("Registration open")).toHaveAttribute("src", "/announcement.png")
+    expect(screen.getByText("Teams can register now.")).toBeInTheDocument()
+    expect(screen.getByText("Important")).toBeInTheDocument()
+    expect(screen.getByText("Can we register two teams?")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Next announcement" }))
+
+    expect(screen.getByAltText("Venue update")).toHaveAttribute("src", "/venue-update.jpg")
+    expect(screen.getByText("The final round moved to Hall B.")).toBeInTheDocument()
+    expect(screen.getByText("Info")).toBeInTheDocument()
+    expect(screen.getByText("Thanks for the update.")).toBeInTheDocument()
+    expect(screen.getByText("2/2")).toBeInTheDocument()
+    expect(screen.queryByAltText("Registration open")).not.toBeInTheDocument()
+    expect(screen.queryByText("Can we register two teams?")).not.toBeInTheDocument()
+  })
+
   it("renders announcement comments and submits a new comment through the wired handler", async () => {
     const onAddAnnouncementComment = jest.fn().mockResolvedValue(undefined)
 

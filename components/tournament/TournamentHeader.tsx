@@ -5,9 +5,9 @@ import { Switch } from "@/components/ui/switch"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 
 const catalog: TranslationCatalog = {
-  en: { prefix: "Tournament", error: "Error loading data", unknown: "Unknown Tournament", starting: "Starting...", start: "Start tournament", visible: "Visible to participants", hidden: "Hidden from participants", toggle: "Toggle participant visibility", invite: "Invite" },
-  ru: { prefix: "Турнир", error: "Ошибка загрузки данных", unknown: "Неизвестный турнир", starting: "Запуск...", start: "Начать турнир", visible: "Виден участникам", hidden: "Скрыт от участников", toggle: "Переключить видимость для участников", invite: "Пригласить" },
-  kk: { prefix: "Турнир", error: "Деректерді жүктеу қатесі", unknown: "Белгісіз турнир", starting: "Іске қосылуда...", start: "Турнирді бастау", visible: "Қатысушыларға көрінеді", hidden: "Қатысушылардан жасырын", toggle: "Қатысушыларға көрінуді ауыстыру", invite: "Шақыру" },
+  en: { prefix: "Tournament", error: "Error loading data", unknown: "Unknown Tournament", starting: "Starting...", start: "Start tournament", visible: "Results visible to participants", hidden: "Results hidden from participants", toggle: "Toggle results visibility", invite: "Invite" },
+  ru: { prefix: "Турнир", error: "Ошибка загрузки данных", unknown: "Неизвестный турнир", starting: "Запуск...", start: "Начать турнир", visible: "Результаты видны участникам", hidden: "Результаты скрыты от участников", toggle: "Переключить видимость результатов", invite: "Пригласить" },
+  kk: { prefix: "Турнир", error: "Деректерді жүктеу қатесі", unknown: "Белгісіз турнир", starting: "Іске қосылуда...", start: "Турнирді бастау", visible: "Нәтижелер қатысушыларға көрінеді", hidden: "Нәтижелер қатысушылардан жасырын", toggle: "Нәтижелердің көрінуін ауыстыру", invite: "Шақыру" },
 }
 
 interface TournamentHeaderProps {
@@ -15,9 +15,10 @@ interface TournamentHeaderProps {
   tournamentLoading: boolean
   tournamentError?: Error
   isOrganizer: boolean
-  isTournamentEnabled: boolean
-  toggleTournamentLoading: boolean
-  onToggleTournament: (checked: boolean) => void
+  canControlVisibility: boolean
+  areResultsVisible: boolean
+  resultsVisibilityUpdating: boolean
+  onToggleResultsVisibility: (checked: boolean) => void
   onOpenInvite?: () => void
   onStartTournament?: () => void
   startTournamentLoading?: boolean
@@ -28,9 +29,10 @@ export function TournamentHeader({
   tournamentLoading,
   tournamentError,
   isOrganizer,
-  isTournamentEnabled,
-  toggleTournamentLoading,
-  onToggleTournament,
+  canControlVisibility,
+  areResultsVisible,
+  resultsVisibilityUpdating,
+  onToggleResultsVisibility,
   onOpenInvite,
   onStartTournament,
   startTournamentLoading = false,
@@ -57,15 +59,15 @@ export function TournamentHeader({
               {startTournamentLoading ? t("starting") : t("start")}
             </button>
           )}
-          {isOrganizer && (
+          {canControlVisibility && (
             <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
               <span className="text-sm font-medium text-[#0D1321]">
-                {isTournamentEnabled ? t("visible") : t("hidden")}
+                {areResultsVisible ? t("visible") : t("hidden")}
               </span>
               <Switch
-                checked={isTournamentEnabled}
-                onCheckedChange={onToggleTournament}
-                disabled={toggleTournamentLoading || tournamentLoading}
+                checked={areResultsVisible}
+                onCheckedChange={onToggleResultsVisibility}
+                disabled={resultsVisibilityUpdating || tournamentLoading}
                 aria-label={t("toggle")}
               />
             </div>

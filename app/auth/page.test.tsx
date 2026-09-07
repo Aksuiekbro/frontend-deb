@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import type { ReactElement } from 'react'
 import AuthRoutePage from './page'
@@ -170,6 +170,43 @@ describe('AuthPageClient query mode', () => {
 })
 
 describe('AuthPage sign-up', () => {
+  it.each([
+    ['participant', Role.PARTICIPANT],
+    ['organizer', Role.ORGANIZER],
+  ])('redirects a successful %s sign-up to the personalized dashboard', async (_, selectedRole) => {
+    jest.useFakeTimers()
+    try {
+      mockRegister.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...signedInUser, role: selectedRole }),
+      } as Response)
+      const { container } = renderAuthPage()
+      fillSignUp(container, 'nurassyl')
+      if (selectedRole === Role.ORGANIZER) {
+        fireEvent.click(container.querySelector('#organizer-radio')!)
+      }
+      submitSignUp(container)
+
+      await waitFor(() => {
+        expect(mockMutate).toHaveBeenCalledWith(
+          ['current-user'],
+          { ...signedInUser, role: selectedRole },
+          { revalidate: false },
+        )
+      })
+      expect(mockPush).not.toHaveBeenCalled()
+
+      await act(async () => {
+        jest.advanceTimersByTime(2000)
+      })
+
+      expect(mockPush).toHaveBeenCalledWith('/dashboard')
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
   it('rejects a non-alphanumeric username client-side and does not call the API', () => {
     const { container } = renderAuthPage()
     fillSignUp(container, 'bad user!')

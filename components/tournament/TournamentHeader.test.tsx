@@ -10,9 +10,10 @@ const baseProps = {
   tournamentName: "Climate Cup",
   tournamentLoading: false,
   tournamentError: undefined,
-  isTournamentEnabled: true,
-  toggleTournamentLoading: false,
-  onToggleTournament: jest.fn(),
+  canControlVisibility: false,
+  areResultsVisible: true,
+  resultsVisibilityUpdating: false,
+  onToggleResultsVisibility: jest.fn(),
 }
 
 describe("TournamentHeader", () => {
@@ -29,5 +30,24 @@ describe("TournamentHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: "Invite" }))
 
     expect(onOpenInvite).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows the visibility control only with explicit permission", () => {
+    const { rerender } = render(
+      <TournamentHeader {...baseProps} isOrganizer canControlVisibility={false} />,
+    )
+
+    expect(screen.queryByRole("switch", { name: "Toggle results visibility" })).not.toBeInTheDocument()
+
+    rerender(<TournamentHeader {...baseProps} isOrganizer canControlVisibility />)
+
+    expect(screen.getByRole("switch", { name: "Toggle results visibility" })).toBeInTheDocument()
+  })
+
+  it("labels the switch as results visibility", () => {
+    render(<TournamentHeader {...baseProps} isOrganizer canControlVisibility areResultsVisible={false} />)
+
+    expect(screen.getByText("Results hidden from participants")).toBeInTheDocument()
+    expect(screen.getByRole("switch", { name: "Toggle results visibility" })).not.toBeChecked()
   })
 })

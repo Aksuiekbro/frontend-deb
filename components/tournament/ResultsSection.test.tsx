@@ -88,6 +88,86 @@ describe("ResultsSection", () => {
     expect(screen.getByText("Алдын ала раундтар әлі жүктелмеген.")).toBeInTheDocument()
   })
 
+  it("renders the Kazakh status header as Мәртебе", async () => {
+    window.localStorage.setItem("debetter-locale", "kk")
+
+    render(
+      <LocaleProvider>
+        <ResultsSection
+          {...baseProps}
+          matches={{
+            content: [{ id: 147, completed: false }],
+            totalElements: 1,
+            totalPages: 1,
+          } as never}
+          matchesLoading={false}
+          canManageTeams
+        />
+      </LocaleProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("columnheader", { name: "Мәртебе" })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("columnheader", { name: "Статус" })).not.toBeInTheDocument()
+    expect(screen.getByRole("cell", { name: "1-матч" })).toBeInTheDocument()
+    expect(screen.queryByText("147-матч")).not.toBeInTheDocument()
+  })
+
+  it("uses round-local match numbers for visible and accessible labels while submitting backend IDs", async () => {
+    const onSubmitResults = jest.fn(async () => true)
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="1/4"
+        selectedRound="1/4"
+        matches={{
+          content: [
+            {
+              id: 147,
+              team1: { id: 1, name: "Team 1", club: { id: 1, name: "Club 1" }, members: team1Members },
+              team2: { id: 2, name: "Team 2", club: { id: 2, name: "Club 2" }, members: team2Members },
+              completed: false,
+            },
+            {
+              id: 148,
+              team1: { id: 3, name: "Team 3", club: { id: 3, name: "Club 3" }, members: team3Members },
+              team2: { id: 4, name: "Team 4", club: { id: 4, name: "Club 4" }, members: team4Members },
+              completed: false,
+            },
+          ],
+          totalElements: 2,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={onSubmitResults}
+      />,
+    )
+
+    expect(screen.getByRole("cell", { name: "Match 1" })).toBeInTheDocument()
+    expect(screen.getByRole("cell", { name: "Match 2" })).toBeInTheDocument()
+    expect(screen.queryByText("Match 147")).not.toBeInTheDocument()
+    expect(screen.queryByText("Match 148")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 3 as winner in match 2" }))
+    fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
+
+    await waitFor(() => {
+      expect(onSubmitResults).toHaveBeenCalledWith([{
+        matchId: 148,
+        teamResults: [
+          { teamId: 3, won: true },
+          { teamId: 4, won: false },
+        ],
+      }] satisfies MatchResultRequest[])
+    })
+  })
+
   it("does not expose an enabled submit button without a real result submit handler", () => {
     render(<ResultsSection {...baseProps} />)
 
@@ -131,20 +211,20 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toBeEnabled()
-    expect(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" })).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Aisha in match 301")).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Boris in match 301")).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Dana in match 301")).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" })).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Aisha in match 1")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Boris in match 1")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Dana in match 1")).toBeEnabled()
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     await waitFor(() => {
@@ -198,8 +278,8 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByLabelText("Speaker points for Arman in match 651")).toBeEnabled()
-    expect(screen.getByLabelText("Speaker points for Boris in match 651")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Boris in match 1")).toBeEnabled()
   })
 
   it("submits team knockout results without speaker points", async () => {
@@ -231,12 +311,12 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 901" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toBeEnabled()
     expect(screen.queryByText("Speaker points")).not.toBeInTheDocument()
-    expect(screen.queryByLabelText("Speaker points for Arman in match 901")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Speaker points for Arman in match 1")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 901" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
     expect(screen.getByRole("button", { name: "Submit results" })).toBeEnabled()
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
@@ -276,8 +356,8 @@ describe("ResultsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 905" }))
-    expect(screen.getByLabelText("Speaker points for Arman in match 905")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
   })
 
@@ -309,7 +389,7 @@ describe("ResultsSection", () => {
     )
 
     expect(screen.getByRole("heading", { name: "Final results" })).toBeInTheDocument()
-    expect(screen.queryByLabelText("Speaker points for Arman in match 902")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Speaker points for Arman in match 1")).not.toBeInTheDocument()
   })
 
   it("returns to round entry when switching from preliminary statistics to elimination", () => {
@@ -403,12 +483,12 @@ describe("ResultsSection", () => {
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
 
     // Fully score ONLY match 301 (match 302 stays untouched).
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
 
     // A completed match now enables submitting, and the helper text reflects the pending one.
     expect(screen.getByRole("button", { name: "Submit results" })).toBeEnabled()
@@ -469,18 +549,18 @@ describe("ResultsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 31 as not winner in match 310" }))
-    expect(screen.getByRole("button", { name: "Mark Team 31 as not winner in match 310" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: "Mark Team 6 as winner in match 310" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 31 as not winner in match 1" }))
+    expect(screen.getByRole("button", { name: "Mark Team 31 as not winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mark Team 6 as winner in match 1" })).toHaveAttribute("aria-pressed", "true")
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 6 as not winner in match 310" }))
-    expect(screen.getByRole("button", { name: "Mark Team 31 as winner in match 310" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: "Mark Team 6 as not winner in match 310" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 6 as not winner in match 1" }))
+    expect(screen.getByRole("button", { name: "Mark Team 31 as winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mark Team 6 as not winner in match 1" })).toHaveAttribute("aria-pressed", "true")
 
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 310"), { target: { value: "24" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 310"), { target: { value: "19" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 310"), { target: { value: "24" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 310"), { target: { value: "24" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "24" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "19" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "24" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "24" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     await waitFor(() => {
@@ -514,6 +594,7 @@ describe("ResultsSection", () => {
     const debater1 = makeParticipant(1301, "Winner")
     const debater2 = makeParticipant(1351, "Runner")
     const onSubmitResults = jest.fn()
+    const resultStorageKey = "tournament:53:round-group:103:round:203:match-results"
 
     render(
       <ResultsSection
@@ -539,12 +620,13 @@ describe("ResultsSection", () => {
         currentRoundNumber={1}
         canManageTeams
         onSubmitResults={onSubmitResults}
+        resultStorageKey={resultStorageKey}
       />,
     )
 
     expect(screen.queryByText("Speaker points")).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Mark Winner as winner in match 501" }))
-    expect(screen.getByRole("button", { name: "Mark Runner as not winner in match 501" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(screen.getByRole("button", { name: "Mark Winner as winner in match 1" }))
+    expect(screen.getByRole("button", { name: "Mark Runner as not winner in match 1" })).toHaveAttribute("aria-pressed", "true")
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     await waitFor(() => {
@@ -553,6 +635,48 @@ describe("ResultsSection", () => {
         winnerParticipantId: 1301,
       }] satisfies MatchResultRequest[])
     })
+    expect(JSON.parse(window.localStorage.getItem(resultStorageKey) ?? "{}")).toEqual({
+      "501:debater1": { result: "won" },
+      "501:debater2": { result: "lost" },
+    })
+  })
+
+  it("renders a completed LD result from winnerParticipantId without marking it for correction", () => {
+    const debater1 = makeParticipant(75, "Lauren")
+    const debater2 = makeParticipant(61, "Dana")
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.SOLO_ELIMINATION}
+        selectedResultsOption="LD"
+        activeResultsSection="1/8"
+        selectedRound="1/8"
+        matches={{
+          content: [{
+            id: 195,
+            debater1,
+            debater2,
+            winnerParticipantId: 75,
+            completed: true,
+          }],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        canManageTeams
+        onSubmitResults={jest.fn()}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Mark Lauren as winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mark Lauren as winner in match 1" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Dana as not winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mark Dana as not winner in match 1" })).toBeDisabled()
+    expect(screen.getByRole("cell", { name: "Completed" })).toBeInTheDocument()
+    expect(screen.queryByText(/Needs correction/)).not.toBeInTheDocument()
   })
 
   it("keeps the BPF results view available when BPF is selected", () => {
@@ -597,18 +721,18 @@ describe("ResultsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 411" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as winner in match 411" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 3 as not winner in match 411" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 4 as not winner in match 411" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 411"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 411"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 411"), { target: { value: "74" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 411"), { target: { value: "73" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Erkin in match 411"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Fariza in match 411"), { target: { value: "71" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Gani in match 411"), { target: { value: "70" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Hana in match 411"), { target: { value: "69" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 3 as not winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 4 as not winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "74" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Erkin in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Fariza in match 1"), { target: { value: "71" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Gani in match 1"), { target: { value: "70" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Hana in match 1"), { target: { value: "69" } })
 
     expect(screen.getByRole("button", { name: "Submit results" })).toBeEnabled()
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
@@ -700,10 +824,10 @@ describe("ResultsSection", () => {
     for (const team of ["Team 1", "Team 2", "Team 3", "Team 4"]) {
       expect(screen.getByText(team)).toBeInTheDocument()
     }
-    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 41201" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Mark Team 2 as winner in match 41201" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Mark Team 3 as not winner in match 41201" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Mark Team 4 as not winner in match 41201" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 2 as winner in match 1" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 3 as not winner in match 1" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 4 as not winner in match 1" })).toBeDisabled()
     expect(screen.getByText("Completed")).toBeInTheDocument()
   })
 
@@ -736,13 +860,13 @@ describe("ResultsSection", () => {
     )
 
     expect(screen.getByText("Needs correction")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Mark Team 15 as winner in match 220" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Mark Team 15 as winner in match 1" })).toBeEnabled()
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 15 as winner in match 220" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 220"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 220"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 220"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 220"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 15 as winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     await waitFor(() => {
@@ -806,8 +930,8 @@ describe("ResultsSection", () => {
 
     expect(screen.getByRole("cell", { name: "Needs correction (not repairable)" })).toBeInTheDocument()
     expect(screen.getByText("This completed match has nonrepairable participant scores and cannot be submitted.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Mark Team 15 as winner in match 221" })).toBeDisabled()
-    expect(screen.getByLabelText("Speaker points for Arman in match 221")).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 15 as winner in match 1" })).toBeDisabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeDisabled()
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
   })
 
@@ -912,6 +1036,51 @@ describe("ResultsSection", () => {
       "1",
       "0",
       "1",
+    ])
+  })
+
+  it("ranks preliminary standings by wins, then speaker points, then team id", () => {
+    const highPointsNoWins = { id: 1, name: "High points, no wins" }
+    const stableLowerId = { id: 2, name: "Stable lower id" }
+    const stableHigherId = { id: 3, name: "Stable higher id" }
+    const highWinsLowPoints = { id: 4, name: "High wins, low points" }
+    const pointsTieBreaker = { id: 5, name: "Points tie-breaker" }
+
+    render(
+      <ResultsSection
+        {...baseProps}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+        selectedRoundNumber={1}
+        currentRoundNumber={1}
+        preliminaryRoundMatches={[{
+          round: { id: 201, name: "Round 1", roundNumber: 1, customFormat: "APF" as never },
+          matches: {
+            content: [
+              { id: 301, team1: highWinsLowPoints, team2: highPointsNoWins, team1Score: 10, team2Score: 500, team1Won: true, team2Won: false, completed: true },
+              { id: 302, team1: highWinsLowPoints, team2: highPointsNoWins, team1Score: 10, team2Score: 500, team1Won: true, team2Won: false, completed: true },
+              { id: 303, team1: pointsTieBreaker, team2: highPointsNoWins, team1Score: 250, team2Score: 500, team1Won: true, team2Won: false, completed: true },
+              { id: 304, team1: stableLowerId, team2: highPointsNoWins, team1Score: 200, team2Score: 500, team1Won: true, team2Won: false, completed: true },
+              { id: 305, team1: stableHigherId, team2: highPointsNoWins, team1Score: 200, team2Score: 500, team1Won: true, team2Won: false, completed: true },
+            ],
+            totalElements: 5,
+            totalPages: 1,
+          } as never,
+        }]}
+      />,
+    )
+
+    const standingsSection = screen.getByRole("heading", { name: "Preliminary standings" }).closest("section")
+    expect(standingsSection).not.toBeNull()
+    const rankedTeamNames = within(standingsSection as HTMLElement).getAllByRole("row").slice(1).map((row) =>
+      within(row).getAllByRole("cell")[1]?.textContent,
+    )
+    expect(rankedTeamNames).toEqual([
+      "High wins, low points",
+      "Points tie-breaker",
+      "Stable lower id",
+      "Stable higher id",
+      "High points, no wins",
     ])
   })
 
@@ -1081,12 +1250,12 @@ describe("ResultsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
 
     unmount()
 
@@ -1115,12 +1284,12 @@ describe("ResultsSection", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toHaveAttribute("aria-pressed", "true")
-      expect(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" })).toHaveAttribute("aria-pressed", "true")
-      expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
-      expect(screen.getByLabelText("Speaker points for Aisha in match 301")).toHaveValue(76)
-      expect(screen.getByLabelText("Speaker points for Boris in match 301")).toHaveValue(72)
-      expect(screen.getByLabelText("Speaker points for Dana in match 301")).toHaveValue(73)
+      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByLabelText("Speaker points for Arman in match 1")).toHaveValue(75)
+      expect(screen.getByLabelText("Speaker points for Aisha in match 1")).toHaveValue(76)
+      expect(screen.getByLabelText("Speaker points for Boris in match 1")).toHaveValue(72)
+      expect(screen.getByLabelText("Speaker points for Dana in match 1")).toHaveValue(73)
       expect(screen.getByText("Open")).toBeInTheDocument()
     })
   })
@@ -1156,12 +1325,12 @@ describe("ResultsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     const inputDraftStorageKey = getResultInputDraftStorageKey(storageKey)
@@ -1231,12 +1400,12 @@ describe("ResultsSection", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" }))
-    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 301" }))
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 301"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 301"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 301"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 301"), { target: { value: "73" } })
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark Team 2 as not winner in match 1" }))
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     const inputDraftStorageKey = getResultInputDraftStorageKey(storageKey)
@@ -1291,10 +1460,10 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeDisabled()
-    expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeDisabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toHaveValue(75)
     expect(screen.getByRole("button", { name: "Submit results" })).toBeDisabled()
   })
 
@@ -1332,12 +1501,12 @@ describe("ResultsSection", () => {
       />,
     )
 
-    expect(screen.getByLabelText("Speaker points for Arman in match 220")).toBeEnabled()
+    expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeEnabled()
     expect(screen.getByRole("cell", { name: "Needs correction" })).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 220"), { target: { value: "75" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 220"), { target: { value: "76" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 220"), { target: { value: "72" } })
-    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 220"), { target: { value: "73" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Arman in match 1"), { target: { value: "75" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Aisha in match 1"), { target: { value: "76" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Boris in match 1"), { target: { value: "72" } })
+    fireEvent.change(screen.getByLabelText("Speaker points for Dana in match 1"), { target: { value: "73" } })
     fireEvent.click(screen.getByRole("button", { name: "Submit results" }))
 
     await waitFor(() => {
@@ -1406,6 +1575,53 @@ describe("ResultsSection", () => {
     expect(onSelectedRoundChange).toHaveBeenCalledWith("Round 2")
   })
 
+  it("renders only configured team-elimination rounds in the results navigation", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        roundGroupType={RoundGroupType.TEAM_ELIMINATION}
+        activeResultsSection="1/4"
+        selectedRound="1/4"
+        rounds={[
+          { id: 901, name: "1/4", roundNumber: 1, customFormat: "APF" as never },
+          { id: 902, name: "1/2", roundNumber: 2, customFormat: "APF" as never },
+          { id: 903, name: "Final", roundNumber: 3, customFormat: "APF" as never },
+        ]}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+      />,
+    )
+
+    const navigation = screen.getByRole("navigation", { name: "Results rounds" })
+    expect(within(navigation).getByRole("button", { name: "1/4" })).toBeInTheDocument()
+    expect(within(navigation).getByRole("button", { name: "1/2" })).toBeInTheDocument()
+    expect(within(navigation).getByRole("button", { name: "Final" })).toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/16" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/8" })).not.toBeInTheDocument()
+  })
+
+  it("renders a final-only LD navigation without inventing 1/16", () => {
+    render(
+      <ResultsSection
+        {...baseProps}
+        selectedResultsOption="LD"
+        roundGroupType={RoundGroupType.SOLO_ELIMINATION}
+        activeResultsSection="Final"
+        selectedRound="Final"
+        rounds={[{ id: 904, name: "Final", roundNumber: 1, customFormat: "LD" as never }]}
+        matches={{ content: [], totalElements: 0, totalPages: 0 }}
+        matchesLoading={false}
+      />,
+    )
+
+    const navigation = screen.getByRole("navigation", { name: "Results rounds" })
+    expect(within(navigation).getByRole("button", { name: "Final" })).toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/16" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/8" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/4" })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole("button", { name: "1/2" })).not.toBeInTheDocument()
+  })
+
   it("hydrates submitted results from local fallback when the match list omits scores after refresh", async () => {
     const storageKey = "tournament:53:round-group:101:round:201:match-results"
     window.localStorage.setItem(storageKey, JSON.stringify({
@@ -1444,10 +1660,10 @@ describe("ResultsSection", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toHaveAttribute("aria-pressed", "true")
-      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 301" })).toBeDisabled()
-      expect(screen.getByLabelText("Speaker points for Arman in match 301")).toHaveValue(75)
-      expect(screen.getByLabelText("Speaker points for Arman in match 301")).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByRole("button", { name: "Mark Team 1 as winner in match 1" })).toBeDisabled()
+      expect(screen.getByLabelText("Speaker points for Arman in match 1")).toHaveValue(75)
+      expect(screen.getByLabelText("Speaker points for Arman in match 1")).toBeDisabled()
       expect(screen.getByText("Completed")).toBeInTheDocument()
     })
   })

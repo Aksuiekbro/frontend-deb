@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-api";
 import { resolveMediaUrl } from "@/lib/media";
+import { Role } from "@/types/user/user";
 import {
   localeLabels,
   locales,
@@ -13,7 +14,9 @@ import {
 
 const headerMessages = {
   en: {
+    home: "Home",
     joinDebates: "Join Debates",
+    browseDebates: "Browse Debates",
     hostDebate: "Host Debate",
     rating: "Rating",
     news: "News",
@@ -24,7 +27,9 @@ const headerMessages = {
     register: "Register",
   },
   ru: {
+    home: "Главная",
     joinDebates: "Участвовать в дебатах",
+    browseDebates: "Смотреть дебаты",
     hostDebate: "Провести дебаты",
     rating: "Рейтинг",
     news: "Новости",
@@ -35,7 +40,9 @@ const headerMessages = {
     register: "Регистрация",
   },
   kk: {
+    home: "Басты бет",
     joinDebates: "Дебатқа қатысу",
+    browseDebates: "Пікірсайыстарды көру",
     hostDebate: "Дебат өткізу",
     rating: "Рейтинг",
     news: "Жаңалықтар",
@@ -49,11 +56,16 @@ const headerMessages = {
 
 // --- The Header Component ---
 export default function Header() {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading, error } = useCurrentUser();
   const { locale, setLocale } = useLocale();
   const t = useTranslations(headerMessages);
 
   const isLoggedIn = !!user;
+  const isOrganizer = user?.role === Role.ORGANIZER;
+  const homeHref = isLoggedIn ? "/dashboard" : "/";
+  const hasResolvedUser = !isLoading && !error;
+  const canBrowseDebates = hasResolvedUser;
+  const canHostDebates = hasResolvedUser && (isOrganizer || !user);
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return '';
@@ -64,11 +76,25 @@ export default function Header() {
     <header className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-4 sm:px-8 lg:px-12">
       {/* ... The rest of your header JSX remains the same ... */}
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2 lg:gap-x-16">
-        <Link href="/" className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</Link>
+        <Link
+          href={homeHref}
+          aria-label={t("home")}
+          className="text-[#0D1321] text-[45px] font-bold font-hikasami"
+        >
+          DB
+        </Link>
         <nav className="flex flex-wrap gap-x-6 gap-y-1 lg:gap-x-12">
           {/* Nav Links */}
-          <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("joinDebates")}</Link>
-          <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("hostDebate")}</Link>
+          {canBrowseDebates && (
+            <Link href="/join" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+              {isOrganizer ? t("browseDebates") : t("joinDebates")}
+            </Link>
+          )}
+          {canHostDebates && (
+            <Link href="/create-tournament" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">
+              {t("hostDebate")}
+            </Link>
+          )}
           <Link href="/rating" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("rating")}</Link>
           <Link href="/news" className="text-[#4a4e69] hover:text-[#22223b] text-[16px] font-normal">{t("news")}</Link>
         </nav>
