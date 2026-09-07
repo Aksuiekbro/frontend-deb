@@ -34,7 +34,7 @@ function response(body: unknown, status = 200) {
 }
 
 function Harness() {
-  const { isTournamentEnabled, toggleTournamentLoading, handleTournamentToggle } = useTournamentVisibility({
+  const { areResultsVisible, resultsVisibilityUpdating, handleResultsVisibilityToggle } = useTournamentVisibility({
     tournament,
     toast,
   })
@@ -43,10 +43,10 @@ function Harness() {
   return (
     <div>
       <span data-testid="locale">{locale}</span>
-      <span>{isTournamentEnabled ? "enabled" : "disabled"}</span>
-      <span>{toggleTournamentLoading ? "loading" : "idle"}</span>
-      <button type="button" onClick={() => handleTournamentToggle(false)}>Disable</button>
-      <button type="button" onClick={() => handleTournamentToggle(true)}>Enable</button>
+      <span>{areResultsVisible ? "published" : "hidden"}</span>
+      <span>{resultsVisibilityUpdating ? "loading" : "idle"}</span>
+      <button type="button" onClick={() => handleResultsVisibilityToggle(false)}>Hide results</button>
+      <button type="button" onClick={() => handleResultsVisibilityToggle(true)}>Publish results</button>
     </div>
   )
 }
@@ -62,20 +62,21 @@ describe("useTournamentVisibility", () => {
     jest.restoreAllMocks()
   })
 
-  it("disables a tournament and shows a success toast", async () => {
+  it("hides results and shows a success toast", async () => {
     apiMock.disableTournament.mockResolvedValue(response({}))
 
     render(<Harness />)
-    await waitFor(() => expect(screen.getByText("enabled")).toBeInTheDocument())
-    fireEvent.click(screen.getByText("Disable"))
+    await waitFor(() => expect(screen.getByText("published")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("Hide results"))
 
     await waitFor(() => {
       expect(apiMock.disableTournament).toHaveBeenCalledWith(53)
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Tournament hidden",
+        title: "Results hidden",
+        description: "Results for Climate Cup are now hidden from participants.",
       }))
     })
-    expect(screen.getByText("disabled")).toBeInTheDocument()
+    expect(screen.getByText("hidden")).toBeInTheDocument()
     expect(screen.getByText("idle")).toBeInTheDocument()
   })
 
@@ -83,21 +84,21 @@ describe("useTournamentVisibility", () => {
     apiMock.disableTournament.mockResolvedValue(response({ message: "Only organizers can edit this tournament" }, 403))
 
     render(<Harness />)
-    await waitFor(() => expect(screen.getByText("enabled")).toBeInTheDocument())
-    fireEvent.click(screen.getByText("Disable"))
+    await waitFor(() => expect(screen.getByText("published")).toBeInTheDocument())
+    fireEvent.click(screen.getByText("Hide results"))
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Failed to update tournament",
+        title: "Failed to update results visibility",
         description: "Only organizers can edit this tournament",
         variant: "destructive",
       }))
     })
-    expect(screen.getByText("enabled")).toBeInTheDocument()
+    expect(screen.getByText("published")).toBeInTheDocument()
     expect(screen.getByText("idle")).toBeInTheDocument()
   })
 
-  it("translates a successful visibility toast into Russian while preserving the tournament name", async () => {
+  it("translates a successful results-publication toast into Russian while preserving the tournament name", async () => {
     window.localStorage.setItem("debetter-locale", "ru")
     apiMock.enableTournament.mockResolvedValue(response({}))
 
@@ -107,17 +108,17 @@ describe("useTournamentVisibility", () => {
       </LocaleProvider>,
     )
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("ru"))
-    fireEvent.click(screen.getByText("Enable"))
+    fireEvent.click(screen.getByText("Publish results"))
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Турнир виден",
-        description: "Турнир «Climate Cup» теперь виден участникам.",
+        title: "Результаты опубликованы",
+        description: "Результаты турнира «Climate Cup» теперь видны участникам.",
       }))
     })
   })
 
-  it("translates a visibility permission error into Kazakh", async () => {
+  it("translates a results-visibility permission error into Kazakh", async () => {
     window.localStorage.setItem("debetter-locale", "kk")
     apiMock.disableTournament.mockResolvedValue(response({}, 403))
 
@@ -127,11 +128,11 @@ describe("useTournamentVisibility", () => {
       </LocaleProvider>,
     )
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("kk"))
-    fireEvent.click(screen.getByText("Disable"))
+    fireEvent.click(screen.getByText("Hide results"))
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Турнирді жаңарту мүмкін болмады",
+        title: "Нәтижелердің көрінуін жаңарту мүмкін болмады",
         description: "Бұл әрекетті орындауға рұқсатыңыз жоқ.",
         variant: "destructive",
       }))

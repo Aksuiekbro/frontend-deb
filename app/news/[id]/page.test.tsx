@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { useSWRConfig } from "swr"
 
@@ -13,9 +13,10 @@ import { Role, type UserResponse } from "@/types/user/user"
 
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
+let mockNewsId = "42"
 
 jest.mock("next/navigation", () => ({
-  useParams: () => ({ id: "42" }),
+  useParams: () => ({ id: mockNewsId }),
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
@@ -113,6 +114,7 @@ function errorResponse(message: string, status = 500): Response {
 describe("NewsDetailPage", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockNewsId = "42"
     mockUseSingleNews.mockReturnValue(newsResult())
     mockUseCurrentUser.mockReturnValue(currentUserResult(owner))
     mockApi.updateNews.mockResolvedValue(okResponse(newsItem))
@@ -151,6 +153,82 @@ describe("NewsDetailPage", () => {
 
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
+  })
+
+  it("does not carry an edit draft into a different News post", () => {
+    const page = render(<NewsDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "First post draft" } })
+
+    mockNewsId = "43"
+    mockUseSingleNews.mockReturnValue({
+      ...newsResult(),
+      newsItem: { ...newsItem, id: 43, title: "Another tournament" },
+    })
+    page.rerender(<NewsDetailPage />)
+
+    expect(screen.queryByRole("textbox", { name: "Title" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+    expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue("Another tournament")
+  })
+
+  it("closes the edit form when the account changes", () => {
+    const page = render(<NewsDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+
+    mockUseCurrentUser.mockReturnValue(currentUserResult({ ...owner, id: 99 }))
+    page.rerender(<NewsDetailPage />)
+
+    expect(screen.queryByRole("textbox", { name: "Title" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument()
+  })
+
+  it("keeps a new post's editor intact when an earlier save completes", async () => {
+    let resolveSave!: (response: Response) => void
+    mockApi.updateNews.mockReturnValueOnce(new Promise((resolve) => { resolveSave = resolve }))
+    const page = render(<NewsDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }))
+
+    const mutateSecondPost = jest.fn()
+    mockNewsId = "43"
+    mockUseSingleNews.mockReturnValue({
+      ...newsResult(),
+      newsItem: { ...newsItem, id: 43, title: "Second post" },
+      mutate: mutateSecondPost,
+    })
+    page.rerender(<NewsDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Second post draft" } })
+
+    await act(async () => { resolveSave(okResponse(newsItem)) })
+
+    expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue("Second post draft")
+    expect(mockMutateNews).toHaveBeenCalledWith(newsItem, { revalidate: false })
+    expect(mutateSecondPost).not.toHaveBeenCalled()
+    expect(mockApi.updateNews).toHaveBeenCalledTimes(1)
+    expect(mockApi.updateNews.mock.calls[0][0]).toBe(42)
+  })
+
+  it("does not navigate away from a new post when an earlier delete completes", async () => {
+    let resolveDelete!: (response: Response) => void
+    mockApi.deleteNews.mockReturnValueOnce(new Promise((resolve) => { resolveDelete = resolve }))
+    const page = render(<NewsDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete" }))
+
+    mockNewsId = "43"
+    mockUseSingleNews.mockReturnValue({
+      ...newsResult(),
+      newsItem: { ...newsItem, id: 43, title: "Second post" },
+    })
+    page.rerender(<NewsDetailPage />)
+    await act(async () => { resolveDelete(okResponse()) })
+
+    expect(screen.getByRole("heading", { name: "Second post" })).toBeInTheDocument()
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockApi.deleteNews).toHaveBeenCalledWith(42)
   })
 
   it("shows the not-found state when the News request returns 404", () => {

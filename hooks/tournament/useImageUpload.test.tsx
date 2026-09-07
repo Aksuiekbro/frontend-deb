@@ -178,7 +178,7 @@ describe("useImageUpload", () => {
     class FailingFileReader {
       onprogress: ((event: ProgressEvent<FileReader>) => void) | null = null
       onload: ((event: ProgressEvent<FileReader>) => void) | null = null
-      onerror: ((event: ProgressEvent<FileReader>) => void) | null = null
+      onerror: ((event: ProgressEvent) => void) | null = null
       readAsDataURL() {
         setTimeout(() => this.onerror?.(new ProgressEvent("error")), 0)
       }

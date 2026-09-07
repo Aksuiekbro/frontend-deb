@@ -366,9 +366,11 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
     onClearMatches,
     onSaveAllRooms,
     onUpdateMatch,
+    resultStorageKey,
   }: {
     selectedStage: "preliminary" | "team" | "solo"
     selectedRound: string
+    resultStorageKey?: string
     availableStages?: ReadonlyArray<{
       id: "preliminary" | "team" | "solo"
       label: string
@@ -385,6 +387,7 @@ jest.mock("@/components/tournament/PairingsSection", () => ({
     onUpdateMatch?: (matchId: number, payload: { location: string; team1Id: number; team2Id: number; judgeId: number }) => void
   }) => (
     <div data-testid="pairings">
+      <output data-testid="pairing-draft-storage-key">{resultStorageKey ?? "none"}</output>
       <div data-testid="selected-pairing-state">{selectedStage}:{selectedRound}</div>
       <div data-testid="stage-formats">{availableStages?.map(({ format }) => format).join(":")}</div>
       <div data-testid="stage-labels">{availableStages?.map(({ label, format }) => `${label} (${format})`).join("|")}</div>
@@ -425,8 +428,10 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
     eliminationRounds,
     onActiveResultsSectionChange,
     onSelectedRoundChange,
+    resultStorageKey,
   }: {
     selectedResultsOption: string
+    resultStorageKey?: string
     roundGroupType?: RoundGroupType
     activeResultsSection?: string
     selectedRound?: string
@@ -440,6 +445,7 @@ jest.mock("@/components/tournament/ResultsSection", () => ({
     }>) => void
   }) => (
       <div data-testid="results">
+      <output data-testid="results-draft-storage-key">{resultStorageKey ?? "none"}</output>
       <div data-testid="selected-results-option">{selectedResultsOption}</div>
       <div data-testid="results-round-group-type">{roundGroupType ?? "unknown"}</div>
       <div data-testid="active-results-section">{activeResultsSection}</div>
@@ -502,8 +508,11 @@ const mockExtraImage = new File(["extra"], "extra.png", { type: "image/png" })
 let mockPostImages = [mockPrimaryImage, mockExtraImage]
 let mockTournamentMap: TournamentMapResponse | null = null
 let mockCurrentRole: Role = Role.ORGANIZER
+let mockCurrentUserId = 1
 let mockCurrentUserPresent = true
 let mockTournamentStarted = true
+let mockTournamentDisabled = false
+let mockAreResultsVisible = true
 let mockTournamentOrganizerIds: Array<number | null> = [1]
 let mockTournamentOrganizersLoading = false
 let mockTournamentOrganizersError: Error | undefined
@@ -533,9 +542,9 @@ jest.mock("@/hooks/tournament/useImageUpload", () => ({
 
 jest.mock("@/hooks/tournament/useTournamentVisibility", () => ({
   useTournamentVisibility: () => ({
-    isTournamentEnabled: true,
-    toggleTournamentLoading: false,
-    handleTournamentToggle: jest.fn(),
+    areResultsVisible: mockAreResultsVisible,
+    resultsVisibilityUpdating: false,
+    handleResultsVisibilityToggle: jest.fn(),
   }),
 }))
 
@@ -546,7 +555,7 @@ jest.mock("@/hooks/tournament/useRoundSelection", () => ({
 jest.mock("@/hooks/use-api", () => ({
   useCurrentUser: () => ({
     user: mockCurrentUserPresent ? {
-      id: 1,
+      id: mockCurrentUserId,
       username: "organizer",
       firstName: "Org",
       lastName: "User",
@@ -555,7 +564,12 @@ jest.mock("@/hooks/use-api", () => ({
     } : null,
   }),
   useTournament: () => ({
-    tournament: { id: 53, name: "Climate Cup", enabled: true, started: mockTournamentStarted },
+    tournament: {
+      id: 53,
+      name: "Climate Cup",
+      disabled: mockTournamentDisabled,
+      started: mockTournamentStarted,
+    },
     isLoading: false,
     error: undefined,
     mutate: mockMutateTournament,
@@ -738,8 +752,11 @@ function configureRoundSelectionGroups(
 beforeEach(() => {
   jest.clearAllMocks()
   mockCurrentRole = Role.ORGANIZER
+  mockCurrentUserId = 1
   mockCurrentUserPresent = true
   mockTournamentStarted = true
+  mockTournamentDisabled = false
+  mockAreResultsVisible = true
   mockTournamentOrganizerIds = [1]
   mockTournamentOrganizersLoading = false
   mockTournamentOrganizersError = undefined
@@ -815,6 +832,64 @@ afterEach(() => {
 })
 
 describe("TournamentDetailPage mutations", () => {
+  it("scopes result storage to the current editor and omits it for participants and guests", () => {
+    const page = render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Pairing and Matches" }))
+    expect(screen.getByTestId("pairing-draft-storage-key")).toHaveTextContent("tournament:53:round-group:101:round:201:match-results:principal:1")
+
+    mockCurrentUserId = 2
+    mockTournamentOrganizerIds = [2]
+    page.rerender(<TournamentDetailPage />)
+    expect(screen.getByTestId("pairing-draft-storage-key")).toHaveTextContent("match-results:principal:2")
+    fireEvent.click(screen.getByRole("button", { name: "Results and Statistics" }))
+    expect(screen.getByTestId("results-draft-storage-key")).toHaveTextContent("match-results:principal:2")
+
+    mockCurrentRole = Role.PARTICIPANT
+    page.rerender(<TournamentDetailPage />)
+    expect(screen.getByTestId("results-draft-storage-key")).toHaveTextContent("none")
+    fireEvent.click(screen.getByRole("button", { name: "Pairing and Matches" }))
+    expect(screen.getByTestId("pairing-draft-storage-key")).toHaveTextContent("none")
+
+    mockCurrentUserPresent = false
+    page.rerender(<TournamentDetailPage />)
+    expect(screen.getByTestId("pairing-draft-storage-key")).toHaveTextContent("none")
+  })
+
+  it("replaces unpublished results with a notice for non-organizers", () => {
+    mockTournamentDisabled = true
+    mockAreResultsVisible = false
+    mockMainOrganizerId = 99
+    mockTournamentOrganizerIds = [99]
+
+    render(<TournamentDetailPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Results and Statistics" }))
+
+    expect(screen.getByRole("heading", { name: "Results are not published" })).toBeInTheDocument()
+    expect(screen.queryByTestId("results")).not.toBeInTheDocument()
+  })
+
+  it("keeps unpublished results available to organizers and follows the optimistic visibility state", () => {
+    mockTournamentDisabled = true
+    mockAreResultsVisible = false
+    const organizerPage = render(<TournamentDetailPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Results and Statistics" }))
+
+    expect(screen.getByTestId("results")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Results are not published" })).not.toBeInTheDocument()
+
+    organizerPage.unmount()
+    mockMainOrganizerId = 99
+    mockTournamentOrganizerIds = [99]
+    mockAreResultsVisible = true
+    render(<TournamentDetailPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Results and Statistics" }))
+
+    expect(screen.getByTestId("results")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Results are not published" })).not.toBeInTheDocument()
+  })
+
   it("models declined organizer invitations as a durable handled status", () => {
     const declined: Pick<OrganizerInvitationResponse, "accepted" | "status"> = {
       accepted: null,

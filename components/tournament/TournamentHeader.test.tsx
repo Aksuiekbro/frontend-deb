@@ -11,9 +11,9 @@ const baseProps = {
   tournamentLoading: false,
   tournamentError: undefined,
   canControlVisibility: false,
-  isTournamentEnabled: true,
-  toggleTournamentLoading: false,
-  onToggleTournament: jest.fn(),
+  areResultsVisible: true,
+  resultsVisibilityUpdating: false,
+  onToggleResultsVisibility: jest.fn(),
 }
 
 describe("TournamentHeader", () => {
@@ -37,10 +37,17 @@ describe("TournamentHeader", () => {
       <TournamentHeader {...baseProps} isOrganizer canControlVisibility={false} />,
     )
 
-    expect(screen.queryByRole("switch", { name: "Toggle participant visibility" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("switch", { name: "Toggle results visibility" })).not.toBeInTheDocument()
 
     rerender(<TournamentHeader {...baseProps} isOrganizer canControlVisibility />)
 
-    expect(screen.getByRole("switch", { name: "Toggle participant visibility" })).toBeInTheDocument()
+    expect(screen.getByRole("switch", { name: "Toggle results visibility" })).toBeInTheDocument()
+  })
+
+  it("labels the switch as results visibility", () => {
+    render(<TournamentHeader {...baseProps} isOrganizer canControlVisibility areResultsVisible={false} />)
+
+    expect(screen.getByText("Results hidden from participants")).toBeInTheDocument()
+    expect(screen.getByRole("switch", { name: "Toggle results visibility" })).not.toBeChecked()
   })
 })

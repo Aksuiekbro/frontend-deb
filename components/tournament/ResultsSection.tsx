@@ -184,11 +184,12 @@ export function ResultsSection({
   deletingTeamId,
   onSubmitResults,
   isSubmittingResults = false,
-  resultStorageKey,
+  resultStorageKey: configuredResultStorageKey,
   preliminaryRoundMatches,
   preliminaryRoundMatchesLoading = false,
   preliminaryRoundMatchesError,
 }: ResultsSectionProps) {
+  const resultStorageKey = onSubmitResults ? configuredResultStorageKey : undefined
   const { locale } = useLocale()
   const t = useTranslations(catalog)
   const getLocalizedRoundLabel = (round: string) => {
@@ -723,6 +724,8 @@ export function ResultsSection({
     return {
       teams: Array.from(teamStandings.values()).sort((a, b) =>
         b.wins - a.wins ||
+        b.speakerTotal - a.speakerTotal ||
+        a.teamId - b.teamId ||
         a.teamName.localeCompare(b.teamName)
       ),
       speakers: Array.from(speakerStandings.values()).sort((a, b) => {
@@ -1040,6 +1043,7 @@ export function ResultsSection({
 
   const renderScoreInput = (
     match: MatchResponse,
+    matchNumber: number,
     slot: ScoreSlot,
     canEditResult: boolean,
     labelPrefix?: string,
@@ -1056,7 +1060,7 @@ export function ResultsSection({
           inputMode="numeric"
           value={scoreDrafts[key] ?? ""}
           disabled={!canEditResult || isSubmittingResults}
-          aria-label={t("speakerPointsForMatch", { name: slot.name, id: match.id })}
+          aria-label={t("speakerPointsForMatch", { name: slot.name, id: matchNumber })}
           onChange={(event) => {
             const value = event.target.value
             setScoreDrafts((current) => ({ ...current, [key]: value }))
@@ -1070,6 +1074,7 @@ export function ResultsSection({
 
   const renderOutcomeControl = (
     match: MatchResponse,
+    matchNumber: number,
     slot: TeamResultSlot | DebaterResultSlot,
     canEditResult: boolean,
   ) => {
@@ -1077,7 +1082,7 @@ export function ResultsSection({
     return (
       <div
         role="group"
-        aria-label={t("resultForMatch", { name: slot.name, id: match.id })}
+        aria-label={t("resultForMatch", { name: slot.name, id: matchNumber })}
         className="inline-flex h-10 overflow-hidden rounded-lg border border-[#D5D9E7] bg-white"
       >
         {(["won", "lost"] as const).map((value) => {
@@ -1088,7 +1093,7 @@ export function ResultsSection({
               type="button"
               disabled={!canEditResult || isSubmittingResults}
               aria-pressed={isSelected}
-              aria-label={t(value === "won" ? "markWinner" : "markNotWinner", { name: slot.name, id: match.id })}
+              aria-label={t(value === "won" ? "markWinner" : "markNotWinner", { name: slot.name, id: matchNumber })}
               onClick={() => {
                 if (slot.kind === "team") {
                   updateTeamResultDraft(match, slot.slot, value)
@@ -1143,12 +1148,13 @@ export function ResultsSection({
       )
     }
 
-    return matchRows.flatMap((match) => {
+    return matchRows.flatMap((match, matchIndex) => {
+      const matchNumber = matchIndex + 1
       const slots = getResultSlots(match)
       if (!slots.length) {
         return (
           <tr key={match.id} className="hover:bg-gray-50">
-            <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{t("matchLabel", { id: match.id })}</td>
+            <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{t("matchLabel", { id: matchNumber })}</td>
             <td colSpan={resultTableColumnCount - 1} className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{t("noSides")}</td>
           </tr>
         )
@@ -1163,13 +1169,13 @@ export function ResultsSection({
           <tr key={key} className="hover:bg-gray-50">
             {index === 0 ? (
               <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#0D1321] font-medium">
-                Match {match.id}
+                {t("matchLabel", { id: matchNumber })}
               </td>
             ) : null}
             <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{slot.name}</td>
             <td className="border border-gray-300 px-6 py-4">
               {slot.kind === "team" || !requiresSpeakerPoints ? (
-                renderOutcomeControl(match, slot, canEditResult)
+                renderOutcomeControl(match, matchNumber, slot, canEditResult)
               ) : (
                 <span className="text-sm text-[#0D1321]">{getDebaterResult(match, slot.slot) ?? "—"}</span>
               )}
@@ -1180,14 +1186,14 @@ export function ResultsSection({
                   slot.speakers.length > 0 ? (
                     <div className="grid min-w-64 gap-2">
                       {slot.speakers.map((speaker, speakerIndex) =>
-                        renderScoreInput(match, speaker, canEditResult, t("speakerLabel", { number: speakerIndex + 1 }))
+                        renderScoreInput(match, matchNumber, speaker, canEditResult, t("speakerLabel", { number: speakerIndex + 1 }))
                       )}
                     </div>
                   ) : (
                         <span className="text-sm text-red-500">{t("noParticipants")}</span>
                   )
                 ) : (
-                  renderScoreInput(match, slot, canEditResult)
+                  renderScoreInput(match, matchNumber, slot, canEditResult)
                 )}
               </td>
             ) : null}

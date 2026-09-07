@@ -7,6 +7,7 @@ import "@testing-library/jest-dom"
 import { SWRConfig, useSWRConfig } from "swr"
 import { api } from "@/lib/api"
 import type { UserResponse } from "@/types/user/user"
+import { DebateFormat } from "@/types/tournament/tournament"
 import {
   useCurrentUser,
   useMyTournaments,
@@ -14,6 +15,8 @@ import {
   useTournamentJudges,
   useTournamentMainOrganizer,
   useTournamentMap,
+  useMatches,
+  useRoundMatches,
 } from "./use-api"
 
 jest.mock("@/lib/api", () => ({
@@ -24,6 +27,7 @@ jest.mock("@/lib/api", () => ({
     getMainOrganizer: jest.fn(),
     getNews: jest.fn(),
     getTournamentMap: jest.fn(),
+    getMatches: jest.fn(),
   },
 }))
 
@@ -33,6 +37,7 @@ const getJudgesMock = api.getJudges as jest.MockedFunction<typeof api.getJudges>
 const getMainOrganizerMock = api.getMainOrganizer as jest.MockedFunction<typeof api.getMainOrganizer>
 const getNewsMock = api.getNews as jest.MockedFunction<typeof api.getNews>
 const getTournamentMapMock = api.getTournamentMap as jest.MockedFunction<typeof api.getTournamentMap>
+const getMatchesMock = api.getMatches as jest.MockedFunction<typeof api.getMatches>
 
 function response(body: unknown, status = 200) {
   return {
@@ -76,7 +81,7 @@ function MyTournamentsConsumer() {
   )
 }
 
-function AccountSwitcher({ user }: { user: UserResponse }) {
+function AccountSwitcher({ user }: { user: UserResponse | null }) {
   const { mutate } = useSWRConfig()
 
   return (
@@ -121,6 +126,16 @@ function SingleNewsConsumer({ newsId }: { newsId: number }) {
       {isLoading ? "loading" : newsItem?.title ?? `${status}:${error?.message}`}
     </output>
   )
+}
+
+function MatchesConsumer() {
+  const { matches, isLoading } = useMatches(53, 101, 201)
+  return <output>{isLoading ? "loading" : matches?.content[0]?.team1Won === true ? "private-winner" : "redacted"}</output>
+}
+
+function RoundMatchesConsumer() {
+  const { roundMatches, isLoading } = useRoundMatches(53, 101, [{ id: 201, name: "Round 1", roundNumber: 1, customFormat: DebateFormat.APF }])
+  return <output>{isLoading ? "loading" : roundMatches?.[0]?.matches.content[0]?.team1Won === true ? "private-winner" : "redacted"}</output>
 }
 
 function TournamentMapConsumer({ tournamentId }: { tournamentId: number }) {
@@ -214,8 +229,89 @@ describe("useCurrentUser", () => {
 
 describe("principal-scoped tournament hooks", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    jest.resetAllMocks()
     getMeMock.mockResolvedValue(response(authenticatedUser))
+  })
+
+  it.each([
+    ["single-round/account", MatchesConsumer, { ...authenticatedUser, id: 8 }],
+    ["all-round/account", RoundMatchesConsumer, { ...authenticatedUser, id: 8 }],
+    ["single-round/guest", MatchesConsumer, null],
+    ["all-round/guest", RoundMatchesConsumer, null],
+  ] as const)("does not reuse organizer outcomes after changing viewer: %s", async (_label, Consumer, nextUser) => {
+    getMatchesMock
+      .mockResolvedValueOnce(response({ content: [{ id: 301, team1Won: true }], totalPages: 1, totalElements: 1 }))
+      .mockResolvedValueOnce(response({ content: [{ id: 301, team1Won: null }], totalPages: 1, totalElements: 1 }))
+    render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 300000 }}>
+      <Consumer />
+      <AccountSwitcher user={nextUser} />
+    </SWRConfig>)
+
+    expect(await screen.findByText("private-winner")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Switch account" }))
+    expect(await screen.findByText("redacted")).toBeInTheDocument()
+    expect(screen.queryByText("private-winner")).not.toBeInTheDocument()
+    expect(getMatchesMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("does not request memberships before authentication resolves or for guests", async () => {
+    let resolveUser!: (value: Response) => void
+    getMeMock.mockReturnValue(new Promise((resolve) => { resolveUser = resolve }))
+    render(<SWRConfig value={{ provider: () => new Map() }}><MyTournamentsConsumer /></SWRConfig>)
+
+    expect(screen.getByTestId("my-tournaments")).toHaveTextContent("loading")
+    expect(getMyTournamentsMock).not.toHaveBeenCalled()
+    resolveUser(response(null, 403))
+    await waitFor(() => expect(screen.getByTestId("my-tournaments")).not.toHaveTextContent("loading"))
+    expect(getMyTournamentsMock).not.toHaveBeenCalled()
+  })
+
+  it("isolates cached memberships when the account changes", async () => {
+    getMyTournamentsMock
+      .mockResolvedValueOnce(response({ content: [{ id: 1, name: "First account cup" }] }))
+      .mockResolvedValueOnce(response({ content: [{ id: 2, name: "Second account cup" }] }))
+    render(
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 300000 }}>
+        <MyTournamentsConsumer />
+        <AccountSwitcher user={{ ...authenticatedUser, id: 8 }} />
+      </SWRConfig>,
+    )
+    expect(await screen.findByText("First account cup")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Switch account" }))
+    expect(await screen.findByText("Second account cup")).toBeInTheDocument()
+    expect(screen.queryByText("First account cup")).not.toBeInTheDocument()
+    expect(getMyTournamentsMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("clears cached memberships when the account signs out", async () => {
+    getMyTournamentsMock.mockResolvedValue(response({ content: [{ id: 1, name: "Private cup" }] }))
+    render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <MyTournamentsConsumer />
+        <AccountSwitcher user={null} />
+      </SWRConfig>,
+    )
+    expect(await screen.findByText("Private cup")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Switch account" }))
+    await waitFor(() => expect(screen.queryByText("Private cup")).not.toBeInTheDocument())
+    expect(getMyTournamentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not reuse an organizer's private judge contacts for another viewer", async () => {
+    getJudgesMock
+      .mockResolvedValueOnce(response({ content: [{ id: 9, email: "judge@example.com" }] }))
+      .mockResolvedValueOnce(response({ content: [{ id: 9 }] }))
+    render(
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 300000 }}>
+        <JudgesConsumer tournamentId={42} />
+        <AccountSwitcher user={{ ...authenticatedUser, id: 8 }} />
+      </SWRConfig>,
+    )
+    expect(await screen.findByText("judge@example.com")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Switch account" }))
+    expect(await screen.findByText("redacted")).toBeInTheDocument()
+    expect(screen.queryByText("judge@example.com")).not.toBeInTheDocument()
+    expect(getJudgesMock).toHaveBeenCalledTimes(2)
   })
 
   it("loads My Tournaments through the principal-scoped API method", async () => {

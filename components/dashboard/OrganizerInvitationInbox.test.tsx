@@ -219,4 +219,29 @@ describe("OrganizerInvitationInbox", () => {
 
     await waitFor(() => expect(acceptButton).toBeEnabled())
   })
+
+  it("prevents a manual refresh or another action while acceptance is pending", async () => {
+    const acceptRequest = deferred<Response>()
+    apiMock.getReceivedOrganizerInvitations
+      .mockResolvedValueOnce(invitationPage([invitation()]))
+      .mockResolvedValueOnce(invitationPage([invitation("ACCEPTED")]))
+    apiMock.acceptOrganizerInvitation.mockReturnValueOnce(acceptRequest.promise)
+
+    render(<OrganizerInvitationInbox />)
+    fireEvent.click(await screen.findByRole("button", { name: "Accept invitation to Autumn Open" }))
+
+    const refreshButton = screen.getByRole("button", { name: "Refresh organizer invitations" })
+    expect(refreshButton).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Decline invitation to Autumn Open" })).toBeDisabled()
+    fireEvent.click(refreshButton)
+    expect(apiMock.getReceivedOrganizerInvitations).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      acceptRequest.resolve(response({}, 204))
+      await acceptRequest.promise
+    })
+
+    expect(await screen.findByText("Accepted")).toBeInTheDocument()
+    await waitFor(() => expect(refreshButton).toBeEnabled())
+  })
 })

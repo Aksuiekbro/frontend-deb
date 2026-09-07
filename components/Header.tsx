@@ -14,6 +14,7 @@ import {
 
 const headerMessages = {
   en: {
+    home: "Home",
     joinDebates: "Join Debates",
     browseDebates: "Browse Debates",
     hostDebate: "Host Debate",
@@ -26,6 +27,7 @@ const headerMessages = {
     register: "Register",
   },
   ru: {
+    home: "Главная",
     joinDebates: "Участвовать в дебатах",
     browseDebates: "Смотреть дебаты",
     hostDebate: "Провести дебаты",
@@ -38,6 +40,7 @@ const headerMessages = {
     register: "Регистрация",
   },
   kk: {
+    home: "Басты бет",
     joinDebates: "Дебатқа қатысу",
     browseDebates: "Пікірсайыстарды көру",
     hostDebate: "Дебат өткізу",
@@ -62,11 +65,7 @@ export default function Header() {
   const hasResolvedUser = !isLoading && !error;
   const canBrowseDebates = hasResolvedUser;
   const canHostDebates = hasResolvedUser && (isOrganizer || !user);
-  const homeHref = hasResolvedUser && user?.role === Role.PARTICIPANT
-    ? "/dashboard"
-    : hasResolvedUser && isOrganizer
-      ? "/organizer"
-      : "/";
+  const homeHref = hasResolvedUser && isLoggedIn ? "/dashboard" : "/";
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return '';
@@ -77,7 +76,13 @@ export default function Header() {
     <header className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-4 sm:px-8 lg:px-12">
       {/* ... The rest of your header JSX remains the same ... */}
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2 lg:gap-x-16">
-        <Link href={homeHref} className="text-[#0D1321] text-[45px] font-bold font-hikasami">DB</Link>
+        <Link
+          href={homeHref}
+          aria-label={t("home")}
+          className="text-[#0D1321] text-[45px] font-bold font-hikasami"
+        >
+          DB
+        </Link>
         <nav className="flex flex-wrap gap-x-6 gap-y-1 lg:gap-x-12">
           {/* Nav Links */}
           {canBrowseDebates && (

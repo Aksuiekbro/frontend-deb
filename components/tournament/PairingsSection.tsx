@@ -325,6 +325,7 @@ const translateRoundLabel = (round: string, t: Translate) => {
 
 type MatchDraft = {
   location: string
+  startTime: string
   judgeId: string
   team1Id: string
   team2Id: string
@@ -335,6 +336,14 @@ type MatchDraft = {
 }
 
 const toSelectValue = (id?: number | null) => (typeof id === "number" ? String(id) : "")
+
+const toDateTimeLocalValue = (value?: string | null) => {
+  if (!value) return ""
+
+  // Match start times are wall-clock values. Preserve the backend date and
+  // time instead of parsing them through Date, which could shift the input.
+  return value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1] ?? ""
+}
 
 const toOptionalId = (value: string) => {
   if (!value) return null
@@ -481,10 +490,11 @@ export function PairingsSection({
   const [deleteConfirmStage, setDeleteConfirmStage] = useState<StageId | null>(null)
   const [roomDrafts, setRoomDrafts] = useState<Record<number, string>>({})
   const serverRoomsRef = useRef<Record<number, string>>({})
-  const [persistedResultDrafts, setPersistedResultDrafts] = useState<PersistedResultDrafts>({})
+  const [storedResultDrafts, setStoredResultDrafts] = useState<{ storageKey?: string; drafts: PersistedResultDrafts }>({ drafts: {} })
   const [editingMatch, setEditingMatch] = useState<MatchResponse | null>(null)
   const [matchDraft, setMatchDraft] = useState<MatchDraft>({
     location: "",
+    startTime: "",
     judgeId: "",
     team1Id: "",
     team2Id: "",
@@ -537,6 +547,9 @@ export function PairingsSection({
   const isCurrentRound = !hasRoundProgress || selectedRoundNumber === currentRoundNumber
   const isEditableRound = isCurrentRound && !isFutureRound && !isPastRound
   const canManageWorkflow = Boolean(onProceedToNextRound || onRandomizePairings || onSubmitPairings)
+  const persistedResultDrafts = canManageWorkflow && storedResultDrafts.storageKey === resultStorageKey
+    ? storedResultDrafts.drafts
+    : {}
   const completedMatches = matchRows.filter((match) =>
     (!canManageWorkflow && selectedStage !== "preliminary" && match.completed) ||
     isMatchCompleteForWorkflow(match, persistedResultDrafts, teamsById, selectedStageFormat, selectedStage)
@@ -656,8 +669,9 @@ export function PairingsSection({
   }, [matches])
 
   useEffect(() => {
+    if (!canManageWorkflow || !resultStorageKey) return
     const refreshPersistedResultDrafts = () => {
-      setPersistedResultDrafts(readPersistedResultDrafts(resultStorageKey))
+      setStoredResultDrafts({ storageKey: resultStorageKey, drafts: readPersistedResultDrafts(resultStorageKey) })
     }
     const handleResultDraftsChanged = (event: Event) => {
       const changedStorageKey =
@@ -678,7 +692,7 @@ export function PairingsSection({
       window.removeEventListener(RESULT_DRAFTS_CHANGED_EVENT, handleResultDraftsChanged)
       window.removeEventListener("storage", handleResultDraftsChanged)
     }
-  }, [matches, resultStorageKey])
+  }, [canManageWorkflow, matches, resultStorageKey])
 
   const renderRoomCell = (match: MatchResponse) => {
     if (!canUpdateRooms) {
@@ -761,6 +775,7 @@ export function PairingsSection({
     setEditingMatch(match)
     setMatchDraft({
       location: match.location ?? "",
+      startTime: toDateTimeLocalValue(match.startTime),
       judgeId: toSelectValue(match.judge?.id),
       team1Id: toSelectValue(match.team1?.id),
       team2Id: toSelectValue(match.team2?.id),
@@ -802,6 +817,7 @@ export function PairingsSection({
 
       await onUpdateMatch(editingMatch.id, {
         location: matchDraft.location.trim() || null,
+        startTime: matchDraft.startTime || null,
         judgeId: toOptionalId(matchDraft.judgeId),
         debater1Id: toOptionalId(matchDraft.debater1Id),
         debater2Id: toOptionalId(matchDraft.debater2Id),
@@ -834,6 +850,7 @@ export function PairingsSection({
 
     const payload: MatchUpdateRequest = {
       location: matchDraft.location.trim() || null,
+      startTime: matchDraft.startTime || null,
       judgeId: toOptionalId(matchDraft.judgeId),
       team1Id: toOptionalId(matchDraft.team1Id),
       team2Id: toOptionalId(matchDraft.team2Id),
@@ -1109,6 +1126,16 @@ export function PairingsSection({
                 placeholder={t("room")}
                 className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
                 aria-label={t("matchRoom")}
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-[#4A5168]">
+              {t("startTime")}
+              <input
+                type="datetime-local"
+                value={matchDraft.startTime}
+                onChange={(event) => setDraftField("startTime", event.target.value)}
+                className="h-10 rounded-lg border border-[#D5D9E7] px-3 text-sm text-[#0B1327] outline-none focus:border-[#2B3F63]"
+                aria-label={t("startTime")}
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-[#4A5168]">

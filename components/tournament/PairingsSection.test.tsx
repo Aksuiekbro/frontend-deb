@@ -96,6 +96,7 @@ describe("PairingsSection", () => {
     expect(screen.getByRole("button", { name: "Келесі раундқа өту" })).toBeInTheDocument()
     expect(screen.getByText("Финал үшін жұптар әлі жоқ")).toBeInTheDocument()
     expect(screen.getByRole("columnheader", { name: "Басталу уақыты" })).toBeInTheDocument()
+    expect(screen.getByRole("columnheader", { name: "Мәртебе" })).toBeInTheDocument()
   })
 
   it("keeps backend-backed pairing actions disabled until handlers are wired", () => {
@@ -363,6 +364,38 @@ describe("PairingsSection", () => {
 
     expect(screen.getByText("All matches in this round are completed.")).toBeInTheDocument()
     expect(screen.queryByText(/Enter results/)).not.toBeInTheDocument()
+  })
+
+  it.each(["team", "solo"] as const)("does not expose stored private %s winners to a public viewer", (stage) => {
+    const resultStorageKey = "tournament:53:round-group:101:round:201:match-results"
+    const slots = stage === "solo" ? ["debater1", "debater2"] : ["team1", "team2"]
+    window.localStorage.setItem(resultStorageKey, JSON.stringify({
+      [`301:${slots[0]}`]: { result: "won", score: "90" },
+      [`301:${slots[1]}`]: { result: "lost", score: "80" },
+    }))
+    render(<PairingsSection
+      {...baseProps}
+      selectedStage={stage}
+      selectedRound="Final"
+      stageFormats={{ team: "APF", solo: "LD" }}
+      resultStorageKey={resultStorageKey}
+      matches={{ content: [{
+        id: 301,
+        team1: { id: 1, name: "Team 1" },
+        team2: { id: 2, name: "Team 2" },
+        debater1: team1Members[0],
+        debater2: team2Members[0],
+        team1Won: null,
+        team2Won: null,
+        debater1Won: null,
+        debater2Won: null,
+        completed: false,
+      }], totalElements: 1, totalPages: 1 } as never}
+    />)
+
+    expect(screen.queryByText("Winner")).not.toBeInTheDocument()
+    expect(screen.queryByText("Loss")).not.toBeInTheDocument()
+    expect(screen.getAllByText("Result pending")).toHaveLength(2)
   })
 
   it("does not advance from team scores alone without win/loss results", () => {
@@ -1011,6 +1044,7 @@ describe("PairingsSection", () => {
               team1: { id: 1, name: "Team 1" },
               team2: { id: 2, name: "Team 2" },
               location: "Room A",
+              startTime: "2026-09-05T09:15:00.000Z",
               judge: { id: 7, fullName: "Judge 1" },
             },
           ],
@@ -1038,15 +1072,20 @@ describe("PairingsSection", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Edit match 301" }))
+    const startTimeInput = screen.getByLabelText("Start time")
+    expect(startTimeInput).toHaveAttribute("type", "datetime-local")
+    expect(startTimeInput).toHaveValue("2026-09-05T09:15")
     fireEvent.change(screen.getByLabelText("Team 1"), { target: { value: "2" } })
     fireEvent.change(screen.getByLabelText("Team 2"), { target: { value: "1" } })
     fireEvent.change(screen.getByLabelText("Match room"), { target: { value: "Room C-15" } })
+    fireEvent.change(startTimeInput, { target: { value: "2026-09-05T14:45" } })
     fireEvent.change(screen.getByLabelText("Judge"), { target: { value: "8" } })
     fireEvent.click(screen.getByRole("button", { name: "Save match" }))
 
     await waitFor(() => {
       expect(onUpdateMatch).toHaveBeenCalledWith(301, {
         location: "Room C-15",
+        startTime: "2026-09-05T14:45",
         judgeId: 8,
         team1Id: 2,
         team2Id: 1,
@@ -1054,7 +1093,7 @@ describe("PairingsSection", () => {
     })
   })
 
-  it("saves a cleared room as null from the match editor", async () => {
+  it("saves cleared room and start time values as null from the match editor", async () => {
     const onUpdateMatch = jest.fn().mockResolvedValue(undefined)
 
     render(
@@ -1067,6 +1106,7 @@ describe("PairingsSection", () => {
               team1: { id: 1, name: "Team 1" },
               team2: { id: 2, name: "Team 2" },
               location: "Room A",
+              startTime: "2026-09-05T09:15:00",
               judge: { id: 7, fullName: "Judge 1" },
             },
           ],
@@ -1094,14 +1134,71 @@ describe("PairingsSection", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Edit match 301" }))
     fireEvent.change(screen.getByLabelText("Match room"), { target: { value: "" } })
+    fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "" } })
     fireEvent.click(screen.getByRole("button", { name: "Save match" }))
 
     await waitFor(() => {
       expect(onUpdateMatch).toHaveBeenCalledWith(301, {
         location: null,
+        startTime: null,
         judgeId: 7,
         team1Id: 1,
         team2Id: 2,
+      })
+    })
+  })
+
+  it("includes the selected start time when updating a solo match", async () => {
+    const onUpdateMatch = jest.fn().mockResolvedValue(undefined)
+    const debater1 = makeParticipant(701, "First")
+    const debater2 = makeParticipant(702, "Second")
+
+    render(
+      <PairingsSection
+        {...baseProps}
+        selectedStage="solo"
+        selectedRound="1/8"
+        matches={{
+          content: [
+            {
+              id: 902,
+              debater1,
+              debater2,
+              location: "Room S",
+              startTime: null,
+              judge: { id: 7, fullName: "Judge 1" },
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        participants={{
+          content: [debater1, debater2],
+          totalElements: 2,
+          totalPages: 1,
+        } as never}
+        judges={{
+          content: [{ id: 7, fullName: "Judge 1", checkedIn: true }],
+          totalElements: 1,
+          totalPages: 1,
+        } as never}
+        onUpdateMatch={onUpdateMatch}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit match 902" }))
+    fireEvent.change(screen.getByLabelText("Start time"), {
+      target: { value: "2026-09-05T16:30" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Save match" }))
+
+    await waitFor(() => {
+      expect(onUpdateMatch).toHaveBeenCalledWith(902, {
+        location: "Room S",
+        startTime: "2026-09-05T16:30",
+        judgeId: 7,
+        debater1Id: 701,
+        debater2Id: 702,
       })
     })
   })

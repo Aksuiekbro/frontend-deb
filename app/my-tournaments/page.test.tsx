@@ -19,8 +19,11 @@ jest.mock("next/image", () => function Image() {
 })
 
 jest.mock("../../hooks/use-api", () => ({
-  useMyTournaments: (...args: unknown[]) => mockUseMyTournaments(...args),
   useCurrentUser: () => mockUseCurrentUser(),
+}))
+
+jest.mock("@/hooks/use-my-tournament-pages", () => ({
+  useMyTournamentPages: (...args: unknown[]) => mockUseMyTournaments(...args),
 }))
 
 const tournament = (overrides: Record<string, unknown>) => ({
@@ -98,12 +101,12 @@ describe("MyTournamentsPage", () => {
     expect(mockUseMyTournaments).toHaveBeenNthCalledWith(
       1,
       { startDateTo: "2026-06-19T00:00:00" },
-      { page: 0, size: 20, sort: ["startDate,desc"] },
+      { size: 20, sort: ["startDate,desc"] },
     )
     expect(mockUseMyTournaments).toHaveBeenNthCalledWith(
       2,
       { startDateFrom: "2026-06-19T00:00:00" },
-      { page: 0, size: 20, sort: ["startDate,asc"] },
+      { size: 20, sort: ["startDate,asc"] },
     )
 
     expect(screen.getByText("Past Cup")).toBeInTheDocument()
@@ -119,7 +122,8 @@ describe("MyTournamentsPage", () => {
     expect(mockUseMyTournaments).toHaveBeenNthCalledWith(
       3,
       undefined,
-      { page: 0, size: 50, sort: ["startDate,desc"] },
+      { size: 50, sort: ["startDate,desc"] },
+      true,
     )
   })
 
@@ -131,6 +135,31 @@ describe("MyTournamentsPage", () => {
     expect(screen.getByRole("heading", { name: "Sign in to view My Tournaments" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Log In" })).toHaveAttribute("href", "/auth?mode=login")
     expect(screen.queryByText("You haven't participated in any tournaments yet.")).not.toBeInTheDocument()
+  })
+
+  it("lets users request another page without hiding the current tournaments", () => {
+    const loadMore = jest.fn()
+    mockUseMyTournaments.mockReturnValue({
+      tournaments: { content: [tournament({ name: "First page cup" })] },
+      isLoading: false,
+      hasMore: true,
+      isLoadingMore: false,
+      loadMore,
+    })
+    const page = renderPage()
+    fireEvent.click(screen.getByRole("button", { name: "Load more tournaments" }))
+    expect(loadMore).toHaveBeenCalledTimes(1)
+
+    mockUseMyTournaments.mockReturnValue({
+      tournaments: { content: [tournament({ name: "First page cup" })] },
+      isLoading: false,
+      hasMore: true,
+      isLoadingMore: true,
+      loadMore,
+    })
+    page.rerender(<LocaleProvider><MyTournamentsPage /></LocaleProvider>)
+    expect(screen.getByText("First page cup")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Loading more tournaments..." })).toBeDisabled()
   })
 
   it("shows a retryable error when the current session cannot be verified", () => {

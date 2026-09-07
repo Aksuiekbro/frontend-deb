@@ -249,8 +249,7 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
           await mutate(CURRENT_USER_KEY)
         }
         setTimeout(() => {
-          if (role === Role.ORGANIZER) router.push('/organizer')
-          else router.push('/dashboard')
+          router.push('/dashboard')
         }, 2000)
         return                      // prevent setState in finally
       }

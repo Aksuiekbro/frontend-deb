@@ -15,6 +15,7 @@ import type {
   StageId as PairingStageId,
 } from "@/components/tournament/PairingsSection"
 import { ResultsSection } from "@/components/tournament/ResultsSection"
+import { ResultsPublicationNotice } from "@/components/tournament/ResultsPublicationNotice"
 import { TeamsSection } from "@/components/tournament/TeamsSection"
 import { TournamentHeader } from "@/components/tournament/TournamentHeader"
 import { TournamentTabs } from "@/components/tournament/TournamentTabs"
@@ -50,6 +51,7 @@ import type { TournamentMapRequest, TournamentMapResponse } from "@/types/tourna
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType, type RoundGroupResponse } from "@/types/tournament/round/round-group"
 import { displayRoundLabel } from "@/lib/round-label"
+import { createResultDraftStorageKey } from "@/lib/tournament-result-drafts"
 import { useTranslations, type TranslationCatalog } from "@/lib/i18n"
 import { Role, type SimpleUserResponse } from "@/types/user/user"
 
@@ -352,7 +354,7 @@ export default function TournamentDetailPage() {
   const resultsDropdownRef = useRef<HTMLDivElement>(null)
   const [selectedNewsCategory, setSelectedNewsCategory] = useState<'Important' | 'Update' | 'Info'>('Info')
 
-  const { isTournamentEnabled, toggleTournamentLoading, handleTournamentToggle } = useTournamentVisibility({
+  const { areResultsVisible, resultsVisibilityUpdating, handleResultsVisibilityToggle } = useTournamentVisibility({
     tournament,
     toast,
   })
@@ -391,11 +393,6 @@ export default function TournamentDetailPage() {
     error: preliminaryRoundMatchesError,
     mutate: mutatePreliminaryRoundMatches,
   } = useRoundMatches(tournamentId, selectedRoundGroupId ?? undefined, rounds, { page: 0, size: 100 })
-
-  const resultStorageKey =
-    typeof selectedRoundGroupId === 'number' && typeof selectedRoundId === 'number'
-      ? `tournament:${tournamentId}:round-group:${selectedRoundGroupId}:round:${selectedRoundId}:match-results`
-      : undefined
 
   const availablePairingStages = useMemo(
     () => getAvailablePairingStageDescriptors(roundGroups).map((stage) => ({
@@ -810,6 +807,11 @@ export default function TournamentDetailPage() {
     currentUser && mainOrganizer?.id === currentUser.id
   )
   const canManageTeams = isOrganizer
+  const canViewResults = areResultsVisible || isOrganizer
+  const resultStorageKey = isOrganizer && currentUser
+    ? createResultDraftStorageKey(currentUser.id, tournamentId, selectedRoundGroupId, selectedRoundId)
+    : undefined
+  const resultViewerKey = `${tournamentId}:${currentUser?.id ?? "guest"}:${isOrganizer}`
 
   useEffect(() => {
     if (!teams?.content) return
@@ -1591,9 +1593,9 @@ export default function TournamentDetailPage() {
         tournamentError={tournamentError}
         isOrganizer={isOrganizer}
         canControlVisibility={canControlVisibility}
-        isTournamentEnabled={isTournamentEnabled}
-        toggleTournamentLoading={toggleTournamentLoading}
-        onToggleTournament={handleTournamentToggle}
+        areResultsVisible={areResultsVisible}
+        resultsVisibilityUpdating={resultsVisibilityUpdating}
+        onToggleResultsVisibility={handleResultsVisibilityToggle}
         onOpenInvite={isOrganizer ? () => setIsInviteModalOpen(true) : undefined}
         onStartTournament={isOrganizer && !tournament?.started ? handleStartTournament : undefined}
         startTournamentLoading={startingTournament}
@@ -1676,6 +1678,7 @@ export default function TournamentDetailPage() {
 
         {activeTab === 'Pairing and Matches' && (
           <PairingsSection
+            key={resultViewerKey}
             matches={matches}
             rounds={rounds}
             teams={teams}
@@ -1702,7 +1705,8 @@ export default function TournamentDetailPage() {
         )}
 
         {activeTab === 'Results and Statistics' && (
-          <ResultsSection
+          canViewResults ? <ResultsSection
+            key={resultViewerKey}
             selectedResultsOption={selectedResultsOption}
             resultsSubTab={resultsSubTab}
             onResultsSubTabChange={setResultsSubTab}
@@ -1731,7 +1735,7 @@ export default function TournamentDetailPage() {
             preliminaryRoundMatches={preliminaryRoundMatches}
             preliminaryRoundMatchesLoading={preliminaryRoundMatchesLoading}
             preliminaryRoundMatchesError={preliminaryRoundMatchesError}
-          />
+          /> : <ResultsPublicationNotice />
         )}
 
         {activeTab === 'News' && (

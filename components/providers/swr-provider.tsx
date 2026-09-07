@@ -5,8 +5,8 @@ import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 
 import type { PageResult } from '@/types/page'
-import type { SimpleTournamentResponse } from '@/types/tournament/tournament'
-import type { UserResponse } from '@/types/user/user'
+import { DebateFormat, TournamentLeague, type SimpleTournamentResponse } from '@/types/tournament/tournament'
+import { Role, type UserResponse } from '@/types/user/user'
 
 // SWR base configuration with optimized caching strategies
 const baseConfig = {
@@ -67,9 +67,9 @@ export default function SWRProvider({ children }: SWRProviderProps) {
           name: 'Demo Invitational',
           description: 'An example tournament for demo mode',
           imageUrl: placeholderImage,
-          league: 'UNIVERSITY',
-          preliminaryFormat: 'BPF',
-          teamEliminationFormat: 'BPF',
+          league: TournamentLeague.UNIVERSITY,
+          preliminaryFormat: DebateFormat.BPF,
+          teamEliminationFormat: DebateFormat.BPF,
           tags: []
         },
         {
@@ -77,9 +77,9 @@ export default function SWRProvider({ children }: SWRProviderProps) {
           name: 'Sample Open',
           description: 'Preview of an upcoming event',
           imageUrl: placeholderImage,
-          league: 'SCHOOL',
-          preliminaryFormat: 'APF',
-          teamEliminationFormat: 'APF',
+          league: TournamentLeague.SCHOOL,
+          preliminaryFormat: DebateFormat.APF,
+          teamEliminationFormat: DebateFormat.APF,
           tags: []
         }
       ],
@@ -89,9 +89,9 @@ export default function SWRProvider({ children }: SWRProviderProps) {
 
     const leaderboardFallback: PageResult<UserResponse> = {
       content: [
-        { id: 101, username: 'alice', firstName: 'Alice', lastName: 'Smith', email: 'alice@example.com', profileId: 1, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined },
-        { id: 102, username: 'bob', firstName: 'Bob', lastName: 'Lee', email: 'bob@example.com', profileId: 2, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined },
-        { id: 103, username: 'carol', lastName: 'Ng', firstName: 'Carol', email: 'carol@example.com', profileId: 3, socialProfiles: [], createdAt: new Date().toISOString(), role: 'PARTICIPANT', imageUrl: undefined },
+        { id: 101, username: 'alice', firstName: 'Alice', lastName: 'Smith', email: 'alice@example.com', profileId: 1, socialProfiles: [], createdAt: new Date().toISOString(), role: Role.PARTICIPANT, imageUrl: undefined },
+        { id: 102, username: 'bob', firstName: 'Bob', lastName: 'Lee', email: 'bob@example.com', profileId: 2, socialProfiles: [], createdAt: new Date().toISOString(), role: Role.PARTICIPANT, imageUrl: undefined },
+        { id: 103, username: 'carol', lastName: 'Ng', firstName: 'Carol', email: 'carol@example.com', profileId: 3, socialProfiles: [], createdAt: new Date().toISOString(), role: Role.PARTICIPANT, imageUrl: undefined },
       ],
       totalElements: 3,
       totalPages: 1
