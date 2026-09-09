@@ -1,7 +1,10 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import AvatarWithEdit from "../../../components/profile/AvatarWithEdit";
 import SocialsManager from "../../../components/profile/SocialsManager";
+import EditProfileForm from "@/components/profile/EditProfileForm";
+import ChangePasswordForm from "@/components/profile/ChangePasswordForm";
 import LogoutButton from "@/components/profile/LogoutButton";
 import { useCurrentUser, useUser } from "@/hooks/use-api";
 import { api } from "@/lib/api";
@@ -9,6 +12,7 @@ import { readResponseError } from "@/lib/http-error";
 import { localeTags, useLocale, useTranslations, type TranslationCatalog } from "@/lib/i18n";
 import { resolveMediaUrl } from "@/lib/media";
 import type { SocialProfileRequest } from "@/types/util/socials/social-profile";
+import type { UserResponse, UserUpdateRequest } from "@/types/user/user";
 
 type ProfileClientProps = {
   userId: number;
@@ -25,6 +29,11 @@ const profileMessages: TranslationCatalog = {
     failedUpdateProfilePicture: "Failed to update profile picture.",
     failedDeleteProfilePicture: "Failed to delete profile picture.",
     failedSaveSocialProfiles: "Failed to save social profiles.",
+    failedSaveProfile: "Could not update your profile. Please try again.",
+    invalidProfile: "Check your profile details and try again.",
+    unauthorizedProfile: "Your session may have expired or you do not have permission. Sign in again.",
+    profileConflict: "That nickname or email is already in use.",
+    account: "Account settings",
     organizer: "Organizer",
     participant: "Participant",
   },
@@ -38,6 +47,11 @@ const profileMessages: TranslationCatalog = {
     failedUpdateProfilePicture: "Не удалось обновить фото профиля.",
     failedDeleteProfilePicture: "Не удалось удалить фото профиля.",
     failedSaveSocialProfiles: "Не удалось сохранить профили в социальных сетях.",
+    failedSaveProfile: "Не удалось обновить профиль. Попробуйте ещё раз.",
+    invalidProfile: "Проверьте данные профиля и попробуйте ещё раз.",
+    unauthorizedProfile: "Сессия могла истечь или у вас нет разрешения. Войдите снова.",
+    profileConflict: "Этот никнейм или адрес электронной почты уже используется.",
+    account: "Настройки аккаунта",
     organizer: "Организатор",
     participant: "Участник",
   },
@@ -51,6 +65,11 @@ const profileMessages: TranslationCatalog = {
     failedUpdateProfilePicture: "Профиль суретін жаңарту мүмкін болмады.",
     failedDeleteProfilePicture: "Профиль суретін жою мүмкін болмады.",
     failedSaveSocialProfiles: "Әлеуметтік желі профильдерін сақтау мүмкін болмады.",
+    failedSaveProfile: "Профильді жаңарту мүмкін болмады. Қайталап көріңіз.",
+    invalidProfile: "Профиль деректерін тексеріп, қайталап көріңіз.",
+    unauthorizedProfile: "Сессия аяқталған болуы мүмкін немесе рұқсатыңыз жоқ. Қайта кіріңіз.",
+    profileConflict: "Бұл лақап ат немесе электрондық пошта қолданыста.",
+    account: "Аккаунт баптаулары",
     organizer: "Ұйымдастырушы",
     participant: "Қатысушы",
   },
@@ -70,9 +89,54 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
   const { locale } = useLocale();
   const t = useTranslations(profileMessages);
   const { user, isLoading, error, mutate } = useUser(userId);
-  const { user: currentUser, mutate: mutateCurrentUser } = useCurrentUser();
+  const { user: currentUser, isLoading: isCurrentUserLoading, error: currentUserError, mutate: mutateCurrentUser } = useCurrentUser();
 
-  const isOwnProfile = Boolean(currentUser && user && currentUser.id === user.id);
+  const isOwnProfile = Boolean(!isCurrentUserLoading && !currentUserError && currentUser && user && currentUser.id === user.id && user.id === userId);
+  const ownerKey = isOwnProfile ? `${currentUser!.id}:${userId}` : null;
+  const activeOwner = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    activeOwner.current = ownerKey;
+    return () => { activeOwner.current = null; };
+  }, [ownerKey]);
+
+  const saveProfile = async (patch: UserUpdateRequest, signal: AbortSignal) => {
+    const isActive = () => !signal.aborted && ownerKey !== null && activeOwner.current === ownerKey;
+    if (!user || !isActive()) return;
+    const targetId = user.id;
+    let response: Response;
+    try {
+      response = await api.updateUser(targetId, patch);
+    } catch {
+      throw new Error(t("failedSaveProfile"));
+    }
+    if (!response.ok) {
+      const message = response.status === 400 ? t("invalidProfile")
+        : response.status === 401 || response.status === 403 ? t("unauthorizedProfile")
+        : response.status === 409 ? t("profileConflict") : t("failedSaveProfile");
+      throw new Error(message);
+    }
+    // Persistence succeeded. A failed refresh must not turn it into a failed save.
+    const body = await response.json().catch(() => null) as UserResponse | null;
+    const savedUser = body?.id === targetId ? body : { ...user, ...patch };
+    const refreshCache = async (updated: UserResponse, current: boolean) => {
+      if (!isActive() || updated.id !== targetId) return;
+      if (current) {
+        await mutateCurrentUser((cached: UserResponse | null | undefined) =>
+          isActive() && cached?.id === targetId ? updated : cached, { revalidate: false });
+      } else {
+        await mutate((cached: UserResponse | undefined) =>
+          isActive() && cached?.id === targetId ? updated : cached, { revalidate: false });
+      }
+    };
+    await Promise.allSettled([refreshCache(savedUser, false), refreshCache(savedUser, true)]);
+    if (!isActive()) return;
+    await Promise.allSettled([false, true].map(async (current) => {
+      const refreshed = await (current ? api.getMe() : api.getUser(targetId));
+      if (!refreshed.ok || !isActive()) return;
+      await refreshCache(await refreshed.json() as UserResponse, current);
+    }));
+  };
 
   const saveAvatar = async (file: File) => {
     const res = await api.updateMyProfilePicture(file);
@@ -131,14 +195,16 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
     content = (
       <section className="mx-auto max-w-[1280px] rounded-[10px] bg-white border border-black/10">
         <div className="flex flex-wrap items-center justify-between gap-6 px-6 md:px-8 py-6">
-          <div className="flex items-center gap-4">
-            <AvatarWithEdit
-              src={view.avatarUrl}
-              sizePx={72}
-              onChangeImage={isOwnProfile ? saveAvatar : undefined}
-              onDeleteImage={isOwnProfile ? deleteAvatar : undefined}
-            />
-            <div className="space-y-1">
+          <div className="flex min-w-0 max-w-full items-center gap-4">
+            <div className="shrink-0">
+              <AvatarWithEdit
+                src={view.avatarUrl}
+                sizePx={72}
+                onChangeImage={isOwnProfile ? saveAvatar : undefined}
+                onDeleteImage={isOwnProfile ? deleteAvatar : undefined}
+              />
+            </div>
+            <div className="min-w-0 space-y-1 [overflow-wrap:anywhere]">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-[24px] font-medium text-[#0D1321]">{view.shortName}</h2>
                 {view.joinedAt && <span className="text-sm text-[#0D1321]/60">{view.joinedAt}</span>}
@@ -157,6 +223,12 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
           </div>
         </div>
 
+        {isOwnProfile && (
+          <div className="px-6 pb-6 md:px-8">
+            <EditProfileForm key={ownerKey} user={user} onSave={saveProfile} />
+          </div>
+        )}
+
         <hr className="border-t border-black/10" />
 
         <div className="px-6 md:px-8 py-6 space-y-4">
@@ -165,19 +237,25 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
           <SocialsManager initialSocials={socials} editable={isOwnProfile} onSave={isOwnProfile ? saveSocials : undefined} />
         </div>
 
-        <hr className="border-t border-black/10" />
-
-        <div className="px-6 md:px-8 py-5 flex items-center justify-between">
-          <LogoutButton />
-          <button
-            type="button"
-            disabled
-            title={t("deleteAccountUnavailable")}
-            className="text-[18px] text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t("deleteAccount")}
-          </button>
-        </div>
+        {isOwnProfile && (
+          <>
+            <hr className="border-t border-black/10" />
+            <section aria-label={t("account")} className="space-y-6 px-6 py-5 md:px-8">
+              <ChangePasswordForm key={ownerKey} userId={user.id} />
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <LogoutButton />
+                <button
+                  type="button"
+                  disabled
+                  title={t("deleteAccountUnavailable")}
+                  className="text-[18px] text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t("deleteAccount")}
+                </button>
+              </div>
+            </section>
+          </>
+        )}
       </section>
     );
   }
@@ -185,7 +263,7 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
   return (
     <div lang={localeTags[locale]} className="min-h-screen bg-[#F1F1F1] font-hikasami">
 
-      <main className="px-8 py-8">{content}</main>
+      <main className="px-4 py-8 sm:px-8">{content}</main>
     </div>
   );
 }

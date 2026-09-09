@@ -311,6 +311,19 @@ describe('AuthPage sign-up', () => {
 })
 
 describe('AuthPage sign-in', () => {
+  it.each(['en', 'ru', 'kk'])('has no dead password-recovery action in %s and preserves sign-in controls', (locale) => {
+    window.localStorage.setItem('debetter-locale', locale)
+    const { container } = renderAuthPage('login', 'login')
+    const signIn = container.querySelector('.sign-in-container')!
+
+    expect(signIn.querySelector('a[href="#"]')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Forgot your password|Забыли пароль|Құпиясөзді ұмыттыңыз ба/)).not.toBeInTheDocument()
+    expect(signIn.querySelector('#auth-signin-email')).toBeInTheDocument()
+    expect(signIn.querySelector('#auth-signin-password')).toBeInTheDocument()
+    expect(signIn.querySelector('#remember-me-checkbox')).toBeInTheDocument()
+    expect(signIn.querySelector('button[type="submit"]')).toBeEnabled()
+  })
+
   it('propagates keyboard-style input events into the controlled sign-in fields', async () => {
     mockLogin.mockResolvedValue({ ok: true, status: 200, json: async () => signedInUser } as Response)
     const { container } = renderAuthPage()
