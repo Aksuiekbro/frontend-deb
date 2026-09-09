@@ -31,7 +31,6 @@ const authCatalog: TranslationCatalog = {
     signingUp: 'Signing up...',
     signInToDeBetter: 'Sign in to DeBetter',
     rememberMe: 'Remember me',
-    forgotPassword: 'Forgot your password?',
     signIn: 'Sign In',
     signingIn: 'Signing in...',
     welcomeBack: 'Welcome Back!',
@@ -68,7 +67,6 @@ const authCatalog: TranslationCatalog = {
     signingUp: 'Регистрация...',
     signInToDeBetter: 'Войти в DeBetter',
     rememberMe: 'Запомнить меня',
-    forgotPassword: 'Забыли пароль?',
     signIn: 'Войти',
     signingIn: 'Вход...',
     welcomeBack: 'С возвращением!',
@@ -105,7 +103,6 @@ const authCatalog: TranslationCatalog = {
     signingUp: 'Тіркелу орындалуда...',
     signInToDeBetter: 'DeBetter жүйесіне кіру',
     rememberMe: 'Мені есте сақтау',
-    forgotPassword: 'Құпиясөзді ұмыттыңыз ба?',
     signIn: 'Кіру',
     signingIn: 'Кіру орындалуда...',
     welcomeBack: 'Қайта қош келдіңіз!',
@@ -500,8 +497,6 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
                 </label>
             </div>
             {signInError && <p className="text-red-500 text-xs">{signInError}</p>}
-
-            <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">{t('forgotPassword')}</a>
 
             <button type="submit" disabled={signInLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] disabled:opacity-50">
               {signInLoading ? t('signingIn') : t('signIn')}
