@@ -20,7 +20,7 @@ export function InviteModal({ isOpen, members, activeTab, onTabChange, onClose }
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[#0D1321] text-[24px] font-bold">Invite</h2>
+          <h2 className="text-[var(--db-fg)] text-[24px] font-bold">Invite</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ×
           </button>
@@ -32,7 +32,7 @@ export function InviteModal({ isOpen, members, activeTab, onTabChange, onClose }
               key={tab}
               onClick={() => onTabChange(tab)}
               className={`flex-1 text-center py-2 border-b-2 font-medium transition-colors ${
-                activeTab === tab ? "border-[#0D1321] text-[#0D1321]" : "border-gray-300 text-[#9a8c98] hover:text-[#4a4e69]"
+                activeTab === tab ? "border-[var(--db-fg)] text-[var(--db-fg)]" : "border-gray-300 text-[var(--db-input-border)] hover:text-[var(--db-muted)]"
               }`}
             >
               {tab === "invite" ? "Invite" : "Copy link"}
@@ -41,7 +41,7 @@ export function InviteModal({ isOpen, members, activeTab, onTabChange, onClose }
         </div>
 
         <div>
-          <h3 className="text-[#0D1321] text-[16px] font-medium mb-4">Who Has Access</h3>
+          <h3 className="text-[var(--db-fg)] text-[16px] font-medium mb-4">Who Has Access</h3>
           <div className="space-y-3">
             {members.length > 0 ? (
               members.map((participant) => {
@@ -57,14 +57,14 @@ export function InviteModal({ isOpen, members, activeTab, onTabChange, onClose }
                           <span className="text-white text-sm font-medium">{name.charAt(0)}</span>
                         </div>
                       )}
-                      <span className="text-[#4a4e69] text-[16px]">{name}</span>
+                      <span className="text-[var(--db-muted)] text-[16px]">{name}</span>
                     </div>
-                    <span className="text-[#9a8c98] text-[14px]">Participant</span>
+                    <span className="text-[var(--db-input-border)] text-[14px]">Participant</span>
                   </div>
                 )
               })
             ) : (
-              <div className="text-center text-[#9a8c98] text-[14px] py-4">No tournament members yet</div>
+              <div className="text-center text-[var(--db-input-border)] text-[14px] py-4">No tournament members yet</div>
             )}
           </div>
         </div>

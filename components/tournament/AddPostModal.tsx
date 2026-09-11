@@ -82,7 +82,7 @@ export function AddPostModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[#0D1321] text-[32px] font-bold">{modalTitle}</h2>
+          <h2 className="text-[var(--db-fg)] text-[32px] font-bold">{modalTitle}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ×
           </button>
@@ -96,24 +96,24 @@ export function AddPostModal({
           className="space-y-6"
         >
           <div>
-            <label className="block text-[#9a8c98] text-[18px] font-medium mb-4">
+            <label className="block text-[var(--db-input-border)] text-[18px] font-medium mb-4">
               {isEditMode ? "Replace Image" : "Attach Images"}
             </label>
             <div className="md:flex md:items-start md:gap-6">
               <div
                 onDragOver={onDragOver}
                 onDrop={onDrop}
-                className={`relative border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#3E5C76] transition-colors cursor-pointer w-full md:flex-1 md:min-h-[360px] ${dzAnimate ? "dz-animate" : ""}`}
+                className={`relative border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[var(--db-accent)] transition-colors cursor-pointer w-full md:flex-1 md:min-h-[360px] ${dzAnimate ? "dz-animate" : ""}`}
                 onClick={() => document.getElementById(inputId)?.click()}
               >
                 <div className="flex flex-col items-center space-y-4">
                   <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <div className="text-[#4a4e69]">
+                  <div className="text-[var(--db-muted)]">
                     <p className="text-[18px] font-medium mb-2">Drag and Drop here</p>
                     <p className="text-[16px] mb-2">or</p>
-                    <p className="text-[#3E5C76] text-[16px] font-medium hover:underline">Browse files</p>
+                    <p className="text-[var(--db-accent)] text-[16px] font-medium hover:underline">Browse files</p>
                   </div>
                 </div>
                 <input
@@ -130,7 +130,7 @@ export function AddPostModal({
                 <div className="mt-4 md:mt-0 md:w-[260px]">
                   <div className="overflow-hidden rounded-lg border border-gray-300 bg-white">
                     <img src={resolvedCurrentImageUrl} alt="Current announcement" className="h-40 w-full bg-[#F7F9FF] object-contain" />
-                    <div className="px-3 py-2 text-sm font-medium text-[#4a4e69]">Current image</div>
+                    <div className="px-3 py-2 text-sm font-medium text-[var(--db-muted)]">Current image</div>
                   </div>
                 </div>
               ) : null}
@@ -152,14 +152,14 @@ export function AddPostModal({
                             {img.src ? (
                               <img src={img.src} alt={img.name} className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-[12px] font-medium text-[#0D1321]">{ext}</span>
+                              <span className="text-[12px] font-medium text-[var(--db-fg)]">{ext}</span>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-[20px] text-[#0D1321] font-medium truncate" title={img.name}>
+                            <div className="text-[20px] text-[var(--db-fg)] font-medium truncate" title={img.name}>
                               {img.name}
                             </div>
-                            <div className="text-[14px] text-[#0D1321]/60">{formatBytes(img.sizeBytes)}</div>
+                            <div className="text-[14px] text-[var(--db-fg)]/60">{formatBytes(img.sizeBytes)}</div>
                           </div>
                           <button
                             type="button"
@@ -177,7 +177,7 @@ export function AddPostModal({
                         </div>
                         {img.status !== "done" && (
                           <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                            <div className="h-full bg-[#3E5C76]" style={{ width: `${img.progress}%` }} />
+                            <div className="h-full bg-[var(--db-accent)]" style={{ width: `${img.progress}%` }} />
                           </div>
                         )}
                         {img.status === "error" && (
@@ -204,34 +204,34 @@ export function AddPostModal({
           {(modalContext === "announcements" || modalContext === "schedule" || modalContext === "news") && (
             <div className="space-y-6">
               <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Title</label>
+                <label className="block text-[var(--db-muted)] text-[16px] font-medium mb-3">Title</label>
                 <input
                   type="text"
                   value={postTitle}
                   onChange={(event) => onTitleChange(event.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--db-accent)] text-[var(--db-muted)]"
                   placeholder="Enter post title"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Description</label>
+                <label className="block text-[var(--db-muted)] text-[16px] font-medium mb-3">Description</label>
                 <textarea
                   value={postDescription}
                   onChange={(event) => onDescriptionChange(event.target.value)}
                   rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69] resize-vertical"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--db-accent)] text-[var(--db-muted)] resize-vertical"
                   placeholder="Enter post description"
                   required
                 />
               </div>
               {modalContext === "announcements" && (
                 <div>
-                  <label className="block text-[#4a4e69] text-[16px] font-medium mb-3">Category</label>
+                  <label className="block text-[var(--db-muted)] text-[16px] font-medium mb-3">Category</label>
                   <select
                     value={selectedNewsCategory}
                     onChange={(event) => onCategoryChange(event.target.value as NewsCategory)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E5C76] text-[#4a4e69]"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--db-accent)] text-[var(--db-muted)]"
                   >
                     <option value="Important">Important</option>
                     <option value="Update">Update</option>
@@ -250,7 +250,7 @@ export function AddPostModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full px-8 py-4 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[18px] font-medium transition-colors disabled:opacity-60"
+              className="w-full px-8 py-4 bg-[var(--db-accent)] text-white rounded-lg hover:bg-[#2D3748] text-[18px] font-medium transition-colors disabled:opacity-60"
             >
               {isSubmitting ? "Submitting..." : submitLabel ?? "Submit"}
             </button>

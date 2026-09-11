@@ -148,3 +148,641 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===========================================================
+   "Senate" theme system — Classic / Senate switchable tokens.
+   All custom properties and component classes below are
+   prefixed `db-` to avoid colliding with shadcn's own tokens
+   (--border, --muted, --accent, etc.) and Tailwind's own
+   `.container` utility, both of which are used app-wide by
+   components not covered by this restyle. See brand-spec.md
+   and design-reference/senate/assets/theme.css for sourcing —
+   values here are copied verbatim, only names are prefixed.
+   Driven by [data-theme] on <html>, defaulting to "classic".
+   =========================================================== */
+
+:root {
+  --db-radius-sm: 8px;
+  --db-radius-md: 12px;
+  --db-radius-lg: 16px;
+  --db-radius-pill: 999px;
+  --db-container: 1280px;
+  --db-ease: cubic-bezier(.4, 0, .2, 1);
+  --db-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --db-touch: 44px;
+}
+
+/* Classic — exact tokens from the live app's real hex values. Unchanged by design. */
+[data-theme="classic"] {
+  --db-bg: #F1F1F1;
+  --db-bg-elevated: #FFFFFF;
+  --db-surface: #0D1321;
+  --db-surface-fg: #FFFFFF;
+  --db-surface-muted: #9a8c98;
+  --db-fg: #0D1321;
+  --db-muted: #4a4e69;
+  --db-border: rgba(13, 19, 33, 0.12);
+  --db-input-border: #9a8c98;
+  --db-accent: #3E5C76;
+  --db-accent-fg: #FFFFFF;
+  --db-accent-hover: #2D3748;
+  --db-link: #4a4e69;
+  --db-link-hover: #22223b;
+  --db-status: #C0392B;
+  --db-status-fg: #FFFFFF;
+  --db-card-dark-fg: #FFFFFF;
+  --db-card-dark-muted: #9a8c98;
+  --db-shadow: 0 10px 28px 4px rgba(43, 63, 108, 0.18);
+  --db-font-display: 'Hikasami Sans', Georgia, serif;
+  --db-font-body: 'Hikasami Sans', system-ui, sans-serif;
+  --db-heading-transform: none;
+  --db-heading-tracking: normal;
+}
+
+/* Senate — derived from brand-spec.md (extracted from the 6 reference images). */
+[data-theme="senate"] {
+  --db-bg: oklch(0.95 0.015 80);
+  --db-bg-elevated: oklch(0.98 0.01 80);
+  --db-surface: oklch(0.90 0.02 75);
+  --db-surface-fg: oklch(0.22 0.02 50);
+  --db-surface-muted: oklch(0.48 0.03 70);
+  --db-fg: oklch(0.22 0.02 50);
+  --db-muted: oklch(0.42 0.03 65);
+  --db-border: oklch(0.78 0.02 70);
+  --db-input-border: oklch(0.70 0.02 70);
+  --db-accent: oklch(0.70 0.13 75);
+  --db-accent-fg: oklch(0.20 0.02 55);
+  --db-accent-hover: oklch(0.78 0.12 75);
+  --db-link: oklch(0.40 0.03 65);
+  --db-link-hover: oklch(0.22 0.02 50);
+  --db-status: oklch(0.40 0.15 25);
+  --db-status-fg: oklch(0.97 0.01 80);
+  --db-card-dark-fg: oklch(0.97 0.01 80);
+  --db-card-dark-muted: oklch(0.78 0.02 70);
+  --db-shadow: 0 12px 32px -4px rgba(57, 43, 32, 0.28);
+  --db-font-display: var(--font-cinzel), Georgia, serif;
+  --db-font-body: 'Hikasami Sans', Georgia, serif;
+  --db-heading-transform: none;
+  --db-heading-tracking: 0.01em;
+}
+
+[data-theme="senate"] :focus-visible {
+  outline-color: oklch(0.45 0.14 30);
+}
+
+.db-container {
+  max-width: var(--db-container);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (max-width: 600px) {
+  .db-container { padding: 0 16px; }
+}
+
+/* ---------- Page backdrop ----------
+   Senate theme: a fixed, full-viewport photo sits behind the entire page —
+   content scrolls over it, not just past a top banner. Classic theme never
+   shows it (unchanged, exactly as the live app looks today). */
+.db-page-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  display: none;
+}
+[data-theme="senate"] .db-page-backdrop { display: block; }
+.db-page-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--db-backdrop-focal, center);
+}
+.db-page-backdrop__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10,8,4,.30) 0%, rgba(10,8,4,.52) 38%, rgba(10,8,4,.78) 100%);
+}
+
+/* Frosted "marble glass" panels — the readable surfaces that float over the
+   backdrop. On Classic they're just the normal opaque surface (no backdrop
+   exists to show through). */
+.db-panel {
+  background: var(--db-bg-elevated);
+  border: 1px solid var(--db-border);
+  border-radius: var(--db-radius-lg);
+  box-shadow: var(--db-shadow);
+}
+[data-theme="senate"] .db-panel {
+  /* rgba, not alpha-channel oklch() -- safer/more universally supported
+     when combined with backdrop-filter. Equivalent color to the spec's
+     oklch(0.98 0.01 80 / 0.92), computed via canvas. */
+  background: rgba(252, 247, 241, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+[data-theme="senate"] .db-card-dark {
+  background: rgba(29, 20, 13, 0.82);
+  color: var(--db-card-dark-fg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ---------- Header ---------- */
+.db-site-header {
+  position: relative;
+  z-index: 40;
+  background: var(--db-bg);
+  border-bottom: 1px solid var(--db-border);
+}
+[data-theme="senate"] .db-site-header {
+  background: rgba(244, 238, 228, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: oklch(0.6 0.02 70 / 0.35);
+}
+.db-site-header__inner {
+  max-width: var(--db-container);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 24px;
+}
+.db-brand {
+  font-family: var(--db-font-display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--db-fg);
+  letter-spacing: var(--db-heading-tracking);
+  white-space: nowrap;
+}
+.db-primary-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex: 1;
+  margin-left: 8px;
+}
+.db-primary-nav a {
+  color: var(--db-muted);
+  font-size: 15px;
+  padding: 6px 2px;
+  border-bottom: 2px solid transparent;
+  transition: color .15s var(--db-ease), border-color .15s var(--db-ease);
+}
+.db-primary-nav a:hover,
+.db-primary-nav a[aria-current="page"] {
+  color: var(--db-fg);
+  border-bottom-color: var(--db-accent);
+}
+.db-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.db-header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px;
+  border-radius: var(--db-radius-pill);
+}
+.db-header-user__avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--db-surface);
+  color: var(--db-surface-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.db-header-user__name { font-size: 15px; color: var(--db-fg); }
+
+.db-nav-toggle {
+  display: none;
+  width: var(--db-touch);
+  height: var(--db-touch);
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--db-border);
+  border-radius: var(--db-radius-sm);
+  color: var(--db-fg);
+  cursor: pointer;
+}
+.db-nav-toggle svg { width: 20px; height: 20px; }
+
+/* Theme toggle — the one button */
+.db-theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: var(--db-surface);
+  border-radius: var(--db-radius-pill);
+  padding: 3px;
+  height: 36px;
+  cursor: pointer;
+  border: 1px solid var(--db-border);
+  flex-shrink: 0;
+}
+.db-theme-toggle__option {
+  position: relative;
+  z-index: 2;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 12px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  color: var(--db-surface-fg);
+  opacity: .65;
+  transition: opacity .15s var(--db-ease);
+  white-space: nowrap;
+}
+.db-theme-toggle[data-active="senate"] .db-theme-toggle__option[data-value="senate"],
+.db-theme-toggle[data-active="classic"] .db-theme-toggle__option[data-value="classic"] {
+  opacity: 1;
+}
+.db-theme-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: 30px;
+  border-radius: var(--db-radius-pill);
+  background: var(--db-accent);
+  transition: transform .22s var(--db-ease);
+  z-index: 1;
+}
+.db-theme-toggle[data-active="senate"] .db-theme-toggle__thumb { transform: translateX(var(--db-thumb-x, 74px)); }
+
+/* Mobile nav drawer */
+.db-nav-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+}
+.db-nav-drawer[data-open="true"] { display: block; }
+.db-nav-drawer__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+}
+.db-nav-drawer__panel {
+  position: absolute;
+  top: 0; right: 0;
+  height: 100%;
+  width: min(320px, 86vw);
+  background: var(--db-bg-elevated);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: -12px 0 32px rgba(0,0,0,.2);
+}
+.db-nav-drawer__close {
+  align-self: flex-end;
+  width: var(--db-touch);
+  height: var(--db-touch);
+  border: none;
+  background: transparent;
+  color: var(--db-fg);
+  cursor: pointer;
+}
+.db-nav-drawer__panel a {
+  padding: 14px 6px;
+  font-size: 17px;
+  color: var(--db-fg);
+  border-bottom: 1px solid var(--db-border);
+  min-height: var(--db-touch);
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .db-primary-nav { display: none; }
+  .db-header-user__name { display: none; }
+  .db-nav-toggle { display: flex; }
+}
+
+/* Below ~480px, brand + theme-toggle + avatar/hamburger no longer fit on one
+   line at their desktop sizes -- compact them instead of overflowing. */
+@media (max-width: 480px) {
+  .db-site-header__inner { padding: 12px 14px; gap: 10px; }
+  .db-brand { font-size: 22px; }
+  .db-header-actions { gap: 8px; }
+  .db-theme-toggle { height: 30px; }
+  .db-theme-toggle__option { font-size: 11px; padding: 0 8px; height: 24px; }
+  /* thumb position is recalculated by theme-toggle.tsx's resize listener,
+     which measures actual offsetLeft -- no static override needed here. */
+}
+
+/* ---------- Buttons ---------- */
+.db-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--db-touch);
+  padding: 0 22px;
+  border-radius: var(--db-radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color .15s var(--db-ease), color .15s var(--db-ease), border-color .15s var(--db-ease);
+}
+.db-btn-primary {
+  background: var(--db-accent);
+  color: var(--db-accent-fg);
+}
+.db-btn-primary:hover { background: var(--db-accent-hover); }
+.db-btn-secondary {
+  background: transparent;
+  color: var(--db-fg);
+  border-color: var(--db-border);
+}
+.db-btn-secondary:hover { border-color: var(--db-fg); background: var(--db-surface); color: var(--db-surface-fg); }
+.db-btn-ghost-on-dark {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255,255,255,.7);
+}
+.db-btn-ghost-on-dark:hover { background: #fff; color: var(--db-surface); }
+.db-btn:disabled { opacity: .5; cursor: not-allowed; }
+.db-btn-block { width: 100%; }
+
+/* ---------- Hero ----------
+   Senate: transparent — the fixed .db-page-backdrop behind it does the work.
+   Classic: its own navy-to-blue gradient, matching the live app's real
+   homepage carousel gradient (no photography in Classic, by design). */
+.db-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+}
+[data-theme="classic"] .db-hero {
+  background: linear-gradient(120deg, #0D1321 0%, #2B3F6C 100%);
+}
+.db-hero__content {
+  position: relative;
+  z-index: 2;
+  padding: 56px 24px;
+  width: 100%;
+}
+.db-hero__eyebrow {
+  font-size: 14px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #E9D9AE;
+  margin-bottom: 12px;
+}
+[data-theme="classic"] .db-hero__eyebrow { color: #A9C1D9; }
+.db-hero__title {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  color: #fff;
+  max-width: 18ch;
+  margin-bottom: 18px;
+}
+.db-hero__lede {
+  font-size: 18px;
+  color: rgba(255,255,255,.88);
+  max-width: 56ch;
+  margin-bottom: 28px;
+}
+
+/* ---------- Cards ---------- */
+.db-card {
+  background: var(--db-bg-elevated);
+  border: 1px solid var(--db-border);
+  border-radius: var(--db-radius-md);
+  box-shadow: var(--db-shadow);
+}
+.db-card-dark {
+  background: var(--db-surface);
+  color: var(--db-card-dark-fg);
+  border-radius: var(--db-radius-lg);
+  padding: 28px;
+}
+.db-card-dark .db-muted { color: var(--db-card-dark-muted); }
+
+.db-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--db-radius-sm);
+  font-size: 13px;
+  background: rgba(255,255,255,.14);
+  color: var(--db-card-dark-fg);
+}
+[data-theme="senate"] .db-tag { background: var(--db-status); color: var(--db-status-fg); }
+[data-theme="classic"] .db-tag-on-light { background: var(--db-fg); color: var(--db-bg); }
+[data-theme="senate"] .db-tag-on-light { background: var(--db-status); color: var(--db-status-fg); }
+
+/* ---------- Forms ---------- */
+.db-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.db-field label { font-size: 14px; font-weight: 600; color: var(--db-fg); }
+.db-field .db-hint { font-size: 13px; color: var(--db-muted); }
+.db-field input[type="text"],
+.db-field input[type="email"],
+.db-field input[type="password"],
+.db-field input[type="date"],
+.db-field input[type="number"],
+.db-field input[type="file"],
+.db-field select,
+.db-field textarea {
+  min-height: var(--db-touch);
+  padding: 10px 14px;
+  border-radius: var(--db-radius-sm);
+  border: 1px solid var(--db-input-border);
+  background: var(--db-bg-elevated);
+  color: var(--db-fg);
+  font-family: var(--db-font-body);
+  font-size: 15px;
+  width: 100%;
+}
+.db-field textarea { min-height: 110px; padding-top: 12px; resize: vertical; }
+.db-field input:focus-visible, .db-field select:focus-visible, .db-field textarea:focus-visible {
+  border-color: var(--db-accent);
+}
+.db-field-error { color: var(--db-status); font-size: 13px; }
+.db-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .db-field-row { grid-template-columns: 1fr; } }
+.db-checkbox-row { display: flex; align-items: center; gap: 10px; min-height: var(--db-touch); }
+.db-checkbox-row input { width: 20px; height: 20px; accent-color: var(--db-accent); }
+
+/* ---------- Modal ---------- */
+.db-modal-scrim {
+  position: fixed; inset: 0; background: rgba(10,8,4,.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 80; padding: 20px;
+}
+.db-modal-scrim[data-open="false"] { display: none; }
+.db-modal {
+  background: var(--db-bg-elevated);
+  border-radius: var(--db-radius-md);
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  position: relative;
+}
+.db-modal__close {
+  position: absolute; top: 14px; right: 14px;
+  width: var(--db-touch); height: var(--db-touch);
+  border: none; background: transparent; color: var(--db-muted); cursor: pointer;
+}
+@media (max-width: 560px) {
+  .db-modal-scrim { align-items: flex-end; padding: 0; }
+  .db-modal { max-width: 100%; border-radius: var(--db-radius-lg) var(--db-radius-lg) 0 0; max-height: 92vh; }
+}
+
+/* ---------- Footer ----------
+   Senate: transparent — the same fixed .db-page-backdrop shows through here
+   too (its scrim is darkest at the bottom, exactly where the footer sits).
+   Classic: solid navy band, matching the live app's real footer exactly. */
+.db-site-footer {
+  position: relative;
+  color: #fff;
+  margin-top: 64px;
+  overflow: hidden;
+  background: var(--db-surface);
+}
+[data-theme="senate"] .db-site-footer { background: transparent; }
+.db-site-footer__inner { position: relative; z-index: 2; padding: 56px 24px 32px; }
+.db-site-footer__brand { font-family: var(--db-font-display); font-size: 36px; font-weight: 700; text-align: center; margin-bottom: 24px; }
+.db-site-footer__social { display: flex; justify-content: center; gap: 14px; margin-bottom: 32px; }
+.db-site-footer__social a {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  color: var(--db-surface);
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .15s var(--db-ease);
+}
+[data-theme="senate"] .db-site-footer__social a:hover { background: var(--db-accent); }
+[data-theme="classic"] .db-site-footer__social a:hover { background: #83c5be; }
+.db-site-footer__meta {
+  display: flex; flex-wrap: wrap; gap: 10px 24px;
+  justify-content: center; text-align: center;
+  font-size: 13px; color: rgba(255,255,255,.75);
+  border-top: 1px solid rgba(255,255,255,.15);
+  padding-top: 20px;
+}
+.db-site-footer__meta a { text-decoration: underline; }
+
+/* ---------- Skip link ---------- */
+.db-skip-link {
+  position: absolute; left: -999px; top: 0;
+  background: var(--db-accent); color: var(--db-accent-fg);
+  padding: 12px 18px; border-radius: 0 0 8px 0; z-index: 100;
+}
+.db-skip-link:focus { left: 0; }
+
+/* ---------- Utility ---------- */
+.db-stack { display: flex; flex-direction: column; }
+.db-row { display: flex; align-items: center; }
+.db-gap-sm { gap: 8px; }
+.db-gap-md { gap: 16px; }
+.db-gap-lg { gap: 24px; }
+.db-mt-lg { margin-top: 48px; }
+.db-center-text { text-align: center; }
+.db-visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap;
+}
+.db-hint { font-size: 13px; color: var(--db-muted); }
+
+/* ---------- Join Debates page ---------- */
+.jd-layout { display: grid; grid-template-columns: 280px 1fr; gap: 28px; padding: 32px 0 72px; align-items: start; }
+@media (max-width: 900px) { .jd-layout { grid-template-columns: 1fr; } }
+.jd-filters { background: var(--db-surface); color: var(--db-surface-fg); border-radius: var(--db-radius-lg); padding: 24px; }
+.jd-filters h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .05em; margin: 18px 0 10px; color: var(--db-surface-fg); font-family: var(--db-font-body); }
+.jd-filters h3:first-child { margin-top: 0; }
+.jd-filters .jd-checkline { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; }
+.jd-filters input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--db-accent); }
+.jd-filters input[type="date"], .jd-filters input[type="text"] {
+  width: 100%; min-height: 40px; padding: 8px 10px; border-radius: var(--db-radius-sm);
+  border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.06); color: var(--db-surface-fg);
+  font-family: var(--db-font-body); font-size: 13px; margin-bottom: 8px;
+}
+.jd-filters--sheet {
+  position: fixed; inset: 0 0 0 auto; z-index: 70;
+  height: 100%; width: min(320px, 86vw);
+  border-radius: 0; overflow-y: auto;
+  box-shadow: -12px 0 32px rgba(0,0,0,.2);
+}
+.jd-filters__close {
+  align-self: flex-end; display: block; margin-left: auto;
+  width: var(--db-touch); height: var(--db-touch);
+  border: none; background: transparent; color: var(--db-surface-fg); cursor: pointer;
+}
+.jd-toolbar { display: flex; gap: 14px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
+.jd-search { position: relative; flex: 1; min-width: 200px; }
+.jd-search__icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--db-muted); pointer-events: none; }
+.jd-search input {
+  width: 100%; min-height: var(--db-touch); padding: 0 16px 0 44px; border-radius: var(--db-radius-pill);
+  border: 1px solid var(--db-input-border); background: var(--db-bg-elevated); color: var(--db-fg); font-size: 15px;
+}
+.jd-toolbar select {
+  min-height: var(--db-touch); padding: 0 14px; border-radius: var(--db-radius-pill); border: 1px solid var(--db-input-border);
+  background: var(--db-bg-elevated); color: var(--db-fg); font-size: 14px;
+}
+.debate-list { display: flex; flex-direction: column; gap: 20px; }
+.debate-item { padding: 26px; }
+.debate-item__head { display: flex; gap: 20px; }
+.debate-item__thumb { width: 96px; height: 96px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: rgba(255,255,255,.08); }
+.debate-item__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.debate-item__name { font-family: var(--db-font-display); font-size: 24px; margin-bottom: 6px; }
+.debate-item__meta-row { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--db-card-dark-muted); margin-bottom: 2px; }
+.debate-item__tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.debate-item__desc { font-size: 14px; color: var(--db-card-dark-muted); line-height: 1.6; margin-bottom: 18px; }
+.debate-item__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.empty-results { text-align: center; padding: 48px 20px; color: var(--db-muted); }
+[data-theme="senate"] .empty-results { color: rgba(255,255,255,.82); }
+
+/* ---------- Landing page ---------- */
+/* Text sitting directly on the page (not inside a card): dark in Classic
+   (plain light page background, no backdrop), white in Senate (photo
+   backdrop with a dark scrim behind it). */
+.home-heading { color: var(--db-fg); }
+[data-theme="senate"] .home-heading { color: #fff; }
+.home-sub { color: var(--db-muted); }
+[data-theme="senate"] .home-sub { color: rgba(255,255,255,.82); }
+/* A .db-btn-secondary that adapts like .home-heading -- for buttons sitting
+   directly on the page (not inside a panel/card), since a fixed dark-text
+   secondary button fails contrast once a Senate backdrop shows behind it. */
+.db-btn-on-backdrop { background: transparent; color: var(--db-fg); border-color: var(--db-border); }
+.db-btn-on-backdrop:hover { border-color: var(--db-fg); background: var(--db-surface); color: var(--db-surface-fg); }
+[data-theme="senate"] .db-btn-on-backdrop { color: #fff; border-color: rgba(255,255,255,.7); }
+[data-theme="senate"] .db-btn-on-backdrop:hover { background: #fff; color: var(--db-surface); }
+.debate-rail { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 760px) { .debate-rail { grid-template-columns: 1fr; } }
+.debate-card__title { font-family: var(--db-font-display); font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+.debate-card__meta { color: var(--db-card-dark-muted); font-size: 14px; margin-bottom: 4px; }
+.debate-card__tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+.content-panel { padding: 40px 32px; }
+@media (max-width: 640px) { .content-panel { padding: 28px 20px; } }
+.empty-state { text-align: center; padding: 24px; color: var(--db-muted); }
+.section-title { font-family: var(--db-font-display); font-size: 32px; margin-bottom: 28px; color: var(--db-fg); }
+/* Always a dark card regardless of theme (like .db-card-dark) so the white
+   heading/ghost-on-dark button text stays legible -- unlike --db-surface,
+   which is light in Senate and would otherwise flip this card light too. */
+.home-hero-slide { background: linear-gradient(120deg, #0D1321 0%, #2B3F6C 100%); }
+[data-theme="senate"] .home-hero-slide { background: linear-gradient(120deg, rgba(35,24,15,1) 0%, var(--db-accent) 100%); }
+
+/* ---------- Create Debate page ---------- */
+.cd-wrap { max-width: 860px; margin: -56px auto 72px; padding: 0 20px; position: relative; z-index: 3; }
+.cd-eyebrow { color: var(--db-muted); font-size: 16px; margin-bottom: 4px; }
+.cd-title { font-family: var(--db-font-display); font-size: clamp(26px,3vw,34px); margin-bottom: 16px; }
+.cd-divider { height: 1px; background: var(--db-border); margin-bottom: 26px; }
+.cd-form-actions { display: flex; gap: 14px; justify-content: flex-end; flex-wrap: wrap; padding-top: 12px; }
+@media (max-width: 560px) { .cd-form-actions { flex-direction: column-reverse; } .cd-form-actions .db-btn { width: 100%; } }

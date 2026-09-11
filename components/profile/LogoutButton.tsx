@@ -19,9 +19,9 @@ export default function LogoutButton() {
   }
 
   return (
-    <button type="button" onClick={onLogout} disabled={loading} className="flex items-center gap-2 text-[#0D1321] hover:opacity-80 disabled:opacity-50">
+    <button type="button" onClick={onLogout} disabled={loading} className="db-btn db-btn-secondary">
       <LogOut className="h-5 w-5" />
-      <span className="text-[18px]">{loading ? "Logging out..." : "Log out"}</span>
+      <span>{loading ? "Logging out..." : "Log Out"}</span>
     </button>
   )
 }

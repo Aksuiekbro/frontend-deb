@@ -182,7 +182,7 @@ export function ResultsSection({
     hasOpenMatchesInSelectedRound
 
   const submitDisabled = true
-  const submitButtonClass = `px-8 py-3 bg-[#3E5C76] text-white rounded-lg text-[16px] font-medium transition-colors ${
+  const submitButtonClass = `px-8 py-3 bg-[var(--db-accent)] text-white rounded-lg text-[16px] font-medium transition-colors ${
     "cursor-not-allowed opacity-50"
   }`
 
@@ -693,7 +693,7 @@ export function ResultsSection({
     if (teamsLoading) {
       return (
         <tr>
-          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69]">
+          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-muted)]">
             Loading teams...
           </td>
         </tr>
@@ -713,7 +713,7 @@ export function ResultsSection({
     if (!teamRows.length) {
       return (
         <tr>
-          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69]">
+          <td colSpan={columnCount} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-muted)]">
             No teams found
           </td>
         </tr>
@@ -1026,7 +1026,7 @@ export function ResultsSection({
               }}
               className={`px-3 text-sm font-medium transition-colors ${
                 isSelected
-                  ? "bg-[#0D1321] text-white"
+                  ? "bg-[var(--db-fg)] text-white"
                   : "text-[#0B1327] hover:bg-[#F5F7FC]"
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
@@ -1044,7 +1044,7 @@ export function ResultsSection({
     if (matchesLoading) {
       return (
         <tr>
-          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[var(--db-muted)]">
             Loading matches...
           </td>
         </tr>
@@ -1064,7 +1064,7 @@ export function ResultsSection({
     if (!matchRows.length) {
       return (
         <tr>
-          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+          <td colSpan={resultTableColumnCount} className="border border-gray-300 px-6 py-8 text-center text-[var(--db-muted)]">
             No matches for this round
           </td>
         </tr>
@@ -1076,8 +1076,8 @@ export function ResultsSection({
       if (!slots.length) {
         return (
           <tr key={match.id} className="hover:bg-gray-50">
-            <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">Match {match.id}</td>
-            <td colSpan={resultTableColumnCount - 1} className="border border-gray-300 px-6 py-4 text-[#4a4e69]">No sides assigned</td>
+            <td className="border border-gray-300 px-6 py-4 text-[var(--db-fg)] font-medium">Match {match.id}</td>
+            <td colSpan={resultTableColumnCount - 1} className="border border-gray-300 px-6 py-4 text-[var(--db-muted)]">No sides assigned</td>
           </tr>
         )
       }
@@ -1090,16 +1090,16 @@ export function ResultsSection({
         return (
           <tr key={key} className="hover:bg-gray-50">
             {index === 0 ? (
-              <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#0D1321] font-medium">
+              <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[var(--db-fg)] font-medium">
                 Match {match.id}
               </td>
             ) : null}
-            <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{slot.name}</td>
+            <td className="border border-gray-300 px-6 py-4 text-[var(--db-fg)] font-medium">{slot.name}</td>
             <td className="border border-gray-300 px-6 py-4">
               {slot.kind === "team" || !requiresSpeakerPoints ? (
                 renderOutcomeControl(match, slot, canEditResult)
               ) : (
-                <span className="text-sm text-[#0D1321]">{getDebaterResult(match, slot.slot) ?? "—"}</span>
+                <span className="text-sm text-[var(--db-fg)]">{getDebaterResult(match, slot.slot) ?? "—"}</span>
               )}
             </td>
             {requiresSpeakerPoints ? (
@@ -1121,13 +1121,13 @@ export function ResultsSection({
             ) : null}
             {index === 0 ? (
               <>
-                <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#4a4e69]">
+                <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[var(--db-muted)]">
                   {match.location || "—"}
                 </td>
-                <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#4a4e69]">
+                <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[var(--db-muted)]">
                   {match.judge?.fullName || "—"}
                 </td>
-                <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[#4a4e69]">
+                <td rowSpan={slots.length} className="border border-gray-300 px-6 py-4 align-top text-[var(--db-muted)]">
                   {statusLabel}
                 </td>
               </>
@@ -1181,26 +1181,26 @@ export function ResultsSection({
 
     return (
       <section>
-        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Preliminary standings</h3>
+        <h3 className="mb-4 text-xl font-semibold text-[var(--db-fg)]">Preliminary standings</h3>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Жеңіс саны</th>
+                <th className="border border-gray-300 px-4 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">№</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Фракция атауы</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Жеңіс саны</th>
               </tr>
             </thead>
             <tbody>
               {hasTeamRows ? preliminarySummary.teams.map((team, index) => (
                 <tr key={team.teamId} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-4 text-center text-[#4a4e69] text-[16px] font-medium">{index + 1}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">{team.teamName}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] text-[16px] font-semibold">{team.wins}</td>
+                  <td className="border border-gray-300 px-4 py-4 text-center text-[var(--db-muted)] text-[16px] font-medium">{index + 1}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[var(--db-fg)] text-[16px] font-medium">{team.teamName}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] text-[16px] font-semibold">{team.wins}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+                  <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[var(--db-muted)]">
                     No preliminary team results yet.
                   </td>
                 </tr>
@@ -1219,21 +1219,21 @@ export function ResultsSection({
 
     return (
       <section>
-        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Speaker details</h3>
+        <h3 className="mb-4 text-xl font-semibold text-[var(--db-fg)]">Speaker details</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] border-collapse border border-gray-300 rounded-2xl overflow-hidden">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Спикер</th>
+                <th className="border border-gray-300 px-4 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">№</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Фракция атауы</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Спикер</th>
                 {summaryRounds.map((round) => (
-                  <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">
+                  <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">
                     {getRoundHeader(round)}
                   </th>
                 ))}
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Іріктеу нәтижесі</th>
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Жалпы іріктеу нәтижесі</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Іріктеу нәтижесі</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Жалпы іріктеу нәтижесі</th>
               </tr>
             </thead>
             <tbody>
@@ -1244,33 +1244,33 @@ export function ResultsSection({
                 return rows.map((speaker, speakerIndex) => (
                   <tr key={speaker ? `${team.teamId}-${speaker.participantId}` : `${team.teamId}-empty`} className="hover:bg-gray-50">
                     {speakerIndex === 0 ? (
-                      <td rowSpan={rows.length} className="border border-gray-300 px-4 py-4 text-center align-top text-[#4a4e69] text-[16px] font-medium">
+                      <td rowSpan={rows.length} className="border border-gray-300 px-4 py-4 text-center align-top text-[var(--db-muted)] text-[16px] font-medium">
                         {teamIndex + 1}
                       </td>
                     ) : null}
                     {speakerIndex === 0 ? (
-                      <td rowSpan={rows.length} className="border border-gray-300 px-6 py-4 align-top text-[#0D1321] text-[16px] font-medium">
+                      <td rowSpan={rows.length} className="border border-gray-300 px-6 py-4 align-top text-[var(--db-fg)] text-[16px] font-medium">
                         {team.teamName}
                       </td>
                     ) : null}
-                    <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">
+                    <td className="border border-gray-300 px-6 py-4 text-[var(--db-fg)] text-[16px] font-medium">
                       {speaker?.speakerName ?? "—"}
                     </td>
                     {summaryRounds.map((round) => {
                       const scores = speaker?.roundScores[round.roundNumber]
                       return (
-                        <td key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+                        <td key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-muted)] text-[16px]">
                           {scores?.length ? scores.map(formatScore).join(", ") : "—"}
                         </td>
                       )
                     })}
-                    <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] text-[16px] font-semibold">
+                    <td className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] text-[16px] font-semibold">
                       {speaker && (speaker.count || speaker.aggregateScore !== null)
                         ? formatScore(speaker.count ? speaker.total : speaker.aggregateScore ?? 0)
                         : "—"}
                     </td>
                     {speakerIndex === 0 ? (
-                      <td rowSpan={rows.length} className="border border-gray-300 px-6 py-4 text-center align-top text-[#0D1321] text-[16px] font-semibold">
+                      <td rowSpan={rows.length} className="border border-gray-300 px-6 py-4 text-center align-top text-[var(--db-fg)] text-[16px] font-semibold">
                         {team.speakerPointCount ? formatScore(team.speakerTotal) : "—"}
                       </td>
                     ) : null}
@@ -1278,7 +1278,7 @@ export function ResultsSection({
                 ))
               }) : (
                 <tr>
-                  <td colSpan={summaryRounds.length + 5} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+                  <td colSpan={summaryRounds.length + 5} className="border border-gray-300 px-6 py-6 text-center text-[var(--db-muted)]">
                     No preliminary speaker points yet.
                   </td>
                 </tr>
@@ -1297,39 +1297,39 @@ export function ResultsSection({
 
     return (
       <section>
-        <h3 className="mb-4 text-xl font-semibold text-[#0D1321]">Win count by round</h3>
+        <h3 className="mb-4 text-xl font-semibold text-[var(--db-fg)]">Win count by round</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse border border-gray-300 rounded-2xl overflow-hidden">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-4 text-center text-[#0D1321] font-medium text-[16px]">№</th>
-                <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Фракция атауы</th>
+                <th className="border border-gray-300 px-4 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">№</th>
+                <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Фракция атауы</th>
                 {summaryRounds.map((round) => (
-                  <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">
+                  <th key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">
                     {getRoundHeader(round)}
                   </th>
                 ))}
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Іріктеу нәтижесі</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Іріктеу нәтижесі</th>
               </tr>
             </thead>
             <tbody>
               {hasTeamRows ? preliminarySummary.teams.map((team, index) => (
                 <tr key={team.teamId} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-4 text-center text-[#4a4e69] text-[16px] font-medium">{index + 1}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-[#0D1321] text-[16px] font-medium">{team.teamName}</td>
+                  <td className="border border-gray-300 px-4 py-4 text-center text-[var(--db-muted)] text-[16px] font-medium">{index + 1}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[var(--db-fg)] text-[16px] font-medium">{team.teamName}</td>
                   {summaryRounds.map((round) => {
                     const results = team.roundResults[round.roundNumber]
                     return (
-                      <td key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[#4a4e69] text-[16px]">
+                      <td key={round.id} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-muted)] text-[16px]">
                         {results?.length ? results.map(getRoundResultValue).join(", ") : "—"}
                       </td>
                     )
                   })}
-                  <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] text-[16px] font-semibold">{team.wins}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] text-[16px] font-semibold">{team.wins}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={summaryRounds.length + 3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+                  <td colSpan={summaryRounds.length + 3} className="border border-gray-300 px-6 py-6 text-center text-[var(--db-muted)]">
                     No preliminary team results yet.
                   </td>
                 </tr>
@@ -1345,7 +1345,7 @@ export function ResultsSection({
     <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h3 className="text-xl font-semibold text-[#0D1321]">
+          <h3 className="text-xl font-semibold text-[var(--db-fg)]">
             {displayRoundLabel(selectedRound)} results{requiresSpeakerPoints ? " and speaker points" : ""}
           </h3>
         </div>
@@ -1360,8 +1360,8 @@ export function ResultsSection({
                   // Compare normalized labels: selection state may hold a clean
                   // "1/16" while the round option is a raw backend "1/16.0".
                   displayRoundLabel(selectedRound) === displayRoundLabel(round)
-                    ? "bg-[#0D1321] text-white"
-                    : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
+                    ? "bg-[var(--db-fg)] text-white"
+                    : "border border-[#D5D9E7] text-[var(--db-fg)] hover:bg-[#F5F7FC]"
                 }`}
               >
                 {displayRoundLabel(round)}
@@ -1374,15 +1374,15 @@ export function ResultsSection({
         <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Match</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Side</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Result</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Match</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Side</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Result</th>
               {requiresSpeakerPoints ? (
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Speaker points</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Speaker points</th>
               ) : null}
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Room</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Status</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Room</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Judge</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Status</th>
             </tr>
           </thead>
           <tbody>{renderMatchResultRows()}</tbody>
@@ -1418,8 +1418,8 @@ export function ResultsSection({
             submitResultsFeedback.isSuccess
               ? "bg-emerald-600"
               : canSubmitMatchResults
-                ? "bg-[#3E5C76] hover:bg-[#2D3748]"
-                : "bg-[#3E5C76] opacity-50"
+                ? "bg-[var(--db-accent)] hover:bg-[#2D3748]"
+                : "bg-[var(--db-accent)] opacity-50"
           }`}
         >
           {submitResultsFeedback.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
@@ -1445,8 +1445,8 @@ export function ResultsSection({
               onClick={() => setSelectedResultsView(option.id)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 activeResultsView === option.id
-                  ? "bg-[#0D1321] text-white"
-                  : "border border-[#D5D9E7] text-[#0D1321] hover:bg-[#F5F7FC]"
+                  ? "bg-[var(--db-fg)] text-white"
+                  : "border border-[#D5D9E7] text-[var(--db-fg)] hover:bg-[#F5F7FC]"
               }`}
             >
               {option.label}
@@ -1475,19 +1475,19 @@ export function ResultsSection({
   )
 
   const renderFractionRow = (team: SimpleTeamResponse, isDark?: boolean) => (
-    <tr key={team.id} className={isDark ? "bg-gradient-to-r from-[#0D1321] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]" : "hover:bg-gray-50"}>
-      <td className={`border border-gray-300 px-6 py-4 text-[16px] font-medium ${isDark ? "text-white" : "text-[#4a4e69]"}`}>
+    <tr key={team.id} className={isDark ? "bg-gradient-to-r from-[var(--db-fg)] to-[#1a1a2e] hover:from-[#1a1a2e] hover:to-[#2d2d3a]" : "hover:bg-gray-50"}>
+      <td className={`border border-gray-300 px-6 py-4 text-[16px] font-medium ${isDark ? "text-white" : "text-[var(--db-muted)]"}`}>
         {team.name}
       </td>
       {Array.from({ length: 4 }).map((_, index) => (
-        <td key={index} className={`border border-gray-300 px-6 py-4 text-[16px] text-center ${isDark ? "text-white" : "text-[#4a4e69]"}`}>
+        <td key={index} className={`border border-gray-300 px-6 py-4 text-[16px] text-center ${isDark ? "text-white" : "text-[var(--db-muted)]"}`}>
           —
         </td>
       ))}
-      <td className={`border border-gray-300 px-6 py-4 text-[16px] text-center font-medium ${isDark ? "text-white" : "text-[#4a4e69]"}`}>
+      <td className={`border border-gray-300 px-6 py-4 text-[16px] text-center font-medium ${isDark ? "text-white" : "text-[var(--db-muted)]"}`}>
         —
       </td>
-      <td className={`border border-gray-300 px-6 py-4 text-[16px] ${isDark ? "text-white" : "text-[#4a4e69]"}`}>
+      <td className={`border border-gray-300 px-6 py-4 text-[16px] ${isDark ? "text-white" : "text-[var(--db-muted)]"}`}>
         {team.club?.name ?? "—"}
       </td>
       {canManageTeams && renderDeleteButton(team)}
@@ -1548,7 +1548,7 @@ export function ResultsSection({
     if (!pairs.length) {
       return (
         <tr>
-          <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[#4a4e69]">
+          <td colSpan={3} className="border border-gray-300 px-6 py-6 text-center text-[var(--db-muted)]">
             No matches scheduled for this round
           </td>
         </tr>
@@ -1568,7 +1568,7 @@ export function ResultsSection({
 
   return (
     <div className="p-8">
-      <h2 className="text-[#0D1321] text-[32px] font-bold mb-8">{selectedResultsOption}</h2>
+      <h2 className="text-[var(--db-fg)] text-[32px] font-bold mb-8">{selectedResultsOption}</h2>
 
       <div className="relative">
         {isMatchResultsMode ? (
@@ -1600,26 +1600,26 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Speaker</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Speaker</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Fraction name</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Round {index + 1}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Overall</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Overall</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Actions</th>
                   )}
                 </tr>
               </thead>
               <tbody>
                 {renderTeamRows(canManageTeams ? 8 : 7, (team) => (
                   <tr key={team.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] font-medium">{team.club?.name ?? team.name}</td>
-                    <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px]">{team.name}</td>
+                    <td className="border border-gray-300 px-6 py-4 text-[var(--db-muted)] text-[16px] font-medium">{team.club?.name ?? team.name}</td>
+                    <td className="border border-gray-300 px-6 py-4 text-[var(--db-muted)] text-[16px]">{team.name}</td>
                     {Array.from({ length: 4 }).map((_, index) => (
-                      <td key={index} className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center">—</td>
+                      <td key={index} className="border border-gray-300 px-6 py-4 text-[var(--db-muted)] text-[16px] text-center">—</td>
                     ))}
-                    <td className="border border-gray-300 px-6 py-4 text-[#4a4e69] text-[16px] text-center font-medium">—</td>
+                    <td className="border border-gray-300 px-6 py-4 text-[var(--db-muted)] text-[16px] text-center font-medium">—</td>
                     {canManageTeams && renderDeleteButton(team)}
                   </tr>
                 ))}
@@ -1633,14 +1633,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Fraction Name</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Round {index + 1}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Win Count</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Judge Name</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Actions</th>
                   )}
                 </tr>
               </thead>
@@ -1654,14 +1654,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Speaker</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Speaker</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Fraction name</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Round {index + 1}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Overall</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Overall</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Actions</th>
                   )}
                 </tr>
               </thead>
@@ -1675,14 +1675,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Fraction Name</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Round {index + 1}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Win Count</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Judge Name</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Actions</th>
                   )}
                 </tr>
               </thead>
@@ -1696,14 +1696,14 @@ export function ResultsSection({
             <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Fraction Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Fraction Name</th>
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Round {index + 1}</th>
+                    <th key={index} className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Round {index + 1}</th>
                   ))}
-                  <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Win Count</th>
-                  <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Judge Name</th>
+                  <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Win Count</th>
+                  <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Judge Name</th>
                   {canManageTeams && (
-                    <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                    <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Actions</th>
                   )}
                 </tr>
               </thead>
@@ -1720,15 +1720,15 @@ export function ResultsSection({
           </>
         )}
 
-        <div className="bg-[#0D1321] rounded-lg p-4">
+        <div className="bg-[var(--db-fg)] rounded-lg p-4">
             <div className="flex items-center justify-start gap-2 overflow-x-auto sm:justify-center">
               {selectedResultsOption !== "LD" && (
                 <>
                   <button
                     className={`shrink-0 whitespace-nowrap px-4 py-2 ${
                       activeResultsSection === `${selectedResultsOption} Results`
-                        ? "bg-white text-[#0D1321]"
-                        : "text-white hover:bg-[#3E5C76]"
+                        ? "bg-white text-[var(--db-fg)]"
+                        : "text-white hover:bg-[var(--db-accent)]"
                     } rounded text-[14px] font-medium transition-colors`}
                     onClick={() => {
                       onActiveResultsSectionChange(`${selectedResultsOption} Results`)
@@ -1740,8 +1740,8 @@ export function ResultsSection({
                   <button
                     className={`shrink-0 whitespace-nowrap px-4 py-2 ${
                       activeResultsSection === `${selectedResultsOption} Speaker Score`
-                        ? "bg-white text-[#0D1321]"
-                        : "text-white hover:bg-[#3E5C76]"
+                        ? "bg-white text-[var(--db-fg)]"
+                        : "text-white hover:bg-[var(--db-accent)]"
                     } rounded text-[14px] font-medium transition-colors`}
                     onClick={() => {
                       onActiveResultsSectionChange(`${selectedResultsOption} Speaker Score`)
@@ -1758,7 +1758,7 @@ export function ResultsSection({
                 <button
                   key={round}
                   className={`shrink-0 whitespace-nowrap px-3 py-2 ${
-                    activeResultsSection === round ? "bg-white text-[#0D1321]" : "text-white hover:bg-[#3E5C76]"
+                    activeResultsSection === round ? "bg-white text-[var(--db-fg)]" : "text-white hover:bg-[var(--db-accent)]"
                   } rounded text-[14px] font-medium transition-colors`}
                   onClick={() => {
                     onActiveResultsSectionChange(round)

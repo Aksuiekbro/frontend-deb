@@ -15,11 +15,11 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
     <div className="py-8">
       <div className="space-y-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <h2 className="text-[#0D1321] text-[32px] font-bold">Tournament News</h2>
+          <h2 className="text-[var(--db-fg)] text-[32px] font-bold">Tournament News</h2>
           {onAddNews ? (
             <button
               onClick={onAddNews}
-              className="px-6 py-3 bg-[#3E5C76] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
+              className="px-6 py-3 bg-[var(--db-accent)] text-white rounded-lg hover:bg-[#2D3748] text-[16px] font-medium transition-colors"
             >
               Add News
             </button>
@@ -46,8 +46,8 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
                 <article key={item.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-[#0D1321] text-[24px] font-bold mb-2">{item.title}</h3>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[#9a8c98] text-[14px]">
+                      <h3 className="text-[var(--db-fg)] text-[24px] font-bold mb-2">{item.title}</h3>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--db-input-border)] text-[14px]">
                         <span>Posted by {authorName}</span>
                         <span>•</span>
                         <span>{dateStr}</span>
@@ -56,12 +56,12 @@ export function NewsSection({ news, newsLoading, newsError, onAddNews }: NewsSec
                       </div>
                     </div>
                   </div>
-                  <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-4">{item.content}</p>
+                  <p className="text-[var(--db-muted)] text-[16px] leading-relaxed mb-4">{item.content}</p>
                 </article>
               )
             })
           ) : (
-            <div className="text-center text-[#9a8c98]">No news yet</div>
+            <div className="text-center text-[var(--db-input-border)]">No news yet</div>
           )}
         </div>
       </div>

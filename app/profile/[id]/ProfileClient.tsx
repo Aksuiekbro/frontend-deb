@@ -3,6 +3,7 @@
 import AvatarWithEdit from "../../../components/profile/AvatarWithEdit";
 import SocialsManager from "../../../components/profile/SocialsManager";
 import LogoutButton from "@/components/profile/LogoutButton";
+import Footer from "@/components/Footer";
 import { useCurrentUser, useUser } from "@/hooks/use-api";
 import { api } from "@/lib/api";
 import { readResponseError } from "@/lib/http-error";
@@ -59,16 +60,16 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
 
   if (isLoading) {
     content = (
-      <section className="mx-auto max-w-[1280px] rounded-[10px] bg-white border border-black/10 px-6 py-8">
-        <p className="text-[18px] text-[#0D1321]/70">Loading profile...</p>
-      </section>
+      <div className="db-panel profile-card px-6 py-8">
+        <p className="text-[18px] text-[var(--db-muted)]">Loading profile...</p>
+      </div>
     );
   } else if (error || !user) {
     content = (
-      <section className="mx-auto max-w-[1280px] rounded-[10px] bg-white border border-black/10 px-6 py-8">
-        <h2 className="text-[24px] font-medium text-[#0D1321]">Profile unavailable</h2>
-        <p className="mt-2 text-[16px] text-[#0D1321]/70">Please sign in again or try another profile.</p>
-      </section>
+      <div className="db-panel profile-card px-6 py-8">
+        <h2 className="text-[24px] font-medium text-[var(--db-fg)] font-[var(--db-font-display)]">Profile unavailable</h2>
+        <p className="mt-2 text-[16px] text-[var(--db-muted)]">Please sign in again or try another profile.</p>
+      </div>
     );
   } else {
     const socials: SocialProfileRequest[] = user.socialProfiles.map((sp) => ({
@@ -87,63 +88,66 @@ export default function ProfileClient({ userId }: ProfileClientProps) {
     };
 
     content = (
-      <section className="mx-auto max-w-[1280px] rounded-[10px] bg-white border border-black/10">
-        <div className="flex flex-wrap items-center justify-between gap-6 px-6 md:px-8 py-6">
-          <div className="flex items-center gap-4">
+      <div className="db-panel profile-card overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-5 p-7">
+          <div className="flex items-center gap-[18px]">
             <AvatarWithEdit
               src={view.avatarUrl}
-              sizePx={72}
+              sizePx={84}
               onChangeImage={isOwnProfile ? saveAvatar : undefined}
               onDeleteImage={isOwnProfile ? deleteAvatar : undefined}
             />
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-[24px] font-medium text-[#0D1321]">{view.shortName}</h2>
-                {view.joinedAt && <span className="text-sm text-[#0D1321]/60">{view.joinedAt}</span>}
+            <div>
+              <div className="flex items-baseline gap-2.5 flex-wrap">
+                <span className="font-[var(--db-font-display)] text-[24px] text-[var(--db-fg)]">{view.shortName}</span>
+                {view.joinedAt && <span className="text-[13px] text-[var(--db-muted)]">Joined {view.joinedAt}</span>}
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-[20px] text-[#0D1321]">{view.fullName}</p>
-              </div>
-              <a href={`mailto:${view.email}`} className="text-[16px] text-[#748CAB] underline underline-offset-2">
+              <p className="text-[18px] text-[var(--db-fg)] mt-0.5">{view.fullName}</p>
+              <a href={`mailto:${view.email}`} className="text-[15px] text-[var(--db-link)] hover:text-[var(--db-link-hover)] underline">
                 {view.email}
               </a>
             </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-[18px] text-[#0D1321] underline underline-offset-4">{view.role}</span>
-          </div>
+          <span className="text-[14px] px-3.5 py-1.5 border border-[var(--db-border)] rounded-[var(--db-radius-pill)] text-[var(--db-fg)]">
+            {view.role}
+          </span>
         </div>
 
-        <hr className="border-t border-black/10" />
-
-        <div className="px-6 md:px-8 py-6 space-y-4">
-          <h3 className="text-[24px] font-medium text-[#0D1321]">Social media</h3>
-
+        <div className="px-7 py-6 border-t border-[var(--db-border)]">
+          <h3 className="font-[var(--db-font-display)] text-[20px] text-[var(--db-fg)] mb-3.5">Social media</h3>
           <SocialsManager initialSocials={socials} editable={isOwnProfile} onSave={isOwnProfile ? saveSocials : undefined} />
         </div>
 
-        <hr className="border-t border-black/10" />
-
-        <div className="px-6 md:px-8 py-5 flex items-center justify-between">
+        <div className="px-7 py-[22px] border-t border-[var(--db-border)] flex items-center justify-between">
           <LogoutButton />
           <button
             type="button"
             disabled
             title="Account deletion is not available yet."
-            className="text-[18px] text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-[15px] text-[var(--db-status)] bg-none border-none cursor-not-allowed opacity-55"
           >
             Delete account
           </button>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
+    <>
+      <div className="db-page-backdrop" aria-hidden="true" style={{ ['--db-backdrop-focal' as string]: '60% 55%' }}>
+        <img src="/images/senate/aqueduct.png" alt="" />
+        <div className="db-page-backdrop__scrim" />
+      </div>
+      <a className="db-skip-link" href="#main">Skip to content</a>
 
-      <main className="px-8 py-8">{content}</main>
-    </div>
+      <main id="main">
+        <section className="db-hero" style={{ height: 220 }} />
+        <div className="max-w-[880px] mx-auto -mt-16 mb-16 px-5 relative z-[3]">{content}</div>
+      </main>
+
+      <Footer />
+    </>
   );
 }

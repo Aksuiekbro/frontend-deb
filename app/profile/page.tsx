@@ -14,8 +14,8 @@ export default function ProfileIndexPage() {
   }, [isLoading, router, user]);
 
   return (
-    <main className="min-h-screen bg-[#F1F1F1] px-8 py-8 font-hikasami">
-      <p className="text-[18px] text-[#0D1321]/70">Loading profile...</p>
+    <main className="min-h-screen bg-[var(--db-bg)] px-8 py-8">
+      <p className="text-[18px] text-[var(--db-muted)]">Loading profile...</p>
     </main>
   );
 }

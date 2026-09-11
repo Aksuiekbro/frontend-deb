@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Join Debates — DeBetter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css" />
+<style>
+  .jd-band { height: 220px; }
+  .jd-layout { display: grid; grid-template-columns: 280px 1fr; gap: 28px; padding: 32px 0 72px; align-items: start; }
+  @media (max-width: 900px) { .jd-layout { grid-template-columns: 1fr; } .filters-aside { display: none; } }
+  .filters-aside { background: var(--surface); color: var(--surface-fg); border-radius: var(--radius-lg); padding: 24px; }
+  .filters-aside h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .05em; margin: 18px 0 10px; color: var(--surface-fg); }
+  .filters-aside h3:first-child { margin-top: 0; }
+  .filters-aside label.checkline { display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:8px; }
+  .filters-aside input[type="checkbox"] { width: 18px; height:18px; accent-color: var(--accent); }
+  .filters-aside input[type="date"], .filters-aside input[type="text"] {
+    width:100%; min-height:40px; padding: 8px 10px; border-radius: var(--radius-sm);
+    border:1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.06); color: var(--surface-fg);
+    font-family: var(--font-body); font-size: 13px; margin-bottom: 8px;
+  }
+  .toolbar { display:flex; gap: 14px; align-items:center; margin-bottom: 24px; flex-wrap: wrap; }
+  .toolbar input[type="search"] {
+    flex: 1; min-width: 200px; min-height: var(--touch); padding: 0 16px; border-radius: var(--radius-pill);
+    border:1px solid var(--input-border); background: var(--bg-elevated); color: var(--fg); font-size: 15px;
+  }
+  .toolbar select {
+    min-height: var(--touch); padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--input-border);
+    background: var(--bg-elevated); color: var(--fg); font-size: 14px;
+  }
+  .filters-open-btn { display:none; }
+  @media (max-width: 900px) { .filters-open-btn { display:inline-flex; } }
+  .debate-list { display: flex; flex-direction: column; gap: 20px; }
+  .debate-item { padding: 26px; }
+  .debate-item__head { display:flex; gap: 20px; }
+  .debate-item__thumb { width: 96px; height: 96px; border-radius: 50%; overflow:hidden; flex-shrink:0; background: rgba(255,255,255,.08); }
+  .debate-item__thumb img { width:100%; height:100%; object-fit:cover; }
+  .debate-item__name { font-family: var(--font-display); font-size: 24px; margin-bottom: 6px; }
+  .debate-item__meta-row { display:flex; align-items:center; gap:6px; font-size: 14px; color: var(--card-dark-muted); margin-bottom:2px; }
+  .debate-item__tags { display:flex; flex-wrap:wrap; gap:8px; margin: 14px 0; }
+  .debate-item__desc { font-size: 14px; color: var(--card-dark-muted); line-height:1.6; margin-bottom: 18px; }
+  .debate-item__actions { display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap; }
+  .empty-results { text-align:center; padding: 48px 20px; color: var(--muted); }
+  .no-fill { fill: none; }
+</style>
+</head>
+<body>
+<div class="page-backdrop" aria-hidden="true" style="--backdrop-focal: 50% 45%;">
+  <img src="assets/senate/senate-oration.png" alt="" />
+  <div class="page-backdrop__scrim"></div>
+</div>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" data-od-id="site-header">
+  <div class="site-header__inner">
+    <a href="landing.html" class="brand" data-od-id="brand-wordmark">DeBetter</a>
+    <nav class="primary-nav" aria-label="Primary">
+      <a href="join-debates.html" aria-current="page" data-od-id="nav-join">Join Debates</a>
+      <a href="create-debate.html" data-od-id="nav-host">Host Debate</a>
+      <a href="#" data-od-id="nav-rating">Rating</a>
+      <a href="#" data-od-id="nav-news">News</a>
+    </nav>
+    <div class="header-actions">
+      <div class="theme-toggle" data-theme-toggle data-od-id="theme-toggle" aria-label="Switch theme">
+        <span class="theme-toggle__thumb"></span>
+        <span class="theme-toggle__option" data-value="classic">Classic</span>
+        <span class="theme-toggle__option" data-value="senate">Senate</span>
+      </div>
+      <a href="profile.html" class="header-user" data-od-id="header-user-link">
+        <span class="header-user__avatar">MA</span>
+        <span class="header-user__name">Cicero_23</span>
+      </a>
+      <button class="nav-toggle" data-nav-open aria-label="Open menu" data-od-id="nav-toggle-mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-drawer" data-nav-drawer data-open="false">
+  <div class="nav-drawer__scrim" data-nav-scrim></div>
+  <div class="nav-drawer__panel" role="dialog" aria-label="Menu">
+    <button class="nav-drawer__close" data-nav-close aria-label="Close menu">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <a href="join-debates.html">Join Debates</a>
+    <a href="create-debate.html">Host Debate</a>
+    <a href="#">Rating</a>
+    <a href="#">News</a>
+    <a href="profile.html">Your Profile</a>
+  </div>
+</div>
+
+<!-- Mobile filters sheet -->
+<div class="nav-drawer" data-filter-drawer data-open="false">
+  <div class="nav-drawer__scrim" data-filter-scrim></div>
+  <div class="nav-drawer__panel" role="dialog" aria-label="Filters" style="background:var(--surface); color:var(--surface-fg);">
+    <button class="nav-drawer__close" data-filter-close aria-label="Close filters" style="color:var(--surface-fg);">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div id="filters-mobile-slot"></div>
+  </div>
+</div>
+
+<main id="main">
+  <section class="hero jd-band" data-od-id="join-hero">
+    <div class="hero__content container" style="padding-bottom:28px;">
+      <h1 class="hero__title" style="font-size:clamp(28px,4vw,44px);">Explore Debates</h1>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="jd-layout">
+      <aside class="filters-aside" id="filters-desktop" data-od-id="filters-panel">
+        <h3>Start Date</h3>
+        <label class="visually-hidden" for="date-from">Start date from</label>
+        <input type="date" id="date-from" />
+        <label class="visually-hidden" for="date-to">Start date to</label>
+        <input type="date" id="date-to" />
+
+        <h3>League</h3>
+        <label class="checkline"><input type="checkbox" data-league="SCHOOL" /> School</label>
+        <label class="checkline"><input type="checkbox" data-league="UNIVERSITY" /> University</label>
+
+        <h3>Availability</h3>
+        <label class="checkline"><input type="checkbox" id="non-full" /> Show non-full debates only</label>
+      </aside>
+
+      <div>
+        <div class="toolbar">
+          <button class="btn btn-secondary filters-open-btn" data-filter-open data-od-id="filters-open-mobile">Filters</button>
+          <label class="visually-hidden" for="search-name">Search by name</label>
+          <input type="search" id="search-name" placeholder="Search by name" data-od-id="search-input" />
+          <label class="visually-hidden" for="sort-select">Sort</label>
+          <select id="sort-select" data-od-id="sort-select">
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+            <option value="date-desc" selected>Most Recent</option>
+            <option value="date-asc">Upcoming</option>
+          </select>
+        </div>
+
+        <div class="debate-list" id="debate-list" data-od-id="debate-list"></div>
+        <p class="empty-results" id="empty-results" hidden>No debates found matching your criteria.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer" data-od-id="site-footer">
+  <div class="site-footer__inner container">
+    <div class="site-footer__meta">
+      <span>Contact us: debetter@gmail.com</span>
+      <span>© 2026 all rights reserved</span>
+      <a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Registration modal -->
+<div class="modal-scrim" id="register-modal" data-open="false">
+  <div class="modal" role="dialog" aria-labelledby="register-modal-title">
+    <button class="modal__close" data-modal-close aria-label="Close">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h2 id="register-modal-title" style="font-family:var(--font-display); font-size:24px; margin-bottom:4px;">Register your team</h2>
+    <p class="hint" id="register-modal-sub" style="color:var(--muted); font-size:14px; margin-bottom:20px;"></p>
+    <form id="register-form">
+      <div class="field">
+        <label for="team-name">Team Name</label>
+        <input id="team-name" type="text" placeholder="Enter team name" required />
+      </div>
+      <div class="field">
+        <label for="club-name">Club Name</label>
+        <input id="club-name" type="text" placeholder="Enter club or institution name" required />
+      </div>
+      <div class="field">
+        <label for="teammate-1">Teammate</label>
+        <input id="teammate-1" type="text" placeholder="Username (optional)" />
+      </div>
+      <div class="field">
+        <label for="teammate-2">2nd Teammate</label>
+        <input id="teammate-2" type="text" placeholder="Username (optional)" />
+      </div>
+      <p class="hint" style="margin-bottom:20px;">Only team name and club name are required — invite teammates later from your dashboard.</p>
+      <button type="submit" class="btn btn-primary btn-block" data-od-id="register-submit">Register Team</button>
+      <p class="auth-status" id="register-status" role="status" style="margin-top:10px; text-align:center;"></p>
+    </form>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var DEBATES = [
+    { id: 1, name: "Metropolitan Debate Invitational", location: "Boston, MA", league: "UNIVERSITY", formats: ["APF","BPF"], date: "2026-11-14", full: false,
+      desc: "A flagship university tournament bringing together APF and BPF teams from across the region for two days of preliminary rounds and elimination brackets." },
+    { id: 2, name: "Winter Parliamentary Cup", location: "Remote — online rounds", league: "SCHOOL", formats: ["BPF"], date: "2026-12-02", full: false,
+      desc: "A fully remote BPF tournament for high-school teams, run over one weekend with judged feedback after every round." },
+    { id: 3, name: "Coastal Rhetoric Championship", location: "San Diego, CA", league: "UNIVERSITY", formats: ["APF"], date: "2026-10-25", full: true,
+      desc: "An invitational APF championship with a capped field of 32 teams and a novice-friendly side bracket." },
+    { id: 4, name: "Founders' Cup Debate Series", location: "Philadelphia, PA", league: "SCHOOL", formats: ["APF","BPF"], date: "2027-01-18", full: false,
+      desc: "An open-entry series for school teams new to competitive debate, with mentorship sessions before each round." },
+    { id: 5, name: "Highland Speakers Forum", location: "Edinburgh, UK", league: "UNIVERSITY", formats: ["BPF"], date: "2026-11-30", full: false,
+      desc: "A cross-university forum focused on current-affairs motions, judged by alumni and visiting practitioners." }
+  ];
+
+  var listEl = document.getElementById("debate-list");
+  var emptyEl = document.getElementById("empty-results");
+  var searchEl = document.getElementById("search-name");
+  var sortEl = document.getElementById("sort-select");
+  var nonFullEl = document.getElementById("non-full");
+  var leagueBoxes = document.querySelectorAll("[data-league]");
+
+  function activeLeagues() {
+    var out = [];
+    leagueBoxes.forEach(function (b) { if (b.checked) out.push(b.getAttribute("data-league")); });
+    return out;
+  }
+
+  function render() {
+    var q = (searchEl.value || "").toLowerCase();
+    var leagues = activeLeagues();
+    var onlyNonFull = nonFullEl.checked;
+    var sort = sortEl.value;
+
+    var rows = DEBATES.filter(function (d) {
+      if (q && d.name.toLowerCase().indexOf(q) === -1) return false;
+      if (leagues.length && leagues.indexOf(d.league) === -1) return false;
+      if (onlyNonFull && d.full) return false;
+      return true;
+    });
+
+    rows.sort(function (a, b) {
+      if (sort === "name-asc") return a.name.localeCompare(b.name);
+      if (sort === "name-desc") return b.name.localeCompare(a.name);
+      if (sort === "date-asc") return a.date.localeCompare(b.date);
+      return b.date.localeCompare(a.date);
+    });
+
+    listEl.innerHTML = "";
+    emptyEl.hidden = rows.length > 0;
+
+    rows.forEach(function (d) {
+      var el = document.createElement("article");
+      el.className = "card-dark debate-item";
+      el.setAttribute("data-od-id", "debate-card-" + d.id);
+      var tags = d.formats.map(function (f) { return '<span class="tag">' + f + "</span>"; }).join("") +
+        '<span class="tag">' + (d.league === "SCHOOL" ? "School" : "University") + "</span>" +
+        (d.full ? '<span class="tag" style="background:var(--status);color:var(--status-fg);">Full</span>' : "");
+      el.innerHTML =
+        '<div class="debate-item__head">' +
+          '<div class="debate-item__thumb"><img src="assets/senate/trireme.png" alt="" /></div>' +
+          '<div>' +
+            '<p class="debate-item__name">' + d.name + '</p>' +
+            '<p class="debate-item__meta-row">' + d.location + '</p>' +
+            '<p class="debate-item__meta-row">Starts ' + new Date(d.date).toLocaleDateString(undefined,{day:"2-digit",month:"short",year:"numeric"}) + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="debate-item__tags">' + tags + '</div>' +
+        '<p class="debate-item__desc">' + d.desc + '</p>' +
+        '<div class="debate-item__actions">' +
+          '<a href="#" class="btn btn-ghost-on-dark" data-od-id="debate-card-' + d.id + '-details">More…</a>' +
+          '<button class="btn btn-primary" data-open-register="' + d.id + '" ' + (d.full ? "disabled" : "") + ' data-od-id="debate-card-' + d.id + '-join">' + (d.full ? "Full" : "Join Debates") + '</button>' +
+        '</div>';
+      listEl.appendChild(el);
+    });
+
+    listEl.querySelectorAll("[data-open-register]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var d = DEBATES.find(function (x) { return String(x.id) === btn.getAttribute("data-open-register"); });
+        document.getElementById("register-modal-sub").textContent = d ? "Registering for " + d.name : "";
+        var modal = document.getElementById("register-modal");
+        modal.setAttribute("data-open", "true");
+        document.body.style.overflow = "hidden";
+      });
+    });
+  }
+
+  [searchEl, sortEl, nonFullEl].forEach(function (el) { el.addEventListener("input", render); el.addEventListener("change", render); });
+  leagueBoxes.forEach(function (b) { b.addEventListener("change", render); });
+  document.getElementById("date-from").addEventListener("change", render);
+  document.getElementById("date-to").addEventListener("change", render);
+
+  render();
+
+  document.getElementById("register-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    document.getElementById("register-status").textContent = "Demo only — no real registration is submitted in this prototype.";
+  });
+
+  // Mobile filters sheet: move the real filter panel (one source of truth) into the sheet,
+  // and back into the grid layout whenever the viewport returns to desktop width.
+  var drawer = document.querySelector("[data-filter-drawer]");
+  var slot = document.getElementById("filters-mobile-slot");
+  var desktopPanel = document.getElementById("filters-desktop");
+  if (drawer && slot && desktopPanel) {
+    var homeParent = desktopPanel.parentNode;
+    var homeNext = desktopPanel.nextSibling;
+    var mq = window.matchMedia("(min-width: 901px)");
+
+    function openFilters() { drawer.setAttribute("data-open", "true"); document.body.style.overflow = "hidden"; }
+    function closeFilters() { drawer.setAttribute("data-open", "false"); document.body.style.overflow = ""; }
+    function restoreDesktop() {
+      desktopPanel.style.display = "";
+      homeParent.insertBefore(desktopPanel, homeNext);
+      closeFilters();
+    }
+
+    document.querySelectorAll("[data-filter-open]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        desktopPanel.style.display = "block";
+        slot.appendChild(desktopPanel);
+        openFilters();
+      });
+    });
+    document.querySelector("[data-filter-close]").addEventListener("click", closeFilters);
+    document.querySelector("[data-filter-scrim]").addEventListener("click", closeFilters);
+    mq.addEventListener("change", function (e) { if (e.matches) restoreDesktop(); });
+  }
+})();
+</script>
+</body>
+</html>

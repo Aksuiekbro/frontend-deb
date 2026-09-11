@@ -49,37 +49,37 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 
 	return (
 		<section
-			className={`container mx-auto max-w-[1280px] px-8 py-12 space-y-12 ${
+			className={`db-container py-12 space-y-12 ${
 				className ? className : ""
 			}`}
 		>
 			{/* CTA Row */}
 			<div className="flex flex-wrap items-center justify-between gap-4">
-				<div className="flex items-center gap-3">
+				<div className="flex flex-wrap items-center gap-3">
 					<button
 						type="button"
-						className="px-4 py-2 rounded-md bg-[#0D1321] text-white text-sm md:text-base font-medium hover:bg-[#0D1321]/90 transition-colors"
+						className="db-btn db-btn-primary"
 					>
 						Join Debates
 					</button>
                   <Link
                     href="/create-tournament"
-                    className="px-4 py-2 rounded-md border border-black/20 text-sm md:text-base font-medium hover:bg-black/5 transition-colors"
+                    className="db-btn db-btn-on-backdrop"
                   >
                     Host Debate
                   </Link>
 				</div>
-				<div aria-hidden className="text-sm text-black/60">Connect Us</div>
+				<div aria-hidden className="text-sm home-sub">Connect Us</div>
 			</div>
 
 			{/* Title */}
 			<header className="space-y-2">
-				<h2 className="text-3xl md:text-4xl font-semibold leading-tight">
-					Get <span className="text-[#748CAB]">Expert Advice</span> on
+				<h2 className="home-heading text-3xl md:text-4xl font-semibold leading-tight font-[var(--db-font-display)]">
+					Get <span className="text-[var(--db-accent)]">Expert Advice</span> on
 					<br />
 					Debating journey
 				</h2>
-				<p className="text-black/70 max-w-3xl">
+				<p className="home-sub max-w-3xl">
 					Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
 					libero urna, mollis a rhoncus id, convallis in dui. Sed erat arcu,
 					porttitor ut mi sed, elementum venenatis lectus. Nam porttitor
@@ -88,7 +88,7 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 			</header>
 
 			{/* Image */}
-			<div className="w-full overflow-hidden rounded-[20px] bg-black/5">
+			<div className="db-panel w-full overflow-hidden">
 				<div className="relative aspect-[16/9] w-full">
 					<Image
 						src={imageSrc}
@@ -102,14 +102,14 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 
 			{/* FAQ */}
 			<section aria-labelledby="faq-heading" className="space-y-4">
-				<h3 id="faq-heading" className="text-2xl font-semibold">
+				<h3 id="faq-heading" className="home-heading text-2xl font-semibold font-[var(--db-font-display)]">
 					FAQ
 				</h3>
-				<div className="divide-y divide-black/10 rounded-xl border border-black/10 bg-white">
+				<div className="db-panel divide-y" style={{ borderColor: 'var(--db-border)' }}>
 					{faq.map((item, idx) => {
 						const isOpen = openIndex === idx;
 						return (
-							<div key={idx} className="p-4 md:p-5">
+							<div key={idx} className="p-4 md:p-5" style={{ borderColor: 'var(--db-border)' }}>
 								<button
 									onClick={() =>
 										setOpenIndex(isOpen ? null : idx)
@@ -118,11 +118,11 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 									aria-expanded={isOpen}
 									aria-controls={`faq-panel-${idx}`}
 								>
-									<span className="text-base md:text-lg font-medium">
+									<span className="text-base md:text-lg font-medium text-[var(--db-fg)]">
 										{item.question}
 									</span>
 									<span
-										className="ml-4 inline-flex h-6 w-6 items-center justify-center rounded border border-black/20"
+										className="ml-4 inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--db-border)] text-[var(--db-fg)]"
 										aria-hidden="true"
 									>
 										{isOpen ? "-" : "+"}
@@ -131,7 +131,7 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 								{isOpen ? (
 									<div
 										id={`faq-panel-${idx}`}
-										className="mt-3 text-black/70"
+										className="mt-3 text-[var(--db-muted)]"
 									>
 										{item.answer}
 									</div>
@@ -141,37 +141,6 @@ export default function OrganizerBelow(props: OrganizerBelowProps) {
 					})}
 				</div>
 			</section>
-
-			{/* Footer */}
-			<footer className="space-y-6">
-				<div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-black/10 bg-white p-4">
-					<div className="flex items-center gap-3">
-						<div className="h-9 w-9 rounded-md bg-black text-white flex items-center justify-center text-sm font-semibold">
-							DB
-						</div>
-						<nav aria-label="Social links" className="flex items-center gap-3 text-sm text-black/70">
-							<span className="h-7 w-7 rounded bg-black/5 inline-flex items-center justify-center" aria-hidden>
-								Icon
-							</span>
-							<span className="h-7 w-7 rounded bg-black/5 inline-flex items-center justify-center" aria-hidden>
-								Icon
-							</span>
-							<span className="h-7 w-7 rounded bg-black/5 inline-flex items-center justify-center" aria-hidden>
-								Icon
-							</span>
-						</nav>
-					</div>
-				</div>
-				<div className="border-t border-black/10 pt-4 text-xs md:text-sm text-black/60 flex flex-wrap items-center justify-between gap-3">
-					<div>Contact us: debetter@gmail.com</div>
-					<div>© 2025 all rights reserved</div>
-					<div>
-						<a href="#" className="underline underline-offset-2 hover:text-black/80">
-							Privacy Policy
-						</a>
-					</div>
-				</div>
-			</footer>
 		</section>
 	);
 }

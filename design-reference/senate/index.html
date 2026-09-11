@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="senate">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeBetter — Senate theme prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css" />
+<style>
+  .launcher-band { height: 46vh; min-height: 280px; }
+  .launcher-note {
+    max-width: 640px; margin: -40px auto 56px; padding: 22px 26px;
+    position: relative; z-index: 3; font-size: 14px; color: var(--fg);
+  }
+  .launcher-note strong { font-family: var(--font-display); display:block; font-size:16px; margin-bottom:6px; }
+  .screen-list { display: flex; flex-direction: column; gap: 20px; padding: 0 24px 64px; max-width: var(--container); margin: 0 auto; }
+  .screen-row {
+    display: grid; grid-template-columns: 260px 1fr auto;
+    align-items: center; gap: 24px; padding: 18px; text-align: left;
+  }
+  @media (max-width: 760px) { .screen-row { grid-template-columns: 1fr; text-align: left; } }
+  .screen-row__img { height: 160px; border-radius: var(--radius-md); overflow: hidden; }
+  .screen-row__img img { width:100%; height:100%; object-fit:cover; }
+  .screen-row__name { font-family: var(--font-display); font-size: 22px; margin-bottom: 6px; }
+  .screen-row__desc { font-size: 14px; color: var(--muted); }
+  .screen-row__cta { white-space: nowrap; }
+  .scope-note { max-width: 760px; margin: 8px auto 64px; padding: 20px 24px; font-size: 14px; color: var(--muted); }
+  .scope-note strong { color: var(--fg); }
+</style>
+</head>
+<body>
+<div class="page-backdrop" aria-hidden="true" style="--backdrop-focal: 40% 50%;">
+  <img src="assets/senate/trireme.png" alt="" />
+  <div class="page-backdrop__scrim"></div>
+</div>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <span class="brand">DeBetter</span>
+    <div class="header-actions">
+      <div class="theme-toggle" data-theme-toggle aria-label="Switch theme">
+        <span class="theme-toggle__thumb"></span>
+        <span class="theme-toggle__option" data-value="classic">Classic</span>
+        <span class="theme-toggle__option" data-value="senate">Senate</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero launcher-band">
+    <div class="hero__content container">
+      <p class="hero__eyebrow">Design prototype</p>
+      <h1 class="hero__title" style="font-size:clamp(32px,5vw,52px);">Classic ⇄ Senate</h1>
+      <p class="hero__lede">Five real screens, restyled with a switchable "Senate" theme over the untouched Classic look. Use the toggle above — or on any screen below — to compare. Your choice is remembered.</p>
+    </div>
+  </section>
+
+  <div class="panel launcher-note">
+    <strong>This page is just a menu.</strong>
+    It links to the five actual screens — open one below to see the full design (the images are full-page backdrops there, not thumbnails).
+  </div>
+
+  <section class="screen-list">
+    <a class="panel screen-row" href="landing.html" data-od-id="launcher-landing">
+      <div class="screen-row__img"><img src="assets/senate/forum-panorama.png" alt="" /></div>
+      <div>
+        <p class="screen-row__name">Landing Page</p>
+        <p class="screen-row__desc">Hero, upcoming debates, community section, footer.</p>
+      </div>
+      <span class="btn btn-secondary screen-row__cta">Open →</span>
+    </a>
+    <a class="panel screen-row" href="auth.html" data-od-id="launcher-auth">
+      <div class="screen-row__img"><img src="assets/senate/river-council.png" alt="" /></div>
+      <div>
+        <p class="screen-row__name">Log In / Register</p>
+        <p class="screen-row__desc">Single page, tab-switched login and account creation.</p>
+      </div>
+      <span class="btn btn-secondary screen-row__cta">Open →</span>
+    </a>
+    <a class="panel screen-row" href="join-debates.html" data-od-id="launcher-join">
+      <div class="screen-row__img"><img src="assets/senate/senate-oration.png" alt="" /></div>
+      <div>
+        <p class="screen-row__name">Join Debates</p>
+        <p class="screen-row__desc">Search, filters, sort, and team registration — all working against demo data.</p>
+      </div>
+      <span class="btn btn-secondary screen-row__cta">Open →</span>
+    </a>
+    <a class="panel screen-row" href="create-debate.html" data-od-id="launcher-create">
+      <div class="screen-row__img"><img src="assets/senate/senate-assembly.png" alt="" /></div>
+      <div>
+        <p class="screen-row__name">Host a Debate</p>
+        <p class="screen-row__desc">Full tournament-creation form with validation.</p>
+      </div>
+      <span class="btn btn-secondary screen-row__cta">Open →</span>
+    </a>
+    <a class="panel screen-row" href="profile.html" data-od-id="launcher-profile">
+      <div class="screen-row__img"><img src="assets/senate/aqueduct.png" alt="" /></div>
+      <div>
+        <p class="screen-row__name">Profile</p>
+        <p class="screen-row__desc">Account info, socials, log out.</p>
+      </div>
+      <span class="btn btn-secondary screen-row__cta">Open →</span>
+    </a>
+  </section>
+
+  <p class="panel scope-note">
+    <strong>Out of scope, by design:</strong> the tournament dashboard, organizer tools, and control pages are not part of this prototype — per the brief, their visual design stays exactly as it is today. This launcher and the five screens above are the full deliverable.
+  </p>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

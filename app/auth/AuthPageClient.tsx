@@ -6,6 +6,7 @@ import { useSWRConfig } from 'swr'
 import { api } from '@/lib/api'
 import { Role, type UserResponse } from '@/types/user/user'
 import { readResponseError } from '@/lib/http-error'
+import Footer from '@/components/Footer'
 
 // Backend rule (mirrors UserRegistrationDto validation): alphanumeric, 3–20 chars.
 const USERNAME_PATTERN = /^[a-zA-Z0-9]{3,20}$/
@@ -172,242 +173,235 @@ export default function AuthPageClient({ initialMode, requestedMode }: AuthPageC
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F1F1] font-hikasami">
-      <div className="brand-logo absolute top-4 left-6 text-2xl font-bold text-[#0D1321] z-50">
-        DeBetter
+    <>
+      <div className="db-page-backdrop" aria-hidden="true" style={{ ['--db-backdrop-focal' as string]: '50% 58%' }}>
+        <img src="/images/senate/river-council.png" alt="" />
+        <div className="db-page-backdrop__scrim" />
       </div>
+      <a className="db-skip-link" href="#main">Skip to content</a>
 
-      <div
-        className={`container relative overflow-hidden bg-white rounded-xl shadow-2xl w-[980px] max-w-full min-h-[640px] ${isSignUp ? 'right-panel-active' : ''}`}
-        data-auth-mode={isSignUp ? 'register' : 'login'}
-        data-auth-client-ready={isClientReady ? 'true' : 'false'}
-      >
+      <main id="main">
+        <section className="db-hero min-h-[320px]">
+          <div className="db-hero__content db-container pb-24">
+            <p className="db-hero__eyebrow">Welcome back</p>
+            <h1 className="db-hero__title" style={{ fontSize: 'clamp(28px,4vw,40px)' }}>Your seat at the table is waiting</h1>
+          </div>
+        </section>
 
-        {/* Sign Up Form */}
-        <div className={`form-container sign-up-container absolute top-0 h-full w-1/2 left-0 transition-all duration-500 ease-in-out ${
-          isSignUp ? 'translate-x-full opacity-100 z-10' : 'opacity-0 z-0'
-        }`}>
-          <form onSubmit={handleSignUpSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
-            <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Create Account</h2>
-
-            <label htmlFor="auth-signup-name" className="sr-only">Full Name</label>
-            <input
-              id="auth-signup-name"
-              name="username"
-              type="text"
-              placeholder="Username"
-              required
-              maxLength={20}
-              value={signUpUsername}
-              onChange={(e) => setSignUpUsername(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-            {signUpErrors.name && <p className="text-red-500 text-xs">{signUpErrors.name}</p>}
-            <label htmlFor="auth-signup-email" className="sr-only">Email</label>
-            <input
-              id="auth-signup-email"
-              name="email"
-              type="email"
-              placeholder="Email"
-              required
-              value={signUpEmail}
-              onChange={(e) => setSignUpEmail(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-            {signUpErrors.email && <p className="text-red-500 text-xs">{signUpErrors.email}</p>}
-            <label htmlFor="auth-signup-password" className="sr-only">Password</label>
-            <input
-              id="auth-signup-password"
-              name="password"
-              type="password"
-              placeholder="Password"
-              required
-              minLength={8}
-              value={signUpPassword}
-              onChange={(e) => setSignUpPassword(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-            {signUpErrors.password && <p className="text-red-500 text-xs">{signUpErrors.password}</p>}
-
-            <label htmlFor="auth-signup-firstname" className="sr-only">First Name</label>
-            <input
-              id="auth-signup-firstname"
-              type="text"
-              placeholder="First Name"
-              required
-              value={signUpFirstName}
-              onChange={(e) => setSignUpFirstName(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-
-            <label htmlFor="auth-signup-lastname" className="sr-only">Last Name</label>
-            <input
-              id="auth-signup-lastname"
-              type="text"
-              placeholder="Last Name"
-              required
-              value={signUpLastName}
-              onChange={(e) => setSignUpLastName(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-
-            <div className="w-full mt-4 mb-2">
-              <div className="flex items-center justify-center gap-8">
-                <div className="flex items-center">
-                  <input
-                    id="debater-radio"
-                    type="radio"
-                    name="role"
-                    value="debater"
-                    checked={role === Role.PARTICIPANT}
-                    onChange={() => setRole(Role.PARTICIPANT)}
-                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 focus:ring-[#3E5C76] focus:ring-2"
-                  />
-                  <label htmlFor="debater-radio" className="text-sm text-gray-700 font-hikasami">
-                    Debater
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    id="organizer-radio"
-                    type="radio"
-                    name="role"
-                    value="organizer"
-                    checked={role === Role.ORGANIZER}
-                    onChange={() => setRole(Role.ORGANIZER)}
-                    className="mr-2 w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 focus:ring-[#3E5C76] focus:ring-2"
-                  />
-                  <label htmlFor="organizer-radio" className="text-sm text-gray-700 font-hikasami">
-                    Organizer
-                  </label>
-                </div>
-              </div>
+        <div className="max-w-[480px] mx-auto -mt-[72px] mb-16 relative z-[3] px-5">
+          <div
+            className="db-panel p-8"
+            data-auth-mode={isSignUp ? 'register' : 'login'}
+            data-auth-client-ready={isClientReady ? 'true' : 'false'}
+          >
+            <div className="flex bg-[var(--db-surface)] rounded-[var(--db-radius-pill)] p-1 mb-[26px]" role="tablist" aria-label="Choose login or register">
+              <button
+                type="button"
+                role="tab"
+                id="tab-login"
+                aria-selected={!isSignUp}
+                aria-controls="panel-login"
+                onClick={() => setIsSignUp(false)}
+                className={`flex-1 text-center py-2.5 min-h-[var(--db-touch)] rounded-[var(--db-radius-pill)] font-semibold text-sm border-none cursor-pointer transition-opacity ${
+                  !isSignUp ? 'bg-[var(--db-accent)] text-[var(--db-accent-fg)] opacity-100' : 'bg-transparent text-[var(--db-surface-fg)] opacity-65'
+                }`}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tab-register"
+                aria-selected={isSignUp}
+                aria-controls="panel-register"
+                onClick={() => setIsSignUp(true)}
+                className={`flex-1 text-center py-2.5 min-h-[var(--db-touch)] rounded-[var(--db-radius-pill)] font-semibold text-sm border-none cursor-pointer transition-opacity ${
+                  isSignUp ? 'bg-[var(--db-accent)] text-[var(--db-accent-fg)] opacity-100' : 'bg-transparent text-[var(--db-surface-fg)] opacity-65'
+                }`}
+              >
+                Create Account
+              </button>
             </div>
 
-            {role === Role.PARTICIPANT && (
-              <>
-                <label htmlFor="auth-signup-city" className="sr-only">City</label>
-                <input
-                  id="auth-signup-city"
-                  type="text"
-                  placeholder="City"
-                  required={role === Role.PARTICIPANT}
-                  value={signUpCity}
-                  onChange={(e) => setSignUpCity(e.target.value)}
-                  className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-
-                <label htmlFor="auth-signup-institution" className="sr-only">Institution</label>
-                <input
-                  id="auth-signup-institution"
-                  type="text"
-                  placeholder="Institution"
-                  required={role === Role.PARTICIPANT}
-                  value={signUpInstitution}
-                  onChange={(e) => setSignUpInstitution(e.target.value)}
-                  className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-                />
-              </>
-            )}
-
-            {signUpErrorMsg && <p className="text-red-500 text-xs">{signUpErrorMsg}</p>}
-            {signUpSuccess && <p className="text-green-500 text-xs">{signUpSuccess}</p>}
-
-            <button type="submit" disabled={signUpLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] mt-4 disabled:opacity-50">
-              {signUpLoading ? 'Signing up...' : 'Sign Up'}
-            </button>
-          </form>
-        </div>
-
-        {/* Sign In Form */}
-        <div className={`form-container sign-in-container absolute top-0 h-full w-1/2 left-0 transition-all duration-500 ease-in-out ${
-          isSignUp ? 'translate-x-full z-0' : 'z-20'
-        }`}>
-          <form onSubmit={handleSignInSubmit} className="bg-white flex items-center justify-center flex-col px-12 h-full text-center">
-            <h2 className="text-3xl font-bold mb-6 text-[#2D3748]">Sign in to DeBetter</h2>
-
-            <label htmlFor="auth-signin-email" className="sr-only">Username</label>
-            <input
-              id="auth-signin-email"
-              name="username"
-              type="text"
-              placeholder="Username"
-              value={signInUsername}
-              onChange={(e) => setSignInUsername(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-            <label htmlFor="auth-signin-password" className="sr-only">Password</label>
-            <input
-              id="auth-signin-password"
-              name="password"
-              type="password"
-              placeholder="Password"
-              value={signInPassword}
-              onChange={(e) => setSignInPassword(e.target.value)}
-              className="bg-gray-200 border-none p-3 my-2 w-full rounded-md focus:outline-none focus:ring-1 focus:ring-[#3E5C76]"
-            />
-            <div className="flex items-center w-full justify-start my-3 px-1">
-                <input
+            {/* Log In */}
+            <div id="panel-login" role="tabpanel" aria-labelledby="tab-login" hidden={isSignUp}>
+              <p className="font-[var(--db-font-display)] text-[26px] mb-1 text-center">Log in to DeBetter</p>
+              <p className="text-center text-[var(--db-muted)] text-sm mb-6">Pick up your tournaments where you left off.</p>
+              <form onSubmit={handleSignInSubmit}>
+                <div className="db-field">
+                  <label htmlFor="auth-signin-email">Username</label>
+                  <input
+                    id="auth-signin-email"
+                    name="username"
+                    type="text"
+                    placeholder="Your username"
+                    value={signInUsername}
+                    onChange={(e) => setSignInUsername(e.target.value)}
+                  />
+                </div>
+                <div className="db-field">
+                  <label htmlFor="auth-signin-password">Password</label>
+                  <input
+                    id="auth-signin-password"
+                    name="password"
+                    type="password"
+                    placeholder="Your password"
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                  />
+                </div>
+                <div className="db-checkbox-row mb-5">
+                  <input
                     id="remember-me-checkbox"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-[#3E5C76] bg-gray-100 border-gray-300 rounded focus:ring-[#3E5C76] focus:ring-2"
-                />
-                <label htmlFor="remember-me-checkbox" className="ml-2 text-sm font-medium text-gray-700">
-                    Remember me
-                </label>
-            </div>
-            {signInError && <p className="text-red-500 text-xs">{signInError}</p>}
-
-            <a href="#" className="text-gray-700 text-sm no-underline my-4 hover:underline">Forgot your password?</a>
-
-            <button type="submit" disabled={signInLoading} className="rounded-full border border-[#3E5C76] bg-[#3E5C76] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform active:scale-95 hover:bg-[#2D3748] disabled:opacity-50">
-              {signInLoading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-        </div>
-
-        {/* Overlay Container */}
-        <div className={`overlay-container absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-500 ease-in-out z-[100] ${
-          isSignUp ? '-translate-x-full' : ''
-        }`}>
-          <div className={`overlay bg-[#3E5C76] bg-no-repeat bg-cover bg-center text-white relative -left-full h-full w-[200%] transition-transform duration-500 ease-in-out ${
-            isSignUp ? 'translate-x-1/2' : 'translate-x-0'
-          }`} style={{
-            backgroundImage: 'url(/images/log_reg.png)'
-          }}>
-
-            {/* Left Panel */}
-            <div className={`overlay-panel overlay-left absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-500 ease-in-out ${
-              isSignUp ? 'translate-x-0' : '-translate-x-[20%]'
-            }`}>
-              <h1 className="font-bold text-4xl mb-4">Welcome Back!</h1>
-              <p className="text-sm mb-6 leading-relaxed">To keep connected with us please login with your personal info</p>
-              <button
-                onClick={() => setIsSignUp(false)}
-                className="rounded-full border-2 border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white hover:bg-opacity-10"
-              >
-                Sign In
-              </button>
+                  />
+                  <label htmlFor="remember-me-checkbox" className="text-sm">Remember me</label>
+                </div>
+                {signInError && <p className="db-field-error mb-3">{signInError}</p>}
+                <a href="#" className="block text-center text-sm text-[var(--db-link)] hover:text-[var(--db-link-hover)] hover:underline mb-4">Forgot your password?</a>
+                <button type="submit" disabled={signInLoading} className="db-btn db-btn-primary db-btn-block">
+                  {signInLoading ? 'Signing in...' : 'Log In'}
+                </button>
+              </form>
             </div>
 
-            {/* Right Panel */}
-            <div className={`overlay-panel overlay-right absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-500 ease-in-out ${
-              isSignUp ? 'translate-x-[20%]' : 'translate-x-0'
-            }`}>
-              <h1 className="font-bold text-4xl mb-4">Hello, Friend!</h1>
-              <p className="text-sm mb-6 leading-relaxed">Enter your personal details and start your journey with us</p>
-              <button
-                onClick={() => setIsSignUp(true)}
-                className="rounded-full border-2 border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white hover:bg-opacity-10"
-              >
-                Sign Up
-              </button>
+            {/* Register */}
+            <div id="panel-register" role="tabpanel" aria-labelledby="tab-register" hidden={!isSignUp}>
+              <p className="font-[var(--db-font-display)] text-[26px] mb-1 text-center">Create your account</p>
+              <p className="text-center text-[var(--db-muted)] text-sm mb-6">Join as a debater or set up tournaments as an organizer.</p>
+              <form onSubmit={handleSignUpSubmit}>
+                <div className="flex gap-5 justify-center mb-[18px]">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      id="debater-radio"
+                      type="radio"
+                      name="role"
+                      value="debater"
+                      checked={role === Role.PARTICIPANT}
+                      onChange={() => setRole(Role.PARTICIPANT)}
+                      className="w-[18px] h-[18px] accent-[var(--db-accent)]"
+                    />
+                    Debater
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      id="organizer-radio"
+                      type="radio"
+                      name="role"
+                      value="organizer"
+                      checked={role === Role.ORGANIZER}
+                      onChange={() => setRole(Role.ORGANIZER)}
+                      className="w-[18px] h-[18px] accent-[var(--db-accent)]"
+                    />
+                    Organizer
+                  </label>
+                </div>
+
+                <div className="db-field">
+                  <label htmlFor="auth-signup-name">Username</label>
+                  <input
+                    id="auth-signup-name"
+                    name="username"
+                    type="text"
+                    placeholder="3–20 characters, letters and numbers"
+                    required
+                    maxLength={20}
+                    value={signUpUsername}
+                    onChange={(e) => setSignUpUsername(e.target.value)}
+                  />
+                  {signUpErrors.name && <p className="db-field-error">{signUpErrors.name}</p>}
+                </div>
+                <div className="db-field">
+                  <label htmlFor="auth-signup-email">Email</label>
+                  <input
+                    id="auth-signup-email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    required
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
+                  />
+                  {signUpErrors.email && <p className="db-field-error">{signUpErrors.email}</p>}
+                </div>
+                <div className="db-field">
+                  <label htmlFor="auth-signup-password">Password</label>
+                  <input
+                    id="auth-signup-password"
+                    name="password"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    required
+                    minLength={8}
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                  />
+                  {signUpErrors.password && <p className="db-field-error">{signUpErrors.password}</p>}
+                </div>
+
+                <div className="db-field-row">
+                  <div className="db-field" style={{ marginBottom: 0 }}>
+                    <label htmlFor="auth-signup-firstname">First Name</label>
+                    <input
+                      id="auth-signup-firstname"
+                      type="text"
+                      required
+                      value={signUpFirstName}
+                      onChange={(e) => setSignUpFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div className="db-field" style={{ marginBottom: 0 }}>
+                    <label htmlFor="auth-signup-lastname">Last Name</label>
+                    <input
+                      id="auth-signup-lastname"
+                      type="text"
+                      required
+                      value={signUpLastName}
+                      onChange={(e) => setSignUpLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {role === Role.PARTICIPANT && (
+                  <div className="db-field-row mt-[18px]">
+                    <div className="db-field" style={{ marginBottom: 0 }}>
+                      <label htmlFor="auth-signup-city">City</label>
+                      <input
+                        id="auth-signup-city"
+                        type="text"
+                        required={role === Role.PARTICIPANT}
+                        value={signUpCity}
+                        onChange={(e) => setSignUpCity(e.target.value)}
+                      />
+                    </div>
+                    <div className="db-field" style={{ marginBottom: 0 }}>
+                      <label htmlFor="auth-signup-institution">Institution</label>
+                      <input
+                        id="auth-signup-institution"
+                        type="text"
+                        required={role === Role.PARTICIPANT}
+                        value={signUpInstitution}
+                        onChange={(e) => setSignUpInstitution(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="h-[18px]" />
+                {signUpErrorMsg && <p className="db-field-error mb-3">{signUpErrorMsg}</p>}
+                {signUpSuccess && <p className="text-sm mb-3" style={{ color: 'var(--db-accent)' }}>{signUpSuccess}</p>}
+                <button type="submit" disabled={signUpLoading} className="db-btn db-btn-primary db-btn-block">
+                  {signUpLoading ? 'Signing up...' : 'Create Account'}
+                </button>
+              </form>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+
+      <Footer />
+    </>
   )
 }

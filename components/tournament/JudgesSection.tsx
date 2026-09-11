@@ -37,19 +37,19 @@ export function JudgesSection({
         <table className="w-full border-collapse border border-gray-300 rounded-2xl overflow-hidden">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Name</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Email</th>
-              <th className="border border-gray-300 px-6 py-4 text-left text-[#0D1321] font-medium text-[16px]">Phone</th>
-              <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Check In</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Name</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Email</th>
+              <th className="border border-gray-300 px-6 py-4 text-left text-[var(--db-fg)] font-medium text-[16px]">Phone</th>
+              <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Check In</th>
               {hasActions ? (
-                <th className="border border-gray-300 px-6 py-4 text-center text-[#0D1321] font-medium text-[16px]">Actions</th>
+                <th className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)] font-medium text-[16px]">Actions</th>
               ) : null}
             </tr>
           </thead>
           <tbody>
             {judgesLoading ? (
               <tr>
-                <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+                <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-[var(--db-muted)]">
                   Loading judges...
                 </td>
               </tr>
@@ -62,10 +62,10 @@ export function JudgesSection({
             ) : rows.length ? (
               rows.map((judge) => (
                 <tr key={judge.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-6 py-4 text-[#0D1321] font-medium">{judge.fullName}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.email || "—"}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-[#4a4e69]">{judge.phoneNumber || "—"}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-center text-[#0D1321]">
+                  <td className="border border-gray-300 px-6 py-4 text-[var(--db-fg)] font-medium">{judge.fullName}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[var(--db-muted)]">{judge.email || "—"}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-[var(--db-muted)]">{judge.phoneNumber || "—"}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-center text-[var(--db-fg)]">
                     {onToggleJudgeCheckIn ? (
                       <button
                         type="button"
@@ -91,7 +91,7 @@ export function JudgesSection({
                           <button
                             type="button"
                             onClick={() => onEditJudge(judge)}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#0D1321] hover:bg-gray-50"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[var(--db-fg)] hover:bg-gray-50"
                             aria-label={`Edit ${judge.fullName}`}
                             title={`Edit ${judge.fullName}`}
                           >
@@ -117,7 +117,7 @@ export function JudgesSection({
               ))
             ) : (
               <tr>
-                <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-[#4a4e69]">
+                <td colSpan={columnCount} className="border border-gray-300 px-6 py-8 text-center text-[var(--db-muted)]">
                   No judges assigned yet
                 </td>
               </tr>
@@ -131,7 +131,7 @@ export function JudgesSection({
           <button
             type="button"
             onClick={onAddJudge}
-            className="w-12 h-12 bg-[#3E5C76] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+            className="w-12 h-12 bg-[var(--db-accent)] hover:bg-[#2D3748] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
             aria-label="Add judge"
           >
             <Plus className="h-6 w-6" />

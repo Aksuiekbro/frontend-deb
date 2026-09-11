@@ -5,6 +5,7 @@ import { useCurrentUser, useUpcomingTournaments, useTournaments } from "../../ho
 import { LoadingState, CardSkeleton, LoadingSpinner } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
 import { resolveMediaUrl } from "@/lib/media"
+import Footer from "@/components/Footer"
 
 const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string" ? tag : tag.name ?? "")
 
@@ -21,50 +22,56 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-white font-hikasami">
+    <>
+      <div className="db-page-backdrop" aria-hidden="true" style={{ ['--db-backdrop-focal' as string]: '50% 40%' }}>
+        <img src="/images/senate/fortress-harbor.jpg" alt="" />
+        <div className="db-page-backdrop__scrim" />
+      </div>
+      <a className="db-skip-link" href="#main">Skip to content</a>
 
+      <main id="main">
       {/* Hero Section with User Welcome */}
       <section className="text-center py-8">
         <LoadingState
           isLoading={userLoading}
-          fallback={<div className="h-16 bg-gray-200 animate-pulse mx-8 rounded"></div>}
+          fallback={<div className="h-16 bg-[var(--db-border)] animate-pulse mx-8 rounded"></div>}
         >
           {userError ? (
-            <h1 className="text-[#0D1321] text-3xl sm:text-4xl lg:text-[56px] font-bold mb-8">Welcome to DeBetter</h1>
+            <h1 className="home-heading text-3xl sm:text-4xl font-bold mb-8 font-[var(--db-font-display)]" style={{ fontSize: 'clamp(32px,6vw,56px)' }}>Welcome to DeBetter</h1>
           ) : (
-            <h1 className="text-[#0D1321] text-3xl sm:text-4xl lg:text-[56px] font-bold mb-8">
+            <h1 className="home-heading font-bold mb-8 font-[var(--db-font-display)] px-4" style={{ fontSize: 'clamp(32px,6vw,56px)' }}>
               Welcome back, {currentUser?.firstName || 'User'}!
             </h1>
           )}
         </LoadingState>
 
-        <div className="bg-[#0D1321] rounded-[16px] mx-8 py-16 px-8 relative">
-          <h2 className="text-[#FFFFFF] text-2xl sm:text-3xl lg:text-[46px] font-semibold mb-8">
-            <span className="text-[#748CAB] font-hikasami text-inherit font-semibold">DeBetter</span> - website for{" "}
-            <span className="text-[#748CAB] font-hikasami text-inherit font-semibold">debates</span> organisation
+        <div className="home-hero-slide rounded-[16px] mx-8 py-16 px-8 relative">
+          <h2 className="text-white font-semibold mb-8 font-[var(--db-font-display)]" style={{ fontSize: 'clamp(26px,4.5vw,46px)' }}>
+            <span className="text-[var(--db-accent)]">DeBetter</span> - website for{" "}
+            <span className="text-[var(--db-accent)]">debates</span> organisation
           </h2>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4 mb-8">
-            <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal text-center">
+            <Link href="/join" className="db-btn db-btn-primary">
               Join Debates
             </Link>
-            <Link href="/create-tournament" className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal text-center">
+            <Link href="/create-tournament" className="db-btn db-btn-ghost-on-dark">
               Host Debate
             </Link>
           </div>
 
-          {/* Pagination dots */}
+          {/* Pagination dots (decorative) */}
           <div className="flex justify-center space-x-2">
-            <div className="w-[8px] h-[8px] bg-[#4a4e69] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#FFFFFF] rounded-full"></div>
-            <div className="w-[8px] h-[8px] bg-[#4a4e69] rounded-full"></div>
+            <div className="w-[8px] h-[8px] bg-white/40 rounded-full"></div>
+            <div className="w-[8px] h-[8px] bg-white rounded-full"></div>
+            <div className="w-[8px] h-[8px] bg-white/40 rounded-full"></div>
           </div>
         </div>
       </section>
 
       {/* User Welcome Back Section */}
-      <section className="px-8 py-8">
-        <div className="bg-gradient-to-r from-[#0D1321] to-[#3E5C76] rounded-[16px] p-8 relative overflow-hidden">
+      <section className="px-8 py-8 db-container">
+        <div className="home-hero-slide rounded-[16px] p-8 relative overflow-hidden">
           <div className="relative z-10">
             <LoadingState
               isLoading={userLoading}
@@ -75,6 +82,7 @@ export default function Dashboard() {
                   error={userError}
                   onRetry={() => window.location.reload()}
                   message="Failed to load user profile"
+                  onDark
                 />
               ) : currentUser ? (
                 <>
@@ -83,71 +91,71 @@ export default function Dashboard() {
                       <img
                         src={resolveMediaUrl(currentUser.imageUrl.url)}
                         alt={`${currentUser.firstName} ${currentUser.lastName} profile`}
-                        className="w-16 h-16 rounded-full object-cover"
+                        className="w-16 h-16 rounded-full object-cover border-[3px] border-[var(--db-accent)]"
                       />
                     ) : (
-                      <div className="w-16 h-16 bg-[#c9ada7] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      <div className="w-16 h-16 bg-[var(--db-accent)] rounded-full flex items-center justify-center text-[var(--db-accent-fg)] font-bold text-lg">
                         {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
                       </div>
                     )}
-                    <h3 className="text-[#FFFFFF] text-[36px] font-semibold">
-                      Welcome Back <span className="text-[#748CAB]">{currentUser.firstName} {currentUser.lastName}!</span>
+                    <h3 className="text-white text-[36px] font-semibold font-[var(--db-font-display)]">
+                      Welcome Back <span className="text-[var(--db-accent)]">{currentUser.firstName} {currentUser.lastName}!</span>
                     </h3>
                   </div>
 
-                  <div className="flex space-x-4 mb-8">
-                    <Link href={`/profile/${currentUser.id}`} className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal">
+                  <div className="flex flex-wrap gap-4 mb-8">
+                    <Link href={`/profile/${currentUser.id}`} className="db-btn db-btn-primary">
                       My Profile
                     </Link>
-                    <Link href="/my-tournaments" className="border border-[#FFFFFF] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#FFFFFF] hover:text-[#22223b] text-[16px] font-normal">
+                    <Link href="/my-tournaments" className="db-btn db-btn-ghost-on-dark">
                       My Tournaments
                     </Link>
                   </div>
 
                   <div className="mb-6">
-                    <h4 className="text-[#FFFFFF] text-[24px] font-medium mb-4">Your Stats</h4>
+                    <h4 className="text-white text-[24px] font-medium mb-4 font-[var(--db-font-display)]">Your Stats</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center space-x-1">
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
                         </div>
                         <div>
-                          <div className="text-[#FFFFFF] text-[20px] font-medium">{currentUser.tournamentsParticipated || 0}</div>
-                          <div className="text-[#9a8c98] text-[14px]">Tournaments</div>
+                          <div className="text-white text-[20px] font-medium">{currentUser.tournamentsParticipated || 0}</div>
+                          <div className="text-white/60 text-[14px]">Tournaments</div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center space-x-1">
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
                         </div>
                         <div>
-                          <div className="text-[#FFFFFF] text-[20px] font-medium">{upcomingTournaments?.content?.length || 0}</div>
-                          <div className="text-[#9a8c98] text-[14px]">Upcoming</div>
+                          <div className="text-white text-[20px] font-medium">{upcomingTournaments?.content?.length || 0}</div>
+                          <div className="text-white/60 text-[14px]">Upcoming</div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center space-x-1">
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
                         </div>
                         <div>
-                          <div className="text-[#FFFFFF] text-[20px] font-medium">{currentUser.rating || 0}</div>
-                          <div className="text-[#9a8c98] text-[14px]">Rating</div>
+                          <div className="text-white text-[20px] font-medium">{currentUser.rating || 0}</div>
+                          <div className="text-white/60 text-[14px]">Rating</div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center space-x-1">
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
-                          <div className="w-6 h-6 bg-[#748CAB] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
+                          <div className="w-6 h-6 bg-[var(--db-accent)] rounded"></div>
                         </div>
                         <div>
-                          <div className="text-[#FFFFFF] text-[20px] font-medium">-</div>
-                          <div className="text-[#9a8c98] text-[14px]">Ranking</div>
+                          <div className="text-white text-[20px] font-medium">-</div>
+                          <div className="text-white/60 text-[14px]">Ranking</div>
                         </div>
                       </div>
                     </div>
@@ -160,6 +168,7 @@ export default function Dashboard() {
                   actionText="Login"
                   actionHref="/auth?mode=login"
                   prefetch={false}
+                  onDark
                 />
               )}
             </LoadingState>
@@ -168,8 +177,9 @@ export default function Dashboard() {
       </section>
 
       {/* Upcoming Debates */}
-      <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Upcoming Debates</h3>
+      <section className="px-8 py-12 db-container">
+        <div className="db-panel content-panel">
+        <h3 className="section-title">Upcoming Debates</h3>
 
         <LoadingState
           isLoading={upcomingLoading}
@@ -188,41 +198,33 @@ export default function Dashboard() {
               message="Failed to load upcoming tournaments"
             />
           ) : upcomingTournaments && upcomingTournaments.content.length > 0 ? (
-            <div className="relative">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {upcomingTournaments.content.slice(0, 2).map((tournament) => {
-                  const formattedDate = new Date(tournament.startDate).toLocaleDateString('en-GB')
+            <div className="debate-rail">
+              {upcomingTournaments.content.slice(0, 2).map((tournament) => {
+                const formattedDate = new Date(tournament.startDate).toLocaleDateString('en-GB')
 
-                  return (
-                    <div key={tournament.id} className="bg-[#0D1321] rounded-[12px] p-6 min-w-0">
-                      <h4 className="text-[#FFFFFF] text-[30px] font-medium mb-2">{tournament.name}</h4>
-                      <p className="text-[#9a8c98] mb-1 text-[16px] font-normal">{tournament.location}</p>
-                      <p className="text-[#9a8c98] mb-4 text-[16px] font-normal">{formattedDate}</p>
+                return (
+                  <div key={tournament.id} className="db-card-dark min-w-0">
+                    <p className="debate-card__title">{tournament.name}</p>
+                    <p className="debate-card__meta">{tournament.location}</p>
+                    <p className="debate-card__meta">{formattedDate}</p>
 
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {tournament.tags.map((tag, index) => (
-                          <span key={index} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">
-                            {getTagLabel(tag)}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-start">
-                          <Link href={`/tournament/${tournament.id}`} className="text-[#FFFFFF] underline hover:text-[#83c5be] text-[14px] font-normal">
-                            More...
-                          </Link>
-                        </div>
-                        <div className="flex justify-start">
-                          <Link href="/join" className="inline-block bg-[#4a4e69] text-[#FFFFFF] px-4 py-2 rounded hover:bg-[#748cab] text-[14px] font-normal text-center">
-                            Join Debates
-                          </Link>
-                        </div>
-                      </div>
+                    <div className="debate-card__tags">
+                      {tournament.tags.map((tag, index) => (
+                        <span key={index} className="db-tag">{getTagLabel(tag)}</span>
+                      ))}
                     </div>
-                  )
-                })}
-              </div>
+
+                    <div className="row gap-md" style={{ flexWrap: 'wrap' }}>
+                      <Link href={`/tournament/${tournament.id}`} className="db-btn db-btn-ghost-on-dark">
+                        More...
+                      </Link>
+                      <Link href="/join" className="db-btn db-btn-primary">
+                        Join Debates
+                      </Link>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <EmptyState
@@ -233,13 +235,14 @@ export default function Dashboard() {
             />
           )}
         </LoadingState>
+        </div>
       </section>
 
       {/* Past Debates Section */}
-      <section className="px-8 py-12">
-        <div className="bg-[#3E5C76] rounded-[16px] p-8 relative overflow-hidden">
+      <section className="px-8 py-12 db-container">
+        <div className="db-card-dark relative overflow-hidden" style={{ padding: 32 }}>
           <div className="absolute inset-0 flex items-center justify-center">
-            <h3 className="text-[#748CAB] text-[120px] font-bold opacity-30 select-none">
+            <h3 className="text-[var(--db-accent)] text-[80px] sm:text-[120px] font-bold opacity-30 select-none font-[var(--db-font-display)]">
               Past debates
             </h3>
           </div>
@@ -250,7 +253,7 @@ export default function Dashboard() {
               fallback={
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="bg-gray-300 animate-pulse rounded-[12px] h-48"></div>
+                    <div key={i} className="bg-[var(--db-border)] animate-pulse rounded-[12px] h-48"></div>
                   ))}
                 </div>
               }
@@ -260,6 +263,7 @@ export default function Dashboard() {
                   error={pastError}
                   onRetry={() => window.location.reload()}
                   message="Failed to load past tournaments"
+                  onDark
                 />
               ) : pastTournamentsData && pastTournamentsData.content.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -305,6 +309,7 @@ export default function Dashboard() {
                   description="Your tournament history will appear here"
                   actionText="Join a Tournament"
                   actionHref="/tournaments"
+                  onDark
                 />
               )}
             </LoadingState>
@@ -313,25 +318,28 @@ export default function Dashboard() {
       </section>
 
       {/* Testimonials (Leaderboard disabled) */}
-      <section className="px-8 py-12">
-        <h3 className="text-[#0D1321] text-[38px] font-semibold mb-8">Community Highlights</h3>
-        <div className="bg-white border border-[#9a8c98] rounded-[12px] py-8 px-6 text-center">
-          <p className="text-[#0D1321] text-[16px] font-normal">Community highlights will appear here as users participate in tournaments</p>
+      <section className="px-8 py-12 db-container">
+        <h3 className="home-heading font-[var(--db-font-display)] mb-7" style={{ fontSize: 32 }}>Community Highlights</h3>
+        <div className="db-panel text-center" style={{ padding: '32px 24px' }}>
+          <p className="text-[16px] text-[var(--db-fg)]">Community highlights will appear here as users participate in tournaments</p>
         </div>
       </section>
 
       {/* Leader Board (disabled) */}
-      <section className="px-8 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h3 className="text-[#0D1321] text-[38px] font-semibold">Leader Board</h3>
-          <Link href="/rating" className="text-[#4a4e69] underline hover:text-[#748CAB] text-[16px] font-normal">
+      <section className="px-8 py-12 db-container">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+          <h3 className="home-heading font-[var(--db-font-display)]" style={{ fontSize: 32 }}>Leader Board</h3>
+          <Link href="/rating" className="home-sub underline text-[16px]">
             View Full Leaderboard
           </Link>
         </div>
-        <div className="bg-white border border-[#9a8c98] rounded-[12px] py-16 px-6 text-center">
-          <p className="text-[#0D1321] text-[16px] font-normal">Leaderboard is disabled until ratings are supported.</p>
+        <div className="db-panel text-center" style={{ padding: '64px 24px' }}>
+          <p className="text-[16px] text-[var(--db-fg)]">Leaderboard is disabled until ratings are supported.</p>
         </div>
       </section>
-    </div>
+      </main>
+
+      <Footer />
+    </>
   )
 }

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeBetter — website for debates organisation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css" />
+<style>
+  .slide-nav-row { display:flex; justify-content:center; gap:12px; margin-top: 28px; }
+  .debate-rail { display:grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px) { .debate-rail { grid-template-columns: 1fr; } }
+  .debate-card__title { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  .debate-card__meta { color: var(--card-dark-muted); font-size: 14px; margin-bottom: 4px; }
+  .debate-card__tags { display:flex; flex-wrap:wrap; gap:8px; margin: 14px 0 18px; }
+  .content-panel { padding: 40px 32px; }
+  @media (max-width: 640px) { .content-panel { padding: 28px 20px; } }
+  .empty-state { text-align:center; padding: 24px; color: var(--muted); }
+  .section-title { font-family: var(--font-display); font-size: 32px; margin-bottom: 28px; }
+</style>
+</head>
+<body>
+<div class="page-backdrop" aria-hidden="true" style="--backdrop-focal: 50% 62%;">
+  <img src="assets/senate/forum-panorama.png" alt="" />
+  <div class="page-backdrop__scrim"></div>
+</div>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" data-od-id="site-header">
+  <div class="site-header__inner">
+    <a href="landing.html" class="brand" data-od-id="brand-wordmark">DeBetter</a>
+    <nav class="primary-nav" aria-label="Primary">
+      <a href="join-debates.html" data-od-id="nav-join">Join Debates</a>
+      <a href="create-debate.html" data-od-id="nav-host">Host Debate</a>
+      <a href="#" data-od-id="nav-rating">Rating</a>
+      <a href="#" data-od-id="nav-news">News</a>
+    </nav>
+    <div class="header-actions">
+      <div class="theme-toggle" data-theme-toggle data-od-id="theme-toggle" aria-label="Switch theme">
+        <span class="theme-toggle__thumb"></span>
+        <span class="theme-toggle__option" data-value="classic">Classic</span>
+        <span class="theme-toggle__option" data-value="senate">Senate</span>
+      </div>
+      <a href="auth.html?mode=login" class="btn btn-secondary" data-od-id="nav-login">Log In</a>
+      <a href="auth.html?mode=register" class="btn btn-primary" data-od-id="nav-register">Register</a>
+      <button class="nav-toggle" data-nav-open aria-label="Open menu" data-od-id="nav-toggle-mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-drawer" data-nav-drawer data-open="false">
+  <div class="nav-drawer__scrim" data-nav-scrim></div>
+  <div class="nav-drawer__panel" role="dialog" aria-label="Menu">
+    <button class="nav-drawer__close" data-nav-close aria-label="Close menu">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <a href="join-debates.html">Join Debates</a>
+    <a href="create-debate.html">Host Debate</a>
+    <a href="#">Rating</a>
+    <a href="#">News</a>
+    <a href="auth.html?mode=login">Log In</a>
+    <a href="auth.html?mode=register">Register</a>
+  </div>
+</div>
+
+<main id="main">
+
+  <section class="hero" style="height:min(88vh,720px);" data-od-id="hero">
+    <div class="hero__content container">
+      <p class="hero__eyebrow">Debate tournaments, organised</p>
+      <h1 class="hero__title" data-od-id="hero-title">DeBetter — the home for debate tournament organisation</h1>
+      <p class="hero__lede">Find and join tournaments, register your team, and track results — all in one place, built for debaters and organisers alike.</p>
+      <div class="row gap-md" style="flex-wrap:wrap;">
+        <a href="join-debates.html" class="btn btn-primary" data-od-id="cta-join-debate">Join Debate</a>
+        <a href="create-debate.html" class="btn btn-ghost-on-dark" data-od-id="cta-host-tournament">Host a Tournament</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="container" style="padding: 48px 24px;">
+   <div class="panel content-panel">
+    <h2 class="section-title">Upcoming Debates</h2>
+    <div class="debate-rail">
+      <article class="card-dark" data-od-id="debate-card-invitational">
+        <p class="debate-card__title">Metropolitan Debate Invitational</p>
+        <p class="debate-card__meta">Boston, MA</p>
+        <p class="debate-card__meta">Starts 14.11.2026</p>
+        <div class="debate-card__tags">
+          <span class="tag">APF</span>
+          <span class="tag">BPF</span>
+          <span class="tag">University</span>
+        </div>
+        <div class="row gap-md" style="flex-wrap:wrap;">
+          <a href="join-debates.html" class="btn btn-ghost-on-dark" data-od-id="debate-card-invitational-details">View Details</a>
+          <a href="join-debates.html" class="btn btn-primary" data-od-id="debate-card-invitational-join">Join Tournament</a>
+        </div>
+      </article>
+      <article class="card-dark" data-od-id="debate-card-parliamentary">
+        <p class="debate-card__title">Winter Parliamentary Cup</p>
+        <p class="debate-card__meta">Remote — online rounds</p>
+        <p class="debate-card__meta">Starts 02.12.2026</p>
+        <div class="debate-card__tags">
+          <span class="tag">BPF</span>
+          <span class="tag">School</span>
+        </div>
+        <div class="row gap-md" style="flex-wrap:wrap;">
+          <a href="join-debates.html" class="btn btn-ghost-on-dark" data-od-id="debate-card-parliamentary-details">View Details</a>
+          <a href="join-debates.html" class="btn btn-primary" data-od-id="debate-card-parliamentary-join">Join Tournament</a>
+        </div>
+      </article>
+    </div>
+   </div>
+  </section>
+
+  <section class="container" style="padding: 0 24px 48px;">
+   <div class="panel content-panel">
+    <h2 class="section-title">Community Voices</h2>
+    <div class="empty-state" data-od-id="community-empty-state">
+      <p>Community testimonials will appear as more debaters join tournaments.</p>
+      <a href="join-debates.html" class="btn btn-primary" style="margin-top:18px;" data-od-id="cta-community-join">Join a Tournament</a>
+    </div>
+   </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" data-od-id="site-footer">
+  <div class="site-footer__inner container">
+    <div class="site-footer__brand">DeBetter</div>
+    <div class="site-footer__social">
+      <a href="#" aria-label="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg></a>
+      <a href="#" aria-label="YouTube"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="#" aria-label="LinkedIn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg></a>
+    </div>
+    <div class="site-footer__meta">
+      <span>Contact us: debetter@gmail.com</span>
+      <span>© 2026 all rights reserved</span>
+      <a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

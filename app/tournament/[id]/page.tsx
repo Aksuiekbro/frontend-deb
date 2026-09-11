@@ -46,6 +46,7 @@ import type { AnnouncementRequest, AnnouncementResponse } from "@/types/tourname
 import type { ScheduleRequest } from "@/types/tournament/schedule"
 import { DebateFormat } from "@/types/tournament/tournament"
 import { RoundGroupType, type RoundGroupResponse } from "@/types/tournament/round/round-group"
+import Footer from "@/components/Footer"
 
 const STAGE_BY_ROUND_GROUP_TYPE: Partial<Record<RoundGroupType, PairingStageId>> = {
   [RoundGroupType.PRELIMINARY]: "preliminary",
@@ -1298,7 +1299,7 @@ export default function TournamentDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
+    <div className="min-h-screen" style={{ background: 'var(--db-bg)' }}>
 
       <TournamentHeader
         tournamentName={tournament?.name}
@@ -1517,6 +1518,10 @@ export default function TournamentDetailPage() {
         title={judgeModalMode === 'edit' ? 'Edit Judge' : 'Add Judge'}
         submitLabel={judgeModalMode === 'edit' ? 'Save Judge' : 'Submit'}
       />
+
+      <div style={{ background: 'var(--db-surface)' }}>
+        <Footer />
+      </div>
     </div>
   )
 }

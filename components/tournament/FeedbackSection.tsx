@@ -77,7 +77,7 @@ export function FeedbackSection({
     }
 
     if (!items.length) {
-      return <p className="text-center text-[#9a8c98]">No feedback yet</p>
+      return <p className="text-center text-[var(--db-input-border)]">No feedback yet</p>
     }
 
     return (
@@ -101,7 +101,7 @@ export function FeedbackSection({
                   <p className="mt-3 break-words text-[1.05rem] leading-relaxed text-[#101737]">{item.title}</p>
                   <p className="mt-2 break-words text-[#0F1423] text-[0.98rem] leading-relaxed">{item.content}</p>
                   {item.tags?.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#3E5C76]">
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--db-accent)]">
                       {item.tags.map((tag) => (
                         <span key={tag.name} className="rounded-full bg-[#EEF2FB] px-3 py-1">#{tag.name}</span>
                       ))}

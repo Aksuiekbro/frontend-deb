@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Log in or create an account — DeBetter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css" />
+<style>
+  .auth-hero { min-height: 320px; }
+  .auth-wrap { max-width: 480px; margin: -72px auto 64px; position: relative; z-index: 3; padding: 0 20px; }
+  .auth-card { padding: 32px; }
+  .auth-tabs { display: flex; background: var(--surface); border-radius: var(--radius-pill); padding: 4px; margin-bottom: 26px; }
+  .auth-tab { flex: 1; text-align: center; padding: 10px 0; min-height: var(--touch); border-radius: var(--radius-pill); color: var(--surface-fg); opacity: .65; cursor: pointer; border: none; background: transparent; font-weight: 600; font-family: var(--font-body); font-size: 14px; }
+  .auth-tab[aria-selected="true"] { opacity: 1; background: var(--accent); color: var(--accent-fg); }
+  .auth-title { font-family: var(--font-display); font-size: 26px; margin-bottom: 4px; text-align: center; }
+  .auth-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .role-row { display: flex; gap: 20px; justify-content: center; margin-bottom: 18px; }
+  .role-option { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .role-option input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .auth-panel[hidden] { display: none; }
+  .auth-status { font-size: 13px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="page-backdrop" aria-hidden="true" style="--backdrop-focal: 50% 58%;">
+  <img src="assets/senate/river-council.png" alt="" />
+  <div class="page-backdrop__scrim"></div>
+</div>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" data-od-id="site-header">
+  <div class="site-header__inner">
+    <a href="landing.html" class="brand" data-od-id="brand-wordmark">DeBetter</a>
+    <nav class="primary-nav" aria-label="Primary">
+      <a href="join-debates.html" data-od-id="nav-join">Join Debates</a>
+      <a href="create-debate.html" data-od-id="nav-host">Host Debate</a>
+      <a href="#" data-od-id="nav-rating">Rating</a>
+      <a href="#" data-od-id="nav-news">News</a>
+    </nav>
+    <div class="header-actions">
+      <div class="theme-toggle" data-theme-toggle data-od-id="theme-toggle" aria-label="Switch theme">
+        <span class="theme-toggle__thumb"></span>
+        <span class="theme-toggle__option" data-value="classic">Classic</span>
+        <span class="theme-toggle__option" data-value="senate">Senate</span>
+      </div>
+      <button class="nav-toggle" data-nav-open aria-label="Open menu" data-od-id="nav-toggle-mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-drawer" data-nav-drawer data-open="false">
+  <div class="nav-drawer__scrim" data-nav-scrim></div>
+  <div class="nav-drawer__panel" role="dialog" aria-label="Menu">
+    <button class="nav-drawer__close" data-nav-close aria-label="Close menu">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <a href="join-debates.html">Join Debates</a>
+    <a href="create-debate.html">Host Debate</a>
+    <a href="#">Rating</a>
+    <a href="#">News</a>
+  </div>
+</div>
+
+<main id="main">
+  <section class="hero auth-hero" data-od-id="auth-hero">
+    <div class="hero__content container" style="padding-bottom: 96px;">
+      <p class="hero__eyebrow">Welcome back</p>
+      <h1 class="hero__title" style="font-size: clamp(28px,4vw,40px);">Your seat at the table is waiting</h1>
+    </div>
+  </section>
+
+  <div class="auth-wrap">
+    <div class="auth-card panel" data-od-id="auth-card">
+      <div class="auth-tabs" role="tablist" aria-label="Choose login or register">
+        <button class="auth-tab" role="tab" id="tab-login" aria-selected="true" aria-controls="panel-login" data-od-id="auth-tab-login">Log In</button>
+        <button class="auth-tab" role="tab" id="tab-register" aria-selected="false" aria-controls="panel-register" data-od-id="auth-tab-register">Create Account</button>
+      </div>
+
+      <!-- Log In -->
+      <div id="panel-login" class="auth-panel" role="tabpanel" aria-labelledby="tab-login">
+        <p class="auth-title">Log in to DeBetter</p>
+        <p class="auth-sub">Pick up your tournaments where you left off.</p>
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label for="login-username">Username</label>
+            <input id="login-username" name="username" type="text" pattern="[a-zA-Z0-9]{3,20}" placeholder="Your username" required />
+            <p class="field-error" id="login-username-error" hidden>Username must be 3–20 characters, letters and numbers only.</p>
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" placeholder="Your password" required />
+          </div>
+          <div class="checkbox-row" style="margin-bottom: 20px;">
+            <input id="login-remember" type="checkbox" />
+            <label for="login-remember" style="font-size:14px;">Remember me</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" data-od-id="auth-submit-login">Log In</button>
+          <p class="auth-status" id="login-status" role="status"></p>
+        </form>
+      </div>
+
+      <!-- Register -->
+      <div id="panel-register" class="auth-panel" role="tabpanel" aria-labelledby="tab-register" hidden>
+        <p class="auth-title">Create your account</p>
+        <p class="auth-sub">Join as a debater or set up tournaments as an organizer.</p>
+        <form id="register-form" novalidate>
+          <div class="role-row">
+            <label class="role-option"><input type="radio" name="role" value="debater" checked /> Debater</label>
+            <label class="role-option"><input type="radio" name="role" value="organizer" /> Organizer</label>
+          </div>
+          <div class="field">
+            <label for="reg-username">Username</label>
+            <input id="reg-username" type="text" pattern="[a-zA-Z0-9]{3,20}" maxlength="20" placeholder="3–20 characters, letters and numbers" required />
+          </div>
+          <div class="field">
+            <label for="reg-email">Email</label>
+            <input id="reg-email" type="email" placeholder="you@example.com" required />
+          </div>
+          <div class="field">
+            <label for="reg-password">Password</label>
+            <input id="reg-password" type="password" minlength="8" placeholder="At least 8 characters" required />
+          </div>
+          <div class="field-row">
+            <div class="field" style="margin-bottom:0;">
+              <label for="reg-first">First Name</label>
+              <input id="reg-first" type="text" required />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="reg-last">Last Name</label>
+              <input id="reg-last" type="text" required />
+            </div>
+          </div>
+          <div class="field-row" id="participant-fields">
+            <div class="field" style="margin-bottom:0;">
+              <label for="reg-city">City</label>
+              <input id="reg-city" type="text" />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="reg-institution">Institution</label>
+              <input id="reg-institution" type="text" />
+            </div>
+          </div>
+          <div style="height:18px;"></div>
+          <button type="submit" class="btn btn-primary btn-block" data-od-id="auth-submit-register">Create Account</button>
+          <p class="auth-status" id="register-status" role="status"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer" data-od-id="site-footer" style="margin-top:0;">
+  <div class="site-footer__inner container">
+    <div class="site-footer__meta">
+      <span>Contact us: debetter@gmail.com</span>
+      <span>© 2026 all rights reserved</span>
+      <a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+<script>
+  (function () {
+    var tabLogin = document.getElementById("tab-login");
+    var tabRegister = document.getElementById("tab-register");
+    var panelLogin = document.getElementById("panel-login");
+    var panelRegister = document.getElementById("panel-register");
+
+    function showLogin() {
+      tabLogin.setAttribute("aria-selected", "true");
+      tabRegister.setAttribute("aria-selected", "false");
+      panelLogin.hidden = false;
+      panelRegister.hidden = true;
+    }
+    function showRegister() {
+      tabLogin.setAttribute("aria-selected", "false");
+      tabRegister.setAttribute("aria-selected", "true");
+      panelLogin.hidden = true;
+      panelRegister.hidden = false;
+    }
+    tabLogin.addEventListener("click", showLogin);
+    tabRegister.addEventListener("click", showRegister);
+
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "register") showRegister(); else showLogin();
+
+    document.querySelectorAll('input[name="role"]').forEach(function (r) {
+      r.addEventListener("change", function () {
+        document.getElementById("participant-fields").style.display =
+          r.value === "debater" && r.checked ? "grid" : (document.querySelector('input[name="role"]:checked').value === "debater" ? "grid" : "none");
+      });
+    });
+
+    document.getElementById("login-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var username = document.getElementById("login-username");
+      var errEl = document.getElementById("login-username-error");
+      var valid = /^[a-zA-Z0-9]{3,20}$/.test(username.value);
+      errEl.hidden = valid;
+      if (!valid) { username.focus(); return; }
+      document.getElementById("login-status").textContent = "Demo only — this prototype does not sign in for real.";
+    });
+    document.getElementById("register-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      document.getElementById("register-status").textContent = "Demo only — this prototype does not create real accounts.";
+    });
+  })();
+</script>
+</body>
+</html>

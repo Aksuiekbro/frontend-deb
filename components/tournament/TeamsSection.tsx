@@ -50,16 +50,16 @@ export function TeamsSection({
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Team Name</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Speaker 1</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Speaker 2</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Study Location</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Club</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">City</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Number</th>
-            <th className="border border-gray-300 px-4 py-3 text-left text-[#0D1321] font-medium">Check In</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Team Name</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Speaker 1</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Speaker 2</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Study Location</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Club</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">City</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Number</th>
+            <th className="border border-gray-300 px-4 py-3 text-left text-[var(--db-fg)] font-medium">Check In</th>
             {showActions ? (
-              <th className="border border-gray-300 px-4 py-3 text-center text-[#0D1321] font-medium">Actions</th>
+              <th className="border border-gray-300 px-4 py-3 text-center text-[var(--db-fg)] font-medium">Actions</th>
             ) : null}
           </tr>
         </thead>
@@ -95,13 +95,13 @@ export function TeamsSection({
 
               return (
                 <tr key={team.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-3 text-[#0D1321] font-medium">{team.name}</td>
-                  <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{getMemberName(primaryMember)}</td>
-                  <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{getMemberName(secondaryMember)}</td>
-                  <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{getInstitutionName(primaryMember)}</td>
-                  <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{team.club?.name ?? "—"}</td>
-                  <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{getCityName(primaryMember)}</td>
-                  <td className="border border-gray-300 px-4 py-3 text-[#4a4e69]">{String(team.id).padStart(3, "0")}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-fg)] font-medium">{team.name}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-muted)]">{getMemberName(primaryMember)}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-muted)]">{getMemberName(secondaryMember)}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-muted)]">{getInstitutionName(primaryMember)}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-muted)]">{team.club?.name ?? "—"}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-muted)]">{getCityName(primaryMember)}</td>
+                  <td className="border border-gray-300 px-4 py-3 text-[var(--db-muted)]">{String(team.id).padStart(3, "0")}</td>
                   <td className="border border-gray-300 px-4 py-3 text-center">
                     <button
                       type="button"
@@ -120,7 +120,7 @@ export function TeamsSection({
                           <button
                             type="button"
                             onClick={() => onEditTeam(team)}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#3E5C76] transition hover:border-[#CBD3EC] hover:text-[#0B1327]"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[var(--db-accent)] transition hover:border-[#CBD3EC] hover:text-[#0B1327]"
                             aria-label={`Edit ${team.name}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -130,7 +130,7 @@ export function TeamsSection({
                           type="button"
                           disabled={!onDeleteTeam}
                           onClick={() => onDeleteTeam?.(team.id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#9a8c98] transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[var(--db-input-border)] transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                           aria-label={`Delete ${team.name}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -140,7 +140,7 @@ export function TeamsSection({
                             type="button"
                             disabled={!onRequalifyTeam}
                             onClick={() => onRequalifyTeam?.(team.id)}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#3E5C76] transition hover:border-[#CBD3EC] hover:text-[#0B1327] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[var(--db-accent)] transition hover:border-[#CBD3EC] hover:text-[#0B1327] disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Requalify ${team.name}`}
                           >
                             <RotateCcw className="h-4 w-4" />
@@ -150,7 +150,7 @@ export function TeamsSection({
                             type="button"
                             disabled={!onDisqualifyTeam}
                             onClick={() => onDisqualifyTeam?.(team.id)}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#9a8c98] transition hover:border-amber-200 hover:text-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[var(--db-input-border)] transition hover:border-amber-200 hover:text-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Disqualify ${team.name}`}
                           >
                             <Ban className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function TeamsSection({
             })
           ) : (
             <tr>
-              <td colSpan={columnCount} className="border border-gray-300 px-4 py-8 text-center text-[#4a4e69]">
+              <td colSpan={columnCount} className="border border-gray-300 px-4 py-8 text-center text-[var(--db-muted)]">
                 No teams registered yet
               </td>
             </tr>

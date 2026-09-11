@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Host a Debate — DeBetter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css" />
+<style>
+  .cd-band { height: 220px; }
+  .cd-wrap { max-width: 860px; margin: -56px auto 72px; padding: 0 20px; position: relative; z-index: 3; }
+  .cd-card { padding: 32px; }
+  .cd-eyebrow { color: var(--muted); font-size: 16px; margin-bottom: 4px; }
+  .cd-title { font-family: var(--font-display); font-size: clamp(26px,3vw,34px); margin-bottom: 16px; }
+  .cd-divider { height: 1px; background: var(--border); margin-bottom: 26px; }
+  .cd-form-actions { display:flex; gap: 14px; justify-content: flex-end; flex-wrap: wrap; padding-top: 12px; }
+  @media (max-width: 560px) { .cd-form-actions { flex-direction: column-reverse; } .cd-form-actions .btn { width: 100%; } }
+</style>
+</head>
+<body>
+<div class="page-backdrop" aria-hidden="true" style="--backdrop-focal: 50% 55%;">
+  <img src="assets/senate/senate-assembly.png" alt="" />
+  <div class="page-backdrop__scrim"></div>
+</div>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" data-od-id="site-header">
+  <div class="site-header__inner">
+    <a href="landing.html" class="brand" data-od-id="brand-wordmark">DeBetter</a>
+    <nav class="primary-nav" aria-label="Primary">
+      <a href="join-debates.html" data-od-id="nav-join">Join Debates</a>
+      <a href="create-debate.html" aria-current="page" data-od-id="nav-host">Host Debate</a>
+      <a href="#" data-od-id="nav-rating">Rating</a>
+      <a href="#" data-od-id="nav-news">News</a>
+    </nav>
+    <div class="header-actions">
+      <div class="theme-toggle" data-theme-toggle data-od-id="theme-toggle" aria-label="Switch theme">
+        <span class="theme-toggle__thumb"></span>
+        <span class="theme-toggle__option" data-value="classic">Classic</span>
+        <span class="theme-toggle__option" data-value="senate">Senate</span>
+      </div>
+      <a href="profile.html" class="header-user" data-od-id="header-user-link">
+        <span class="header-user__avatar">MA</span>
+        <span class="header-user__name">Cicero_23</span>
+      </a>
+      <button class="nav-toggle" data-nav-open aria-label="Open menu" data-od-id="nav-toggle-mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-drawer" data-nav-drawer data-open="false">
+  <div class="nav-drawer__scrim" data-nav-scrim></div>
+  <div class="nav-drawer__panel" role="dialog" aria-label="Menu">
+    <button class="nav-drawer__close" data-nav-close aria-label="Close menu">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <a href="join-debates.html">Join Debates</a>
+    <a href="create-debate.html">Host Debate</a>
+    <a href="#">Rating</a>
+    <a href="#">News</a>
+    <a href="profile.html">Your Profile</a>
+  </div>
+</div>
+
+<main id="main">
+  <section class="hero cd-band" data-od-id="create-hero"></section>
+
+  <div class="cd-wrap">
+    <div class="cd-card panel" data-od-id="host-debate-card">
+      <p class="cd-eyebrow">Start the Debate</p>
+      <h1 class="cd-title">Create a Debate and Let the Discussion Begin</h1>
+      <div class="cd-divider"></div>
+
+      <form id="host-form" novalidate>
+        <div class="field">
+          <label for="debate-title">Debate Title</label>
+          <input id="debate-title" type="text" maxlength="50" placeholder="Enter a clear and engaging title for your debate" required />
+        </div>
+        <div class="field">
+          <label for="debate-desc">Debate Description</label>
+          <textarea id="debate-desc" maxlength="200" placeholder="Provide context and key points to help participants understand the topic" required></textarea>
+        </div>
+        <div class="field">
+          <label for="debate-image">Tournament Image</label>
+          <input id="debate-image" type="file" accept="image/*" required />
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label for="start-date">Start Date</label><input id="start-date" type="date" required /></div>
+          <div class="field"><label for="end-date">End Date</label><input id="end-date" type="date" required /></div>
+        </div>
+        <div class="field" style="max-width:320px;">
+          <label for="reg-deadline">Registration Deadline</label>
+          <input id="reg-deadline" type="date" required />
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label for="location">Location</label><input id="location" type="text" maxlength="50" placeholder="Enter the city or venue name" required /></div>
+          <div class="field">
+            <label for="league">League</label>
+            <select id="league" required>
+              <option value="" disabled selected>Select the league</option>
+              <option value="SCHOOL">School</option>
+              <option value="UNIVERSITY">University</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label for="team-limit">Team Limit</label><input id="team-limit" type="number" min="2" placeholder="Maximum number of teams allowed" required /></div>
+          <div class="field">
+            <label for="elim-format">Elimination Round Format</label>
+            <select id="elim-format" required>
+              <option value="" disabled selected>Choose a format for knock-out rounds</option>
+              <option value="APF">APF</option>
+              <option value="BPF">BPF</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="prelim-format">Preliminary Debate Format</label>
+            <select id="prelim-format" required>
+              <option value="" disabled selected>Choose a format</option>
+              <option value="APF">APF</option>
+              <option value="BPF">BPF</option>
+            </select>
+          </div>
+          <div class="field"><label for="prelim-rounds">Number of Preliminary Rounds</label><input id="prelim-rounds" type="number" min="1" placeholder="Enter total preliminary rounds" required /></div>
+        </div>
+
+        <div class="field">
+          <label for="elim-rounds">Number of Elimination Rounds</label>
+          <input id="elim-rounds" type="number" min="1" placeholder="Enter total elimination rounds" required style="max-width:320px;" />
+        </div>
+
+        <div class="field">
+          <label class="checkbox-row" for="ld-enabled" style="margin-bottom:6px;">
+            <input id="ld-enabled" type="checkbox" checked />
+            Include LD (solo speaker) bracket
+          </label>
+          <p class="hint">Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.</p>
+          <div id="ld-size-field" style="margin-top:10px; max-width:320px;">
+            <label for="ld-size">LD bracket size</label>
+            <select id="ld-size">
+              <option value="4">Top 16 speakers</option>
+              <option value="5">Top 32 speakers</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="cd-form-actions">
+          <p class="field-error" id="host-error" role="alert" style="flex:1; align-self:center; margin:0;" hidden></p>
+          <button type="button" class="btn btn-secondary" id="host-cancel" data-od-id="host-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-od-id="host-submit">Submit</button>
+        </div>
+        <p class="auth-status" id="host-status" role="status" style="text-align:right; margin-top:8px;"></p>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer" data-od-id="site-footer" style="margin-top:0;">
+  <div class="site-footer__inner container">
+    <div class="site-footer__meta">
+      <span>Contact us: debetter@gmail.com</span>
+      <span>© 2026 all rights reserved</span>
+      <a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var ldCheckbox = document.getElementById("ld-enabled");
+  var ldField = document.getElementById("ld-size-field");
+  function syncLd() { ldField.style.display = ldCheckbox.checked ? "block" : "none"; }
+  ldCheckbox.addEventListener("change", syncLd);
+  syncLd();
+
+  var form = document.getElementById("host-form");
+  var errorEl = document.getElementById("host-error");
+  var statusEl = document.getElementById("host-status");
+
+  document.getElementById("host-cancel").addEventListener("click", function () {
+    form.reset();
+    syncLd();
+    errorEl.hidden = true;
+    statusEl.textContent = "";
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errorEl.hidden = true;
+    statusEl.textContent = "";
+
+    var start = document.getElementById("start-date").value;
+    var end = document.getElementById("end-date").value;
+    var deadline = document.getElementById("reg-deadline").value;
+
+    if (!form.reportValidity()) return;
+
+    if (new Date(deadline) > new Date(start)) {
+      errorEl.textContent = "Registration deadline must be before the tournament starts.";
+      errorEl.hidden = false;
+      return;
+    }
+    if (new Date(end) < new Date(start)) {
+      errorEl.textContent = "End date must be after the start date.";
+      errorEl.hidden = false;
+      return;
+    }
+
+    statusEl.textContent = "Demo only — this prototype does not create a real tournament.";
+  });
+})();
+</script>
+</body>
+</html>

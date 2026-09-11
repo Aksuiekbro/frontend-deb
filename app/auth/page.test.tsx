@@ -61,7 +61,7 @@ function renderAuthPage(initialMode: AuthMode = 'register', requestedMode: AuthM
   return render(<AuthPageClient initialMode={initialMode} requestedMode={requestedMode} />)
 }
 
-// Both auth forms render simultaneously (sliding-panel UI); target the sign-in one by its fields.
+// Both auth forms render simultaneously (the inactive tab panel is hidden via the `hidden` attribute, not unmounted); target the sign-in one by its fields.
 function fillAndSubmitSignIn(container: HTMLElement, username: string, password: string) {
   fireEvent.change(container.querySelector('#auth-signin-email')!, { target: { value: username } })
   fireEvent.change(container.querySelector('#auth-signin-password')!, { target: { value: password } })
@@ -91,28 +91,30 @@ describe('AuthPageClient query mode', () => {
 
     expect(container.querySelector('[data-auth-mode="login"]')).toBeInTheDocument()
     await waitFor(() => expect(container.querySelector('[data-auth-client-ready="true"][data-auth-mode="login"]')).toBeInTheDocument())
-    expect(container.querySelector('.sign-in-container')).toHaveClass('z-20')
-    expect(container.querySelector('.sign-in-container')).not.toHaveClass('translate-x-full')
+    expect(container.querySelector('#panel-login')).not.toHaveAttribute('hidden')
+    expect(container.querySelector('#panel-register')).toHaveAttribute('hidden')
+    expect(container.querySelector('#tab-login')).toHaveAttribute('aria-selected', 'true')
   })
 
   it('renders direct register mode and keeps the signup panel active', async () => {
     const { container } = renderAuthPage('register', 'register')
 
     await waitFor(() => expect(container.querySelector('[data-auth-client-ready="true"][data-auth-mode="register"]')).toBeInTheDocument())
-    expect(container.querySelector('.sign-up-container')).toHaveClass('z-10')
-    expect(container.querySelector('.sign-in-container')).toHaveClass('translate-x-full')
+    expect(container.querySelector('#panel-register')).not.toHaveAttribute('hidden')
+    expect(container.querySelector('#panel-login')).toHaveAttribute('hidden')
+    expect(container.querySelector('#tab-register')).toHaveAttribute('aria-selected', 'true')
   })
 
   it('defaults absent mode to register and preserves a manual mode toggle', async () => {
     const { container, rerender } = renderAuthPage('register', null)
 
     await waitFor(() => expect(container.querySelector('[data-auth-client-ready="true"][data-auth-mode="register"]')).toBeInTheDocument())
-    fireEvent.click(container.querySelector('.overlay-left button')!)
+    fireEvent.click(container.querySelector('#tab-login')!)
 
     rerender(<AuthPageClient initialMode="register" requestedMode={null} />)
 
     expect(container.querySelector('[data-auth-client-ready="true"][data-auth-mode="login"]')).toBeInTheDocument()
-    expect(container.querySelector('.sign-in-container')).toHaveClass('z-20')
+    expect(container.querySelector('#panel-login')).not.toHaveAttribute('hidden')
   })
 
   it('synchronizes client mode changes when the requested mode is explicit', async () => {
@@ -124,14 +126,6 @@ describe('AuthPageClient query mode', () => {
     rerender(<AuthPageClient initialMode="register" requestedMode="register" />)
 
     await waitFor(() => expect(container.querySelector('[data-auth-client-ready="true"][data-auth-mode="register"]')).toBeInTheDocument())
-  })
-
-  it('preserves the 500ms sliding-panel transition classes', () => {
-    const { container } = renderAuthPage()
-
-    expect(container.querySelector('.sign-up-container')).toHaveClass('duration-500')
-    expect(container.querySelector('.sign-in-container')).toHaveClass('duration-500')
-    expect(container.querySelector('.overlay-container')).toHaveClass('duration-500')
   })
 })
 

@@ -3,19 +3,9 @@
 import React, { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { toBackendDateTime } from "@/lib/datetime"
 import { readResponseError } from "@/lib/http-error"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   DebateFormat,
   TournamentLeague,
@@ -202,72 +192,73 @@ export default function HostDebate() {
   }
 
   return (
-    <section aria-labelledby="host-debate-heading" className="bg-white rounded-[10px] p-6 md:p-8 shadow-sm">
-      <div className="mb-6">
-        <p className="text-[#0D1321] text-[20px]">Start the Debate</p>
-        <h1 id="host-debate-heading" className="text-[#0D1321] text-[32px] md:text-[40px] font-semibold leading-tight">
-          Create a Debate and
-          <br />
-          Let the Discussion Begin
-        </h1>
-        <div className="h-px bg-[#0D1321]/20 mt-4" />
-      </div>
+    <div className="db-panel cd-card" style={{ padding: 32 }}>
+      <p className="cd-eyebrow">Start the Debate</p>
+      <h1 id="host-debate-heading" className="cd-title">Create a Debate and Let the Discussion Begin</h1>
+      <div className="cd-divider" />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Debate Title:</label>
-            <Input
-              placeholder="Enter a clear and engaging title for your debate"
-              value={form.name ?? ""}
-              onChange={e => update("name", e.target.value)}
-              maxLength={TITLE_MAX_LENGTH}
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} noValidate aria-labelledby="host-debate-heading">
+        <div className="db-field">
+          <label htmlFor="debate-title">Debate Title</label>
+          <input
+            id="debate-title"
+            type="text"
+            placeholder="Enter a clear and engaging title for your debate"
+            value={form.name ?? ""}
+            onChange={e => update("name", e.target.value)}
+            maxLength={TITLE_MAX_LENGTH}
+            required
+          />
+        </div>
 
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Debate Description:</label>
-            <Textarea
-              placeholder="Provide context and key points to help participants understand the topic"
-              value={form.description ?? ""}
-              onChange={e => update("description", e.target.value)}
-              className="min-h-[96px]"
-              maxLength={DESCRIPTION_MAX_LENGTH}
-              required
-            />
-          </div>
+        <div className="db-field">
+          <label htmlFor="debate-desc">Debate Description</label>
+          <textarea
+            id="debate-desc"
+            placeholder="Provide context and key points to help participants understand the topic"
+            value={form.description ?? ""}
+            onChange={e => update("description", e.target.value)}
+            maxLength={DESCRIPTION_MAX_LENGTH}
+            required
+          />
+        </div>
 
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Tournament Image:</label>
-            <Input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              required
-              onChange={e => {
-                setImageFile(e.target.files?.[0] ?? null)
-                setSubmitError(null)
-              }}
-            />
-          </div>
+        <div className="db-field">
+          <label htmlFor="debate-image">Tournament Image</label>
+          <input
+            id="debate-image"
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            required
+            onChange={e => {
+              setImageFile(e.target.files?.[0] ?? null)
+              setSubmitError(null)
+            }}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Start Date</label>
-            <Input required type="date" value={form.startDate ?? ""} onChange={e => update("startDate", e.target.value)} />
+        <div className="db-field-row">
+          <div className="db-field">
+            <label htmlFor="start-date">Start Date</label>
+            <input id="start-date" required type="date" value={form.startDate ?? ""} onChange={e => update("startDate", e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">End Date</label>
-            <Input required type="date" value={form.endDate ?? ""} onChange={e => update("endDate", e.target.value)} />
+          <div className="db-field">
+            <label htmlFor="end-date">End Date</label>
+            <input id="end-date" required type="date" value={form.endDate ?? ""} onChange={e => update("endDate", e.target.value)} />
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-[#0D1321] text-[16px]">Registration Deadline</label>
-            <div className="max-w-[320px]"><Input required type="date" value={form.registrationDeadline ?? ""} onChange={e => update("registrationDeadline", e.target.value)} /></div>
-          </div>
+        </div>
+        <div className="db-field" style={{ maxWidth: 320 }}>
+          <label htmlFor="reg-deadline">Registration Deadline</label>
+          <input id="reg-deadline" required type="date" value={form.registrationDeadline ?? ""} onChange={e => update("registrationDeadline", e.target.value)} />
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Location:</label>
-            <Input
+        <div className="db-field-row">
+          <div className="db-field">
+            <label htmlFor="location">Location</label>
+            <input
+              id="location"
+              type="text"
               placeholder="Enter the city or venue name"
               value={form.location ?? ""}
               onChange={e => update("location", e.target.value)}
@@ -275,23 +266,27 @@ export default function HostDebate() {
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">League:</label>
-            <Select value={form.league} onValueChange={(v) => update("league", v as TournamentLeague)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select the league" />
-              </SelectTrigger>
-              <SelectContent>
-                {leagueOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="db-field">
+            <label htmlFor="league">League</label>
+            <select
+              id="league"
+              value={form.league ?? ""}
+              onChange={e => update("league", e.target.value as TournamentLeague)}
+              required
+            >
+              <option value="" disabled>Select the league</option>
+              {leagueOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Team Limit</label>
-            <Input
+        <div className="db-field-row">
+          <div className="db-field">
+            <label htmlFor="team-limit">Team Limit</label>
+            <input
+              id="team-limit"
               type="number"
               min={2}
               placeholder="Maximum number of teams allowed"
@@ -300,36 +295,41 @@ export default function HostDebate() {
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Elimination Round Format</label>
-            <Select value={form.teamEliminationFormat} onValueChange={v => update("teamEliminationFormat", v as DebateFormat)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a format for knock-out rounds" />
-              </SelectTrigger>
-              <SelectContent>
-                {teamFormatOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="db-field">
+            <label htmlFor="elim-format">Elimination Round Format</label>
+            <select
+              id="elim-format"
+              value={form.teamEliminationFormat ?? ""}
+              onChange={e => update("teamEliminationFormat", e.target.value as DebateFormat)}
+              required
+            >
+              <option value="" disabled>Choose a format for knock-out rounds</option>
+              {teamFormatOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Preliminary Debate Format</label>
-            <Select value={form.preliminaryFormat} onValueChange={v => update("preliminaryFormat", v as DebateFormat)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a format" />
-              </SelectTrigger>
-              <SelectContent>
-                {teamFormatOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="db-field-row">
+          <div className="db-field">
+            <label htmlFor="prelim-format">Preliminary Debate Format</label>
+            <select
+              id="prelim-format"
+              value={form.preliminaryFormat ?? ""}
+              onChange={e => update("preliminaryFormat", e.target.value as DebateFormat)}
+              required
+            >
+              <option value="" disabled>Choose a format</option>
+              {teamFormatOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Number of Preliminary Rounds</label>
-            <Input
+          <div className="db-field">
+            <label htmlFor="prelim-rounds">Number of Preliminary Rounds</label>
+            <input
+              id="prelim-rounds"
               type="number"
               min={1}
               placeholder="Enter total preliminary rounds"
@@ -338,57 +338,59 @@ export default function HostDebate() {
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-[#0D1321] text-[16px]">Number of Elimination Rounds</label>
-            <Input
-              type="number"
-              min={1}
-              placeholder="Enter total elimination rounds"
-              value={form.eliminationRoundCount ?? ""}
-              onChange={e => update("eliminationRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="flex items-center gap-3 text-[#0D1321] text-[16px]">
-              <input
-                type="checkbox"
-                checked={form.ldEnabled ?? true}
-                onChange={e => update("ldEnabled", e.target.checked)}
-                className="h-4 w-4 accent-[#0D1321]"
-              />
-              Include LD (solo speaker) bracket
-            </label>
-            <p className="text-[14px] text-[#9a8c98]">
-              Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.
-            </p>
-            {(form.ldEnabled ?? true) && (
-              <div className="space-y-2">
-                <label className="text-[#0D1321] text-[16px]" htmlFor="ld-bracket-size">LD bracket size</label>
-                <select
-                  id="ld-bracket-size"
-                  value={form.ldRoundCount ?? 4}
-                  onChange={e => update("ldRoundCount", Number(e.target.value))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value={4}>Top 16 speakers</option>
-                  <option value={5}>Top 32 speakers</option>
-                </select>
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-end">
+        <div className="db-field" style={{ maxWidth: 320 }}>
+          <label htmlFor="elim-rounds">Number of Elimination Rounds</label>
+          <input
+            id="elim-rounds"
+            type="number"
+            min={1}
+            placeholder="Enter total elimination rounds"
+            value={form.eliminationRoundCount ?? ""}
+            onChange={e => update("eliminationRoundCount", e.target.value === "" ? undefined : Number(e.target.value))}
+            required
+          />
+        </div>
+
+        <div className="db-field">
+          <label className="db-checkbox-row" htmlFor="ld-enabled" style={{ marginBottom: 6 }}>
+            <input
+              id="ld-enabled"
+              type="checkbox"
+              checked={form.ldEnabled ?? true}
+              onChange={e => update("ldEnabled", e.target.checked)}
+            />
+            Include LD (solo speaker) bracket
+          </label>
+          <p className="db-hint">
+            Top speakers from preliminary rounds get their own 1v1 playoff alongside the team bracket.
+          </p>
+          {(form.ldEnabled ?? true) && (
+            <div style={{ marginTop: 10, maxWidth: 320 }}>
+              <label htmlFor="ld-bracket-size">LD bracket size</label>
+              <select
+                id="ld-bracket-size"
+                value={form.ldRoundCount ?? 4}
+                onChange={e => update("ldRoundCount", Number(e.target.value))}
+              >
+                <option value={4}>Top 16 speakers</option>
+                <option value={5}>Top 32 speakers</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        <div className="cd-form-actions">
           {submitError ? (
-            <p className="text-sm text-red-600 sm:mr-auto" role="alert">{submitError}</p>
+            <p className="db-field-error" role="alert" style={{ flex: 1, alignSelf: "center", margin: 0 }}>{submitError}</p>
           ) : null}
-          <Button type="button" variant="outline" className="px-[40px] py-[18px]" onClick={handleCancel} disabled={isSubmitting}>Cancel</Button>
-          <Button type="submit" className="bg-[#0D1321] hover:bg-[#0D1321]/90 px-[40px] py-[18px]" disabled={isSubmitting}>
+          <button type="button" className="db-btn db-btn-secondary" onClick={handleCancel} disabled={isSubmitting}>Cancel</button>
+          <button type="submit" className="db-btn db-btn-primary" disabled={isSubmitting}>
             {isSubmitting ? "Creating..." : "Submit"}
-          </Button>
+          </button>
         </div>
       </form>
-    </section>
+    </div>
   )
 }

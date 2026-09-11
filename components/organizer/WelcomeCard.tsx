@@ -27,7 +27,7 @@ export default function WelcomeCard(props: WelcomeCardProps) {
 	return (
 		<section
 			aria-labelledby="welcome-heading"
-			className={`rounded-[10px] bg-[#0D1321] px-6 md:px-10 py-8 md:py-10 text-white ${
+			className={`home-hero-slide rounded-[10px] px-6 md:px-10 py-8 md:py-10 text-white ${
 				className ? className : ""
 			}`}
 		>
@@ -40,23 +40,23 @@ export default function WelcomeCard(props: WelcomeCardProps) {
 						{initial}
 					</div>
 					<div>
-						<h2 id="welcome-heading" className="text-xl md:text-2xl font-semibold">
+						<h2 id="welcome-heading" className="text-xl md:text-2xl font-semibold font-[var(--db-font-display)]">
 							Welcome Back {username}!
 						</h2>
 						<p className="text-sm text-white/70">Glad to see you again.</p>
 					</div>
 				</div>
 
-				<nav aria-label="User actions" className="flex gap-3">
+				<nav aria-label="User actions" className="flex flex-wrap gap-3">
 					<Link
 						href={myProfileHref}
-						className="px-4 py-2 rounded-md bg-white text-[#0D1321] text-sm md:text-base font-medium hover:bg-white/90 transition-colors"
+						className="db-btn db-btn-primary"
 					>
 						My Profile
 					</Link>
 					<Link
 						href="/my-tournaments"
-						className="px-4 py-2 rounded-md border border-white/30 text-white text-sm md:text-base font-medium hover:bg-white/10 transition-colors"
+						className="db-btn db-btn-ghost-on-dark"
 					>
 						My Tournaments
 					</Link>

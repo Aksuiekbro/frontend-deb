@@ -1344,7 +1344,7 @@ describe("ResultsSection", () => {
 
     const roundSelector = screen.getByLabelText("Select results round")
     const activeChip = within(roundSelector).getByRole("button", { name: "1/16" })
-    expect(activeChip).toHaveClass("bg-[#0D1321]")
+    expect(activeChip).toHaveClass("bg-[var(--db-fg)]")
     expect(within(roundSelector).queryByRole("button", { name: "1/16.0" })).not.toBeInTheDocument()
 
     fireEvent.click(within(roundSelector).getByRole("button", { name: "1/8" }))

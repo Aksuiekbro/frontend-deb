@@ -88,7 +88,7 @@ export function TournamentTabs({
     <div
       role="tablist"
       data-tournament-tabs-hydrated={isHydrated ? "true" : "false"}
-      className="flex overflow-x-auto border-b border-gray-300 mb-8"
+      className="flex overflow-x-auto border-b border-[var(--db-border)] mb-8"
     >
       <div className="relative shrink-0" ref={mainInfoDropdownRef}>
         <button
@@ -103,8 +103,8 @@ export function TournamentTabs({
           }}
           className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "Main Info"
-              ? "text-[#0D1321] border-[#0D1321]"
-              : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
+              ? "text-[var(--db-fg)] border-[var(--db-accent)]"
+              : "text-[var(--db-muted)] border-transparent hover:text-[var(--db-fg)]"
           }`}
         >
           {selectedMainInfoOption}
@@ -121,14 +121,14 @@ export function TournamentTabs({
 
         {isMainInfoDropdownOpen && mainInfoCoords && (
           <div
-            className="fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[160px]"
+            className="fixed bg-[var(--db-bg-elevated)] border border-[var(--db-border)] rounded-md shadow-lg z-50 min-w-[160px]"
             style={{ top: mainInfoCoords.top, left: mainInfoCoords.left }}
           >
             {(["Announcements", "Schedule", "Map"] as const).map((option) => (
               <button
                 key={option}
                 onClick={() => onMainInfoOptionSelect(option)}
-                className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
+                className="w-full text-left px-4 py-2 text-[16px] text-[var(--db-fg)] hover:bg-[var(--db-surface)] hover:text-[var(--db-fg)]"
               >
                 {option}
               </button>
@@ -146,7 +146,7 @@ export function TournamentTabs({
           tabIndex={activeTab === tab ? 0 : -1}
           onClick={() => onChangeTab(tab)}
           className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors shrink-0 whitespace-nowrap ${
-            activeTab === tab ? "text-[#0D1321] border-[#0D1321]" : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
+            activeTab === tab ? "text-[var(--db-fg)] border-[var(--db-accent)]" : "text-[var(--db-muted)] border-transparent hover:text-[var(--db-fg)]"
           }`}
         >
           {tab}
@@ -167,8 +167,8 @@ export function TournamentTabs({
           }}
           className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === "Results and Statistics"
-              ? "text-[#0D1321] border-[#0D1321]"
-              : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
+              ? "text-[var(--db-fg)] border-[var(--db-accent)]"
+              : "text-[var(--db-muted)] border-transparent hover:text-[var(--db-fg)]"
           }`}
         >
           Results and Statistics
@@ -185,14 +185,14 @@ export function TournamentTabs({
 
         {isResultsDropdownOpen && resultsCoords && (
           <div
-            className="fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[120px]"
+            className="fixed bg-[var(--db-bg-elevated)] border border-[var(--db-border)] rounded-md shadow-lg z-50 min-w-[120px]"
             style={{ top: resultsCoords.top, left: resultsCoords.left }}
           >
             {resultsOptions.map((option) => (
               <button
                 key={option}
                 onClick={() => onResultsOptionSelect(option)}
-                className="w-full text-left px-4 py-2 text-[16px] text-[#4a4e69] hover:bg-gray-100 hover:text-[#0D1321]"
+                className="w-full text-left px-4 py-2 text-[16px] text-[var(--db-fg)] hover:bg-[var(--db-surface)] hover:text-[var(--db-fg)]"
               >
                 {option}
               </button>
@@ -210,7 +210,7 @@ export function TournamentTabs({
           tabIndex={activeTab === tab ? 0 : -1}
           onClick={() => onChangeTab(tab)}
           className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors shrink-0 whitespace-nowrap ${
-            activeTab === tab ? "text-[#0D1321] border-[#0D1321]" : "text-[#9a8c98] border-transparent hover:text-[#4a4e69]"
+            activeTab === tab ? "text-[var(--db-fg)] border-[var(--db-accent)]" : "text-[var(--db-muted)] border-transparent hover:text-[var(--db-fg)]"
           }`}
         >
           {tab}

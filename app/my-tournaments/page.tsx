@@ -9,6 +9,7 @@ import { toBackendDateTime } from "@/lib/datetime"
 import { resolveMediaUrl } from "@/lib/media"
 import { LoadingState, CardSkeleton } from "../../components/ui/loading"
 import { ErrorState, EmptyState } from "../../components/ui/error"
+import Footer from "@/components/Footer"
 
 const getTagLabel = (tag: { name?: string } | string) => (typeof tag === "string" ? tag : tag.name ?? "")
 
@@ -64,23 +65,29 @@ export default function MyTournamentsPage() {
   const { tournaments, isLoading, error } = getCurrentTournaments()
 
   return (
-    <div className="min-h-screen bg-[#F1F1F1] font-hikasami">
+    <>
+      <div className="db-page-backdrop" aria-hidden="true" style={{ ['--db-backdrop-focal' as string]: '50% 45%' }}>
+        <img src="/images/senate/greek-overlook.jpg" alt="" />
+        <div className="db-page-backdrop__scrim" />
+      </div>
+      <a className="db-skip-link" href="#main">Skip to content</a>
 
+      <main id="main">
       {/* Page Title */}
-      <section className="px-12 py-8">
-        <h1 className="text-[#0D1321] text-[48px] font-bold mb-8">My Tournaments</h1>
-        
+      <section className="px-12 py-8 db-container">
+        <h1 className="home-heading font-bold mb-8 font-[var(--db-font-display)]" style={{ fontSize: 'clamp(32px,5vw,48px)' }}>My Tournaments</h1>
+
         {/* Tabs */}
-        <div className="flex border-b border-gray-300 mb-8">
+        <div className="flex flex-wrap gap-1" style={{ borderBottom: '1px solid var(--db-border)', marginBottom: 32 }}>
           {['Past', 'Ongoing', 'Upcoming'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 text-[18px] font-medium border-b-2 transition-colors ${
-                activeTab === tab
-                  ? 'text-[#0D1321] border-[#0D1321]'
-                  : 'text-[#9a8c98] border-transparent hover:text-[#4a4e69]'
-              }`}
+              className="px-6 py-3 text-[18px] font-medium transition-colors"
+              style={{
+                borderBottom: `2px solid ${activeTab === tab ? 'var(--db-accent)' : 'transparent'}`,
+                color: activeTab === tab ? 'var(--db-fg)' : 'var(--db-muted)',
+              }}
             >
               {tab}
             </button>
@@ -89,7 +96,7 @@ export default function MyTournamentsPage() {
       </section>
 
       {/* Main Content */}
-      <div className="px-12 pb-16">
+      <div className="px-12 pb-16 db-container">
         {/* Tournament Cards */}
         <LoadingState
           isLoading={isLoading}
@@ -106,6 +113,7 @@ export default function MyTournamentsPage() {
               error={error}
               onRetry={() => window.location.reload()}
               message={`Failed to load ${activeTab.toLowerCase()} tournaments`}
+              onBackdrop
             />
           ) : tournaments.length > 0 ? (
             <div className="space-y-6">
@@ -113,10 +121,10 @@ export default function MyTournamentsPage() {
                 const formattedDate = new Date(tournament.startDate).toLocaleDateString('en-GB')
 
                 return (
-                  <div key={tournament.id} className="bg-[#0D1321] rounded-[16px] p-8">
+                  <div key={tournament.id} className="db-card-dark">
                     {/* Tournament Info */}
                     <div className="flex items-start mb-6">
-                      <div className="w-[150px] h-[150px] bg-[#FFFFFF] rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
+                      <div className="w-[150px] h-[150px] bg-white rounded-full mr-6 overflow-hidden flex-shrink-0 relative">
                         {tournament.imageUrl && !imageErrors[tournament.id] ? (
                           <Image
                             src={resolveMediaUrl(tournament.imageUrl.url) ?? tournament.imageUrl.url}
@@ -133,8 +141,8 @@ export default function MyTournamentsPage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-[#FFFFFF] text-[32px] font-medium mb-2">{tournament.name}</h3>
-                        <div className="text-[#9a8c98] text-[16px] font-normal space-y-1 mb-4">
+                        <p className="debate-card__title">{tournament.name}</p>
+                        <div className="debate-card__meta space-y-1 mb-4">
                           <div className="flex items-center">
                             <MapPin className="w-4 h-4 mr-2" />
                             <span>{tournament.location}</span>
@@ -144,30 +152,28 @@ export default function MyTournamentsPage() {
                             <span>{formattedDate}</span>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="debate-card__tags" style={{ margin: '0 0 4px' }}>
                           {tournament.tags.map((tag, index) => (
-                            <span key={index} className="bg-[#FFFFFF] text-[#22223b] px-3 py-1 rounded text-[14px] font-normal cursor-default">
-                              {getTagLabel(tag)}
-                            </span>
+                            <span key={index} className="db-tag">{getTagLabel(tag)}</span>
                           ))}
                         </div>
                       </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-[#9a8c98] text-[16px] font-normal mb-4 leading-relaxed">
+                    <p className="debate-card__meta mb-4" style={{ lineHeight: 1.6 }}>
                       {tournament.description}
                     </p>
 
                     {/* Tournament Stats */}
-                    <div className="flex items-center justify-between mb-4 text-[#9a8c98] text-[14px]">
+                    <div className="debate-card__meta flex flex-wrap items-center justify-between gap-2 mb-4">
                       <span>Teams: {tournament.currentTeamCount}/{tournament.maxTeamCount}</span>
                       <span>Status: {tournament.status}</span>
                       <span>Format: {tournament.debateFormat}</span>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex space-x-4">
                         <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${
                           tournament.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
@@ -179,7 +185,7 @@ export default function MyTournamentsPage() {
                       </div>
                       <Link
                         href={`/tournament/${tournament.id}`}
-                        className="bg-[#4a4e69] text-[#FFFFFF] px-6 py-3 rounded-[8px] hover:bg-[#748cab] text-[16px] font-normal transition-colors"
+                        className="db-btn db-btn-primary"
                       >
                         Show Details
                       </Link>
@@ -194,10 +200,14 @@ export default function MyTournamentsPage() {
               description={`You haven't ${activeTab === 'Upcoming' ? 'registered for any upcoming' : activeTab === 'Ongoing' ? 'participated in any ongoing' : 'participated in any'} tournaments yet.`}
               actionText="Browse Tournaments"
               actionHref="/tournaments"
+              onBackdrop
             />
           )}
         </LoadingState>
       </div>
-    </div>
+      </main>
+
+      <Footer />
+    </>
   )
 }

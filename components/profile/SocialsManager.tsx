@@ -102,7 +102,7 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
     <div className="space-y-4">
       {socials.map((s) => (
         <div key={s.platform} className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-[#0D1321] text-white flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full bg-[var(--db-surface)] text-[var(--db-surface-fg)] flex items-center justify-center">
             <NetworkIcon type={s.platform} className="h-5 w-5" />
           </div>
           <div className="flex-1">
@@ -111,16 +111,16 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
               onChange={(e) => handleChange(s.platform, e.target.value)}
               readOnly={!editable}
               placeholder={s.platform === SocialPlatform.TELEGRAM ? "@handle" : "username"}
-              className="w-full border-b border-black/20 bg-transparent py-2 outline-none text-[#0D1321] read-only:cursor-default"
+              className="w-full border-b border-[var(--db-border)] bg-transparent py-2 outline-none text-[var(--db-fg)] read-only:cursor-default"
             />
           </div>
           {editable && (
             <>
-              <button type="button" aria-label="Edit" className="p-2 rounded hover:bg-black/5">
-                <Pencil className="h-5 w-5 text-[#0D1321]" />
+              <button type="button" aria-label="Edit" className="p-2 rounded hover:bg-[var(--db-surface)]">
+                <Pencil className="h-5 w-5 text-[var(--db-fg)]" />
               </button>
-              <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-black/5" onClick={() => handleRemove(s.platform)}>
-                <Trash2 className="h-5 w-5 text-[#0D1321]" />
+              <button type="button" aria-label="Delete" className="p-2 rounded hover:bg-[var(--db-surface)]" onClick={() => handleRemove(s.platform)}>
+                <Trash2 className="h-5 w-5 text-[var(--db-fg)]" />
               </button>
             </>
           )}
@@ -134,7 +134,7 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
           aria-label="Add social"
           aria-expanded={pickerOpen}
           onClick={() => setPickerOpen((open) => !open)}
-          className="h-9 w-9 shrink-0 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-transform duration-1000 aria-expanded:rotate-45"
+          className="h-9 w-9 shrink-0 rounded-full bg-[var(--db-border)] flex items-center justify-center hover:bg-[var(--db-surface)] hover:text-[var(--db-surface-fg)] transition-transform duration-1000 aria-expanded:rotate-45"
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -157,17 +157,17 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
                 disabled={!pickerOpen || isSaved}
                 tabIndex={pickerOpen ? 0 : -1}
                 className={`flex items-center gap-3 rounded-full px-3 py-2 border whitespace-nowrap transition-all duration-300 ${
-                  isSaved ? "bg-[#0D1321] text-white border-transparent opacity-70" : "bg-white text-[#0D1321] border-black/10 hover:bg-black/5"
+                  isSaved ? "bg-[var(--db-surface)] text-[var(--db-surface-fg)] border-transparent opacity-70" : "bg-[var(--db-bg-elevated)] text-[var(--db-fg)] border-[var(--db-border)] hover:bg-[var(--db-surface)] hover:text-[var(--db-surface-fg)]"
                 } ${pickerOpen ? "translate-x-0 opacity-100" : "-translate-x-16 opacity-0"}`}
                 style={{ transitionDelay: `${delayMs}ms` }}
               >
-                <span className={`h-8 w-8 rounded-full inline-flex items-center justify-center ${isSaved ? "bg-white/20 text-white" : "bg-[#0D1321] text-white"}`}>
+                <span className={`h-8 w-8 rounded-full inline-flex items-center justify-center ${isSaved ? "bg-[var(--db-accent)] text-[var(--db-accent-fg)]" : "bg-[var(--db-surface)] text-[var(--db-surface-fg)]"}`}>
                   <NetworkIcon type={n} className="h-4 w-4" />
                 </span>
                 <span
                   className={`chip-text inline-block overflow-hidden align-middle transition-all duration-300 ${
                     pickerOpen ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0"
-                  } ${isSaved ? "text-white" : "text-[#0D1321]"}`}
+                  } ${isSaved ? "text-[var(--db-surface-fg)]" : "text-[var(--db-fg)]"}`}
                   style={{ transitionDelay: `${delayMs + 100}ms` }}
                 >
                   <span className="pl-2">{label}</span>
@@ -185,13 +185,14 @@ export default function SocialsManager({ initialSocials, editable = false, onSav
             aria-label="Save social profiles"
             disabled={!dirty || saving}
             onClick={handleSave}
-            className="rounded-md bg-[#3E5C76] px-4 py-2 text-sm font-medium text-white hover:bg-[#2D3748] disabled:cursor-not-allowed disabled:opacity-50"
+            className="db-btn db-btn-primary"
+            style={{ height: 40, padding: "0 16px" }}
           >
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
       )}
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="db-field-error">{error}</p>}
     </div>
   );
 }

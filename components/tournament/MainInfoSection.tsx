@@ -106,13 +106,13 @@ export function MainInfoSection({
   if (selectedOption === "Announcements") {
     return (
       <div>
-        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Announcements</h2>
+        <h2 className="text-[var(--db-fg)] text-[32px] font-bold mb-6">Announcements</h2>
         <div className="relative rounded-3xl border border-[#CFD6EA] bg-white p-6">
           <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-72 w-full rounded-2xl" />}>
             {announcementsError ? (
               <div className="text-center text-red-500 text-[16px] py-20">Failed to load announcements</div>
             ) : sortedAnnouncements.length === 0 ? (
-              <div className="text-center text-[#9a8c98] text-[16px] py-20">No announcements yet</div>
+              <div className="text-center text-[var(--db-input-border)] text-[16px] py-20">No announcements yet</div>
             ) : (
               <>
                 <div className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border border-[#D6DEEF] bg-[#1F5957]">
@@ -172,7 +172,7 @@ export function MainInfoSection({
                         <button
                           type="button"
                           onClick={() => onEditAnnouncement(currentAnnouncement)}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-[#D6DEEF] px-3 py-1.5 font-medium text-[#0B1327] transition hover:border-[#3E5C76] hover:text-[#3E5C76]"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[#D6DEEF] px-3 py-1.5 font-medium text-[#0B1327] transition hover:border-[var(--db-accent)] hover:text-[var(--db-accent)]"
                           aria-label="Edit announcement"
                           title="Edit announcement"
                         >
@@ -189,9 +189,9 @@ export function MainInfoSection({
                     if (!category) return null
                     const badgeClass =
                       category === "Important"
-                        ? "bg-[#3E5C76] text-white"
+                        ? "bg-[var(--db-accent)] text-white"
                         : category === "Update"
-                          ? "bg-[#9a8c98] text-white"
+                          ? "bg-[var(--db-input-border)] text-white"
                           : "bg-green-500 text-white"
                     return (
                       <span className={`${badgeClass} mt-4 inline-block rounded-full px-3 py-1 text-[12px] font-medium`}>
@@ -232,13 +232,13 @@ export function MainInfoSection({
                             }))
                           }
                           placeholder="Add a comment"
-                          className="min-w-0 flex-1 rounded-lg border border-[#D6DEEF] px-3 py-2 text-sm text-[#0B1327] outline-none focus:border-[#3E5C76]"
+                          className="min-w-0 flex-1 rounded-lg border border-[#D6DEEF] px-3 py-2 text-sm text-[#0B1327] outline-none focus:border-[var(--db-accent)]"
                         />
                         <button
                           type="button"
                           disabled={commentSubmitting || !(commentDrafts[currentAnnouncement.id] ?? "").trim()}
                           onClick={() => handleAddComment(currentAnnouncement.id)}
-                          className="rounded-lg bg-[#0D1321] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#22223b] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-lg bg-[var(--db-fg)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#22223b] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Add comment
                         </button>
@@ -255,7 +255,7 @@ export function MainInfoSection({
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => onOpenModal("announcements")}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--db-fg)] text-white shadow-lg transition hover:bg-[#22223b]"
                 aria-label="Add announcement"
               >
                 <Plus className="h-6 w-6" />
@@ -271,13 +271,13 @@ export function MainInfoSection({
     const sortedSchedules = schedules ?? []
     return (
       <div>
-        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Schedule</h2>
+        <h2 className="text-[var(--db-fg)] text-[32px] font-bold mb-6">Schedule</h2>
         <div className="relative rounded-3xl border border-[#CFD6EA] bg-white p-6">
           <LoadingState isLoading={schedulesLoading} fallback={<Skeleton className="h-80 w-full rounded-2xl" />}>
             {schedulesError ? (
               <div className="text-center text-red-500 text-[16px] py-20">Failed to load schedule</div>
             ) : sortedSchedules.length === 0 ? (
-              <div className="text-center text-[#9a8c98] text-[16px] py-20">No schedule entries yet</div>
+              <div className="text-center text-[var(--db-input-border)] text-[16px] py-20">No schedule entries yet</div>
             ) : (
               <div className="flex max-h-[720px] flex-col gap-6 overflow-y-auto pr-2">
                 {sortedSchedules.map((schedule) => (
@@ -324,7 +324,7 @@ export function MainInfoSection({
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => onOpenModal("schedule")}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0D1321] text-white shadow-lg transition hover:bg-[#22223b]"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--db-fg)] text-white shadow-lg transition hover:bg-[#22223b]"
                 aria-label="Add schedule"
               >
                 <Plus className="h-6 w-6" />
@@ -339,13 +339,13 @@ export function MainInfoSection({
   if (selectedOption === "Map") {
     return (
       <div>
-        <h2 className="text-[#0D1321] text-[32px] font-bold mb-6">Map</h2>
+        <h2 className="text-[var(--db-fg)] text-[32px] font-bold mb-6">Map</h2>
         <div className="relative bg-[#E5E5E5] rounded-lg border border-gray-300 min-h-[400px] p-6">
-          <div className="text-center text-[#9a8c98] text-[16px] py-20">Map will be displayed here</div>
+          <div className="text-center text-[var(--db-input-border)] text-[16px] py-20">Map will be displayed here</div>
           {onOpenModal ? (
             <button
               onClick={() => onOpenModal("map")}
-              className="absolute bottom-6 right-6 w-12 h-12 bg-[#0D1321] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
+              className="absolute bottom-6 right-6 w-12 h-12 bg-[var(--db-fg)] text-white rounded-full flex items-center justify-center hover:bg-[#22223b] transition-colors shadow-lg"
               aria-label="Add map"
             >
               <Plus className="h-6 w-6" />
@@ -361,16 +361,16 @@ export function MainInfoSection({
       {(!isSpecialOption(selectedOption)) && (
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="mb-8">
-            <h2 className="text-[#0D1321] text-[24px] font-bold mb-4">Details</h2>
+            <h2 className="text-[var(--db-fg)] text-[24px] font-bold mb-4">Details</h2>
             <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-24 w-full" />}>
               {tournamentError ? (
                 <p className="text-red-500 text-[16px]">Unable to load tournament details</p>
               ) : tournament ? (
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
+                <p className="text-[var(--db-muted)] text-[16px] leading-relaxed mb-6">
                   {tournament.description || "No description available for this tournament."}
                 </p>
               ) : (
-                <p className="text-[#4a4e69] text-[16px] leading-relaxed mb-6">
+                <p className="text-[var(--db-muted)] text-[16px] leading-relaxed mb-6">
                   Tournament details will appear here once loaded.
                 </p>
               )}
@@ -378,9 +378,9 @@ export function MainInfoSection({
 
             <div className="flex flex-col gap-6 sm:flex-row sm:gap-12 mb-8">
               <div>
-                <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Dates</h3>
+                <h3 className="text-[var(--db-fg)] text-[18px] font-bold mb-2">Dates</h3>
                 <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-6 w-48" />}>
-                  <p className="text-[#4a4e69] text-[16px]">
+                  <p className="text-[var(--db-muted)] text-[16px]">
                     {tournament ? (
                       tournament.endDate
                         ? `${new Date(tournament.startDate).toLocaleDateString()} - ${new Date(tournament.endDate).toLocaleDateString()}`
@@ -392,9 +392,9 @@ export function MainInfoSection({
                 </LoadingState>
               </div>
               <div>
-                <h3 className="text-[#0D1321] text-[18px] font-bold mb-2">Location</h3>
+                <h3 className="text-[var(--db-fg)] text-[18px] font-bold mb-2">Location</h3>
                 <LoadingState isLoading={tournamentLoading} fallback={<Skeleton className="h-6 w-32" />}>
-                  <p className="text-[#4a4e69] text-[16px]">{tournament?.location || "Location TBA"}</p>
+                  <p className="text-[var(--db-muted)] text-[16px]">{tournament?.location || "Location TBA"}</p>
                 </LoadingState>
               </div>
             </div>
@@ -404,30 +404,30 @@ export function MainInfoSection({
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
             <div>
-              <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Announcements</h2>
+              <h2 className="text-[var(--db-fg)] text-[24px] font-bold mb-6">Announcements</h2>
               <LoadingState isLoading={announcementsLoading} fallback={<Skeleton className="h-20 w-full" />}>
                 {announcementsError ? (
                   <p className="text-red-500 text-[16px]">Unable to load announcements</p>
                 ) : announcements && announcements.content.length > 0 ? (
-                  <div className="text-[#0D1321] text-[18px] leading-relaxed space-y-4">
+                  <div className="text-[var(--db-fg)] text-[18px] leading-relaxed space-y-4">
                     {announcements.content.slice(0, 3).map((announcement) => (
                       <div key={announcement.id} className="border-b border-gray-200 pb-2 mb-2 last:border-b-0">
                         <h4 className="font-medium text-[16px] mb-1">{announcement.title}</h4>
-                        <p className="text-[14px] text-[#4a4e69]">{announcement.content}</p>
-                        <span className="text-[12px] text-[#9a8c98]">
+                        <p className="text-[14px] text-[var(--db-muted)]">{announcement.content}</p>
+                        <span className="text-[12px] text-[var(--db-input-border)]">
                           {new Date(announcement.timestamp).toLocaleDateString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-[#9a8c98] text-[16px] py-8">No announcements yet</div>
+                  <div className="text-[var(--db-input-border)] text-[16px] py-8">No announcements yet</div>
                 )}
               </LoadingState>
             </div>
 
             <div>
-              <h2 className="text-[#0D1321] text-[24px] font-bold mb-6">Schedule</h2>
+              <h2 className="text-[var(--db-fg)] text-[24px] font-bold mb-6">Schedule</h2>
               <LoadingState isLoading={schedulesLoading} fallback={<Skeleton className="h-80 w-full rounded-lg" />}>
                 {schedulesError ? (
                   <p className="text-red-500 text-[16px]">Unable to load schedule</p>
@@ -435,13 +435,13 @@ export function MainInfoSection({
                   <div className="space-y-4">
                     {schedules.slice(0, 3).map((schedule) => (
                       <div key={schedule.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <h4 className="font-medium text-[16px] text-[#0D1321]">{schedule.name}</h4>
-                        <p className="mt-1 text-[14px] text-[#4a4e69]">{schedule.description}</p>
+                        <h4 className="font-medium text-[16px] text-[var(--db-fg)]">{schedule.name}</h4>
+                        <p className="mt-1 text-[14px] text-[var(--db-muted)]">{schedule.description}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-[#9a8c98] text-[16px] py-8">No schedule entries yet</div>
+                  <div className="text-[var(--db-input-border)] text-[16px] py-8">No schedule entries yet</div>
                 )}
               </LoadingState>
             </div>

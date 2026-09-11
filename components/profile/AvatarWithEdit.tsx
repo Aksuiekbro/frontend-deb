@@ -56,7 +56,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
       <img
         src={imageSrc}
         alt="User avatar"
-        className="h-full w-full rounded-full object-cover bg-black/5"
+        className="h-full w-full rounded-full object-cover bg-[var(--db-surface)] border-[3px] border-[var(--db-accent)]"
         onError={() => {
           if (!preview && src !== FALLBACK_AVATAR_SRC) setFailedSrc(src);
         }}
@@ -68,9 +68,9 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
         aria-label="Edit avatar"
         disabled={!canEdit}
         onClick={onPick}
-        className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-black/5 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+        className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-[var(--db-bg-elevated)] border border-[var(--db-border)] shadow-sm flex items-center justify-center hover:bg-[var(--db-surface)] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Pencil className="h-4 w-4 text-[#0D1321]" />
+        <Pencil className="h-4 w-4 text-[var(--db-fg)]" />
       </button>
 
       <input
@@ -85,28 +85,28 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="relative z-10 w-[min(90vw,420px)] rounded-[12px] bg-white p-5 shadow-lg">
+          <div className="db-panel relative z-10 w-[min(90vw,420px)] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[#0D1321] text-[18px] font-medium">Change avatar</h3>
-              <button onClick={() => setOpen(false)} className="text-[#0D1321] hover:opacity-80">✕</button>
+              <h3 className="text-[var(--db-fg)] text-[18px] font-medium font-[var(--db-font-display)]">Change avatar</h3>
+              <button onClick={() => setOpen(false)} className="text-[var(--db-fg)] hover:opacity-80">✕</button>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={FALLBACK_AVATAR_SRC}
               alt="Edit avatar prompt"
-              className="w-full rounded-[8px] border border-black/10 object-contain mb-4"
+              className="w-full rounded-[8px] border border-[var(--db-border)] object-contain mb-4"
             />
             <div className="flex items-center justify-end gap-3">
               <button
                 type="button"
-                className="px-4 py-2 rounded-md border border-black/10 text-[#0D1321] hover:bg-black/5"
+                className="db-btn db-btn-secondary"
                 onClick={() => inputRef.current?.click()}
               >
                 Change image
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-md bg-[#3E5C76] text-white hover:bg-[#4a6d8f]"
+                className="db-btn db-btn-primary"
                 onClick={() => inputRef.current?.click()}
               >
                 Upload new
@@ -117,7 +117,7 @@ export default function AvatarWithEdit({ src, sizePx = 72, onChangeImage, onDele
                 type="button"
                 disabled={!onDeleteImage || deleting}
                 onClick={handleDelete}
-                className="text-[#FF4800] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="text-[var(--db-status)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? "Deleting..." : "Delete image"}
               </button>
